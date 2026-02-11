@@ -1,73 +1,82 @@
 # BEAR v0 Roadmap
 
-This roadmap is strictly for v0.
+This roadmap is strictly for v0.  
 If something is not listed here, it does not get built.
+
+v0 uses:
+- Logic blocks only
+- Effects expressed as structured ports
+- No capability blocks
+- No block-to-block composition
 
 ---
 
-## Phase 0 -- Project Setup (bear-cli)
+## Phase 0 — Project Setup (bear-cli)
 
-- [ ] Create Gradle multi-module project
-- [ ] Create `kernel` module (trusted seed)
-- [ ] Create `app` module (CLI wrapper)
-- [ ] Ensure CLI entrypoint runs: `bear --help`
-- [ ] Add JUnit 5 test setup
-- [ ] Add README
-- [ ] Add ARCHITECTURE.md (locked)
+- [x] Create Gradle multi-module project
+- [x] Create `kernel` module (trusted seed)
+- [x] Create `app` module (CLI wrapper)
+- [x] Ensure CLI entrypoint runs: `bear --help`
+- [x] Add JUnit 5 test setup
+- [x] Add README
+- [x] Add ARCHITECTURE.md (locked)
 
 Milestone: CLI builds and runs, no BEAR logic yet.
 
 ---
 
-## Phase 1 -- BEAR IR Foundation (kernel)
+## Phase 1 — BEAR IR Foundation (kernel)
 
-Goal: Deterministic parsing + validation.
+Goal: Deterministic parsing + validation + normalization.
+
+### Core Model
 
 - [ ] Define `BlockModel`
   - name
-  - kind
+  - kind (`logic` only in v0)
   - contract (inputs/outputs)
-  - effects.allow
+  - effects (structured ports)
   - idempotency
   - invariants (non_negative only)
 
+- [ ] Define `EffectPortModel`
+  - port name
+  - list of ops
+
+### Parsing
+
 - [ ] Add YAML parsing (SnakeYAML)
-- [ ] Implement schema validation
-- [ ] Implement semantic validation
-- [ ] Implement normalization (sorted effects, canonical form)
+- [ ] Implement strict schema validation
+  - fail on unknown keys
+  - fail on invalid enums
+  - fail on invalid references
+
+### Validation Rules
+
+- [ ] Unique input names
+- [ ] Unique output names
+- [ ] Unique port names
+- [ ] Unique ops per port
+- [ ] idempotency.key must reference input
+- [ ] invariant field must reference output
+
+### Normalization (Deterministic Canonical Form)
+
+- [ ] Sort inputs by name
+- [ ] Sort outputs by name
+- [ ] Sort ports by name
+- [ ] Sort ops within each port
+- [ ] Sort invariants deterministically
+- [ ] Emit canonical key order
+
 - [ ] Implement `bear validate <file>`
 
-Milestone: `bear validate withdraw.bear.yaml` succeeds/fails deterministically.
+Milestone:  
+`bear validate withdraw.bear.yaml` succeeds/fails deterministically and emits canonical form.
 
 ---
 
-## Phase 2 -- Early Self-Hosting (Controlled)
-
-Goal: BEAR generates part of BEAR (pure logic only).
-
-Rules:
-- Kernel remains trusted seed.
-- No CLI, filesystem, or generation logic is self-hosted.
-- Only pure deterministic logic blocks may be self-hosted.
-
-- [ ] Create `bear/` folder inside bear-cli
-- [ ] Define first BEAR block: `NormalizeIr`
-  - Input: raw IR
-  - Output: canonical IR
-  - effects.allow: none
-  - invariants: deterministic output
-
-- [ ] Use BEAR to generate its skeleton + tests
-- [ ] Implement NormalizeIr logic via BEAR-generated impl file
-- [ ] Replace kernel normalization call with generated block call (adapter layer)
-
-Milestone: Part of normalization logic is BEAR-generated and enforced.
-
-This is the first proof of self-hosting.
-
----
-
-## Phase 3 -- JVM Target (Deterministic Codegen)
+## Phase 2 — JVM Target (Deterministic Codegen)
 
 Goal: Generate enforcement artifacts for demo projects.
 
@@ -76,34 +85,55 @@ Goal: Generate enforcement artifacts for demo projects.
 
 Generation must produce:
 
-- [ ] Skeleton class (non-editable)
-- [ ] Implementation stub (if missing)
-- [ ] Port interface derived from effects.allow
-- [ ] JUnit test templates:
-  - idempotency
-  - non_negative invariant
+### 1. Logic Skeleton
+
+- [ ] Non-editable skeleton class
+- [ ] Constructor receives generated port interfaces
+- [ ] Abstract or delegated `execute(...)` method
+- [ ] Deterministic structure
+
+### 2. Port Interfaces (Effects Boundary)
+
+- [ ] Generate one Java interface per declared port
+- [ ] Generate methods for each declared op
+- [ ] No extra methods
+- [ ] Deterministic method signatures
+
+### 3. Implementation Stub
+
+- [ ] Generate impl file if missing
+- [ ] Never overwrite existing impl
+
+### 4. JUnit Test Templates
+
+- [ ] Idempotency test (if declared)
+- [ ] non_negative invariant test
+- [ ] Deterministic wiring with in-memory adapters
 
 - [ ] Output to `build/generated/bear`
-- [ ] Ensure deterministic generation
+- [ ] Ensure deterministic generation (byte-stable output)
 
-Milestone: `bear compile` creates compilable artifacts.
+Milestone:  
+`bear compile` creates compilable artifacts.
 
 ---
 
-## Phase 4 -- Two-File Enforcement
+## Phase 3 — Two-File Enforcement
 
 Goal: Prevent drift.
 
 - [ ] Skeleton and impl separated
 - [ ] Skeleton always regenerated
 - [ ] Impl preserved
-- [ ] Drift detection (fail if generated artifacts differ unexpectedly)
+- [ ] Drift detection:
+  - Fail if generated artifacts differ unexpectedly
 
-Milestone: Manual edits to skeleton are rejected or overwritten.
+Milestone:  
+Manual edits to skeleton are rejected or overwritten deterministically.
 
 ---
 
-## Phase 5 -- bear check
+## Phase 4 — bear check
 
 Goal: Single deterministic enforcement gate.
 
@@ -111,34 +141,42 @@ Goal: Single deterministic enforcement gate.
   - validate IR
   - compile artifacts
   - invoke Gradle tests
-- [ ] Fail on:
-  - invalid IR
-  - generation drift
-  - invariant violation
-  - idempotency violation
 
-Milestone: One command enforces BEAR guarantees.
+Fail on:
+
+- invalid IR
+- generation drift
+- invariant violation
+- idempotency violation
+
+Milestone:  
+One command enforces BEAR guarantees.
 
 ---
 
-## Phase 6 -- Demo (bear-demo)
+## Phase 5 — Demo (bear-account-demo)
 
 Goal: Prove value.
 
 - [ ] Create simple bank account domain
-- [ ] Write Withdraw BEAR IR
+- [ ] Write Withdraw BEAR IR (logic block)
+- [ ] Declare ledger + idempotency ports
+- [ ] Provide deterministic in-memory adapters
 - [ ] Implement naive Withdraw
 - [ ] Confirm `bear check` fails
 - [ ] Fix implementation
 - [ ] Confirm `bear check` passes
 
-Milestone: Clear before/after demonstration.
+Milestone:  
+Clear before/after demonstration.
 
 ---
 
 ## Explicitly Not in v0
 
-- Spec -> IR lowering
+- Capability blocks in IR
+- Block-to-block composition
+- Spec → IR lowering
 - LLM inside BEAR core
 - Cross-service modeling
 - Multi-language targets
@@ -149,5 +187,7 @@ Milestone: Clear before/after demonstration.
 - Rewriting CLI wiring using BEAR
 
 If it does not contribute to:
-"Naive withdraw fails. Correct withdraw passes."
+
+> "Naive withdraw fails. Correct withdraw passes."
+
 It is out of scope.

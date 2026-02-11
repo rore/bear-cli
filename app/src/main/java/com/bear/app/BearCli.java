@@ -5,13 +5,9 @@ public final class BearCli {
     }
 
     public static void main(String[] args) {
-        if (args.length == 0) {
-            printUsage();
-            return;
-        }
-
-        String command = args[0];
+        String command = args.length == 0 ? "help" : args[0];
         switch (command) {
+            case "help", "-h", "--help" -> printUsage();
             case "validate" -> System.out.println("bear validate: placeholder");
             case "compile" -> System.out.println("bear compile: placeholder");
             case "check" -> System.out.println("bear check: placeholder");
@@ -24,5 +20,6 @@ public final class BearCli {
 
     private static void printUsage() {
         System.out.println("Usage: bear <validate|compile|check>");
+        System.out.println("       bear --help");
     }
 }

@@ -9,37 +9,38 @@ Last Updated: 2026-02-11
 
 ## Current Focus
 
-Scaffolding `bear-cli` multi-module project.
+Phase 1 (IR foundation): deterministic parsing + strict validation + deterministic normalization.
 
 ---
 
 ## Current Phase
 
-Phase: 0 -- Project Setup
+Phase: 1 -- BEAR IR Foundation
 
 Checklist:
-- [ ] Gradle multi-module project created
-- [ ] `kernel` module builds
-- [ ] `app` module builds
-- [ ] CLI entry point wired
-- [ ] `bear --help` works
+- [x] Gradle multi-module project created
+- [x] `kernel` module scaffolded (IR parser/validator/normalizer stubs)
+- [x] `app` module scaffolded (CLI placeholder commands)
+- [x] CLI entry point wired (including `--help`)
+- [x] JUnit 5 configured in Gradle
 
 Exit condition:
-CLI builds and runs with placeholder commands.
+`bear validate <file>` succeeds/fails deterministically and emits canonical form.
 
 ---
 
 ## Next Concrete Task
 
-Scaffold `bear-cli`:
+Implement Phase 1 core model + strict validation:
 
-1. Create Gradle multi-module structure
-2. Add `kernel` (trusted seed, no generation logic yet)
-3. Add `app` (CLI wrapper)
-4. Implement minimal command dispatcher
-5. Verify `bear --help` works
+1. Replace map-based IR with `BlockModel` + `EffectPortModel`
+2. Define strict YAML schema (fail on unknown keys)
+3. Implement semantic validation rules from `doc/ROADMAP.md`
+4. Implement deterministic canonicalization (sorted structure + canonical key order)
+5. Wire `bear validate <file>` to parse -> validate -> emit canonical form
 
-Nothing else.
+Notes:
+- This repo currently does not include a Gradle wrapper; running builds requires a local Gradle install.
 
 ---
 
