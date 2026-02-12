@@ -9,7 +9,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -232,6 +234,11 @@ class BearCliTest {
 
         Path baselineFile = tempDir.resolve("build/generated/bear/src/main/java/com/bear/generated/withdraw/Withdraw.java");
         byte[] before = Files.readAllBytes(baselineFile);
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
 
         CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
         assertEquals(0, check.exitCode);
@@ -273,6 +280,135 @@ class BearCliTest {
         assertFalse(Files.exists(removedFile));
         assertTrue(Files.exists(addedFile));
         assertEquals(changedBefore + "\n// drift\n", Files.readString(changedFile));
+    }
+
+    @Test
+    void checkMissingProjectWrapperReturnsIoError(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+
+        CliRunResult compile = runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(0, compile.exitCode);
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(74, check.exitCode);
+        assertTrue(check.stderr.startsWith("io: IO_ERROR: PROJECT_TEST_WRAPPER_MISSING:"));
+    }
+
+    @Test
+    void checkRunsProjectTestsAndPasses(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+
+        CliRunResult compile = runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(0, compile.exitCode);
+
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(0, check.exitCode);
+        assertTrue(check.stdout.startsWith("check: OK"));
+    }
+
+    @Test
+    void checkProjectTestFailureReturnsExit4AndTail(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+
+        CliRunResult compile = runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(0, compile.exitCode);
+
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\nfor /L %%i in (1,1,50) do echo line%%i\r\nexit /b 1\r\n",
+            "#!/usr/bin/env sh\nfor i in $(seq 1 50); do echo line$i; done\nexit 1\n"
+        );
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(4, check.exitCode);
+        String stderr = normalizeLf(check.stderr);
+        assertTrue(stderr.startsWith("check: TEST_FAILED: project tests failed\n"));
+        assertTrue(stderr.contains("\nline11\n"));
+        assertTrue(stderr.contains("\nline50\n"));
+        assertFalse(stderr.contains("\nline10\n"));
+    }
+
+    @Test
+    void checkProjectTestTimeoutReturnsExit4(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+
+        CliRunResult compile = runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(0, compile.exitCode);
+
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho start\r\npowershell -Command \"Start-Sleep -Seconds 3\"\r\necho end\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho start\nsleep 3\necho end\nexit 0\n"
+        );
+
+        String prev = System.getProperty("bear.check.testTimeoutSeconds");
+        try {
+            System.setProperty("bear.check.testTimeoutSeconds", "1");
+            CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+            assertEquals(4, check.exitCode);
+            assertTrue(normalizeLf(check.stderr).startsWith("check: TEST_TIMEOUT: project tests exceeded 1s"));
+        } finally {
+            if (prev == null) {
+                System.clearProperty("bear.check.testTimeoutSeconds");
+            } else {
+                System.setProperty("bear.check.testTimeoutSeconds", prev);
+            }
+        }
+    }
+
+    @Test
+    void checkDriftShortCircuitsAndDoesNotRunProjectTests(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+
+        CliRunResult compile = runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(0, compile.exitCode);
+
+        Path marker = tempDir.resolve("wrapper-ran.txt");
+        String markerPath = marker.toString();
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho ran>\"" + markerPath + "\"\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho ran > \"" + markerPath.replace("\\", "\\\\") + "\"\nexit 0\n"
+        );
+
+        Path driftFile = tempDir.resolve("build/generated/bear/drift-added.txt");
+        Files.writeString(driftFile, "drift");
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(3, check.exitCode);
+        assertFalse(Files.exists(marker));
+    }
+
+    private static void writeProjectWrapper(Path projectRoot, String windowsContent, String unixContent) throws Exception {
+        Path wrapper = projectRoot.resolve(isWindows() ? "gradlew.bat" : "gradlew");
+        String content = isWindows() ? windowsContent : unixContent;
+        Files.writeString(wrapper, content);
+        if (!isWindows()) {
+            try {
+                Files.setPosixFilePermissions(wrapper, Set.of(
+                    PosixFilePermission.OWNER_READ,
+                    PosixFilePermission.OWNER_WRITE,
+                    PosixFilePermission.OWNER_EXECUTE
+                ));
+            } catch (UnsupportedOperationException ignored) {
+                // Ignore on filesystems without POSIX permissions.
+            }
+        }
+    }
+
+    private static boolean isWindows() {
+        return System.getProperty("os.name").toLowerCase().contains("win");
     }
 
     private static CliRunResult runCli(String[] args) {

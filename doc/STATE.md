@@ -9,7 +9,7 @@ Last Updated: 2026-02-12
 
 ## Current Focus
 
-Phase 3 (Two-file enforcement): drift regeneration enforcement implemented via `bear check` v1.
+Phase 4 (`bear check`): drift + project-test gate implemented in `bear check` v1.1.
 
 ---
 
@@ -30,12 +30,12 @@ Exit condition:
 
 ## Next Concrete Task
 
-Phase 4 (`bear check` extension): execute project tests after drift pass:
+Phase 5 (Demo proof): wire naive/fixed Withdraw loop and validate gate behavior end-to-end:
 
-1. Extend `bear check` to run project tests (Gradle) after no-drift result
-2. Add deterministic failure mapping/reporting for project test failures
-3. Keep drift output contract unchanged and stable
-4. Use demo project to verify gate behavior in practice
+1. Implement naive Withdraw logic in demo and confirm `bear check` fails deterministically
+2. Implement corrected Withdraw logic and confirm `bear check` passes
+3. Capture concise before/after proof steps for repeatable demo runbook
+4. Keep v0 scope tight (no extra domain/service modeling)
 
 Notes:
 - Gradle wrapper is available: use `.\gradlew.bat` (Windows) to build/run without a global Gradle install.
@@ -112,3 +112,5 @@ No essays. No philosophy.
 - Added `spec/commands/check.md` to freeze v1 check command contract and non-mutation semantics.
 - Tightened `bear check` baseline semantics: empty generated baseline tree now counts as `MISSING_BASELINE` (same deterministic drift failure path).
 - Clarified `check` path semantics in spec: reported drift paths are relative to `build/generated/bear` root.
+- Extended `bear check` to execute project Gradle wrapper tests after drift pass, with dedicated test-failure exit code (`4`) and deterministic timeout handling.
+- Added deterministic test-failure reporting with normalized 40-line output tail and explicit drift short-circuit behavior (tests do not run on drift).

@@ -3,19 +3,23 @@
 ## Command
 `bear check <ir-file> --project <path>`
 
-`bear check` v1 is a drift regeneration gate for BEAR-owned artifacts.
+`bear check` v1.1 is a deterministic gate for:
+1. drift regeneration enforcement on BEAR-owned artifacts
+2. project test execution after drift passes
 
 It performs:
 1. Parse + validate + normalize IR.
 2. Compile normalized IR into a temporary project root.
 3. Diff temp BEAR-owned tree against project BEAR-owned tree.
-4. Fail deterministically on any mismatch.
+4. If drift passes, execute project tests via Gradle wrapper.
+5. Fail deterministically on mismatch or test failure.
 
 ## Scope (v1)
 - Includes:
   - drift detection for BEAR-owned generated tree
+- Includes:
+  - project test execution after no-drift result
 - Excludes:
-  - project test execution
   - user-owned impl file checks
   - static boundary isolation checks
 
@@ -29,6 +33,7 @@ It performs:
 - `0`: no drift
 - `2`: schema/semantic IR validation error
 - `3`: drift detected (including missing baseline)
+- `4`: project test failure (including timeout)
 - `64`: usage error
 - `74`: IO error
 - `70`: internal/unexpected error
@@ -44,6 +49,7 @@ Missing baseline:
 - Baseline is considered missing when:
   - `<project>/build/generated/bear` does not exist, OR
   - it exists but contains no regular files
+- If drift is detected, project tests are not executed.
 
 ## Ordering (deterministic)
 - Primary key: relative path (lexicographic, `/` separators)
@@ -62,6 +68,24 @@ Missing baseline:
   - never printed in command output
   - never part of test assertions
 - Cleanup is best-effort and must not affect check verdict.
+
+## Project test execution (v1.1)
+- Wrapper invocation:
+  - Windows: `<project>/gradlew.bat --no-daemon test`
+  - Unix-like: `<project>/gradlew --no-daemon test`
+- Wrapper requirements:
+  - missing wrapper file => IO error (`74`) with guidance
+  - non-executable Unix wrapper => IO error (`74`) with chmod guidance
+  - no fallback to system `gradle`
+- Timeout:
+  - fixed 300s default (internal override may be used by tests)
+  - timeout is reported as test failure exit code `4`
+- Failure output:
+  - `check: TEST_FAILED: project tests failed`
+  - or `check: TEST_TIMEOUT: project tests exceeded <seconds>s`
+  - then print last 40 lines of merged test output
+  - line handling is deterministic: normalize `\r\n` and `\n`, tail by normalized lines
+  - tail lines are printed without extra per-line prefixes
 
 ## No-mutation guarantee
 `bear check` does not modify project baseline files.
