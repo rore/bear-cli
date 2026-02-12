@@ -9,7 +9,7 @@ Last Updated: 2026-02-12
 
 ## Current Focus
 
-Phase 2 (JVM target): compile conformance hardening (golden corpus + strict replay payload integrity) completed.
+Phase 3 (Two-file enforcement): drift regeneration enforcement implemented via `bear check` v1.
 
 ---
 
@@ -30,12 +30,12 @@ Exit condition:
 
 ## Next Concrete Task
 
-Phase 3 (Two-file enforcement): start drift detection (`bear check` regen + compare) using compile golden baseline:
+Phase 4 (`bear check` extension): execute project tests after drift pass:
 
-1. Implement deterministic regen+compare flow for generated artifacts
-2. Define mismatch reporting format (stable, path-focused)
-3. Wire initial `bear check --project <path>` skeleton to invoke validate+compile+drift check
-4. Keep demo loop minimal until drift gate is in place
+1. Extend `bear check` to run project tests (Gradle) after no-drift result
+2. Add deterministic failure mapping/reporting for project test failures
+3. Keep drift output contract unchanged and stable
+4. Use demo project to verify gate behavior in practice
 
 Notes:
 - Gradle wrapper is available: use `.\gradlew.bat` (Windows) to build/run without a global Gradle install.
@@ -107,3 +107,6 @@ No essays. No philosophy.
 - Added compile golden corpus at `spec/golden/compile/withdraw` and kernel tests now assert exact generated file list/content against golden.
 - Tightened generated replay decoding: `hit=true` now requires all `result.*` fields; missing field fails fast with deterministic error text.
 - Updated compile/IR docs to explicitly define current v0 replay-hit behavior and `hit` protocol semantics.
+- Implemented `bear check <ir-file> --project <path>` v1 drift gate: validate + temp compile + deterministic diff against `<project>/build/generated/bear`.
+- Added deterministic drift reporting (`ADDED`/`REMOVED`/`CHANGED`) and explicit missing-baseline failure (`MISSING_BASELINE`) with exit code `3`.
+- Added `spec/commands/check.md` to freeze v1 check command contract and non-mutation semantics.
