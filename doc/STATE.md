@@ -9,33 +9,34 @@ Last Updated: 2026-02-12
 
 ## Current Focus
 
-Phase 4 (`bear check`): drift + project-test gate implemented in `bear check` v1.1.
+Documentation normalization complete: BEAR philosophy/roadmap now frames v0 as boundary-governance enforcement for agentic workflows.
 
 ---
 
 ## Current Phase
 
-Phase: 2 -- JVM Target
+Phase: 5 -- Governance signaling in check (v0 completion track)
 
 Checklist:
-- [x] Phase 1 `bear validate <file>` implemented end-to-end
-- [x] Strict schema + semantic validation implemented and tested
-- [x] Deterministic normalization + canonical YAML emission implemented and golden-tested
-- [x] Phase 2 codegen scaffolding started
+- [x] Phase 1 deterministic IR validation + normalization
+- [x] Phase 2 deterministic JVM compile + golden conformance
+- [x] Phase 3 drift regeneration gate
+- [x] Phase 4 project test execution gate
+- [ ] Phase 5 deterministic boundary-expansion signaling in `bear check`
 
 Exit condition:
-`bear compile` emits deterministic JVM artifacts (ports + skeleton + test templates) for the demo IR.
+`bear check` emits deterministic, reviewable boundary-expansion signals per `doc/GOVERNANCE.md`.
 
 ---
 
 ## Next Concrete Task
 
-Phase 5 (Demo proof): wire naive/fixed Withdraw loop and validate gate behavior end-to-end:
+Implement deterministic boundary-expansion signaling in `bear check` output flow:
 
-1. Implement naive Withdraw logic in demo and confirm `bear check` fails deterministically
-2. Implement corrected Withdraw logic and confirm `bear check` passes
-3. Capture concise before/after proof steps for repeatable demo runbook
-4. Keep v0 scope tight (no extra domain/service modeling)
+1. Add classification step (`ordinary` vs `boundary-expanding`) based on `doc/GOVERNANCE.md`
+2. Emit stable, parseable boundary-expansion lines in check output
+3. Add app tests for signal determinism and ordering
+4. Update `spec/commands/check.md` with signal contract
 
 Notes:
 - Gradle wrapper is available: use `.\gradlew.bat` (Windows) to build/run without a global Gradle install.
@@ -114,3 +115,4 @@ No essays. No philosophy.
 - Clarified `check` path semantics in spec: reported drift paths are relative to `build/generated/bear` root.
 - Extended `bear check` to execute project Gradle wrapper tests after drift pass, with dedicated test-failure exit code (`4`) and deterministic timeout handling.
 - Added deterministic test-failure reporting with normalized 40-line output tail and explicit drift short-circuit behavior (tests do not run on drift).
+- Added normative governance policy in `doc/GOVERNANCE.md` and aligned `doc/ARCHITECTURE.md`, `doc/ROADMAP.md`, `doc/START_HERE.md`, `doc/PROMPT_BOOTSTRAP.md`, and `README.md` to boundary-governance-first framing.

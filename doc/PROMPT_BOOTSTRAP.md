@@ -7,12 +7,12 @@ Paste the SHORT block first. Paste LONG only if needed.
 
 # SHORT BOOTSTRAP (Paste First)
 
-We are building BEAR (Block Enforcement & Representation), a deterministic constraint compiler for backend blocks.
+We are building BEAR (Block Enforcement & Representation), a deterministic boundary-governance layer for backend blocks in agentic development.
 
 Core purpose:
 - Agent-generated code is non-deterministic.
-- Natural language specs are loose.
-- Production systems need deterministic enforcement.
+- Boundary expansion can happen silently.
+- Production systems need deterministic, independent enforcement gates.
 
 What BEAR does:
 - Takes BEAR IR (strict intermediate representation for one logic block).
@@ -22,6 +22,11 @@ What BEAR does:
   - structured capability port interfaces
   - deterministic tests
 - Enforces with one gate: `bear check` (validate + compile + test + drift detection).
+
+Governance litmus:
+- BEAR is valuable only if new external interaction capability cannot be introduced silently.
+- IR changes are classified as `ordinary` or `boundary-expanding`.
+- Boundary-expanding changes must be explicitly visible/signaled in deterministic output.
 
 v0 scope (locked):
 - JVM/Java only.
@@ -41,6 +46,7 @@ v0 non-guarantees:
 - Real DB/concurrency/transaction semantics.
 - Runtime enforcement beyond test harness.
 - Concurrency-safe duplicate handling (v0 idempotency is deterministic replay safety only).
+- Full static isolation of arbitrary impl-side calls (post-v0 hardening unless delivered).
 
 Demo proof target:
 - Naive Withdraw fails `bear check`.
@@ -59,6 +65,7 @@ Constraints for this session:
 - Do not add features beyond v0 scope.
 - Do not expand IR expressiveness.
 - Keep behavior deterministic.
+- Preserve governance semantics from `doc/GOVERNANCE.md`.
 
 Continue from here.
 
@@ -71,6 +78,7 @@ BEAR is not:
 - a behavior DSL
 - infrastructure simulation
 - a replacement for developers
+- a spec-refinement assistant as its primary role
 
 BEAR IR v0 canonical model:
 - root: `version: v0`, `block`
@@ -95,6 +103,9 @@ Two-file enforcement model:
 - generated skeleton is non-editable
 - implementation file is editable
 - regeneration must not allow silent drift
+
+Agent-default workflow:
+- prompt -> exploration -> IR update -> deterministic gates -> boundary summary
 
 Demo IR shape (canonical intent):
 - one Withdraw logic block

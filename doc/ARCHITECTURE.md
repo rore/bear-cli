@@ -1,21 +1,22 @@
 # BEAR v0 Architecture
 
 ## Core Purpose
-BEAR is a deterministic constraint compiler.
+BEAR is a boundary-governance enforcement layer for agentic development.
 
 It exists because:
 - Agent-generated code is non-deterministic.
-- Natural language specifications are loose.
-- Production systems require deterministic enforcement.
+- Boundary expansion can happen silently.
+- Production systems need deterministic, independent gates.
 
-BEAR introduces a rigid, machine-checkable intermediate representation (BEAR IR) that:
-- constrains what a block is allowed to do
-- compiles into structural boundaries and deterministic tests
-- prevents architectural drift through regeneration and enforcement gates
+BEAR uses a rigid, machine-checkable intermediate representation (BEAR IR) to:
+- constrain allowed block interaction surfaces
+- compile deterministic structural boundaries and tests
+- detect drift and surface governance-relevant diffs
 
 BEAR is not a full verifier.
 BEAR does not simulate infrastructure behavior.
 BEAR is not a behavior DSL.
+BEAR is not primarily a spec-refinement tool.
 
 ## Core Principles
 1. Deterministic core
@@ -28,6 +29,10 @@ BEAR is not a behavior DSL.
    - Business logic lives in a separate implementation file.
 4. Minimal enforceable semantics
    - v0 enforces only a narrow, mechanically testable surface.
+5. Boundary visibility over silent expansion
+   - Ordinary IR evolution is expected.
+   - Boundary-expanding changes must be explicit and reviewable.
+   - Governance classification is defined in `doc/GOVERNANCE.md`.
 
 ## What BEAR Guarantees in v0
 If a block passes `bear check`, then:
@@ -36,6 +41,7 @@ If a block passes `bear check`, then:
 - it satisfies declared invariant templates under generated tests
 - it respects declared idempotency semantics under generated tests
 - generated artifacts are unchanged from deterministic regeneration (drift detection)
+- boundary-governance signals are deterministic for covered v0 expansion cases
 
 ## What BEAR Does Not Guarantee in v0
 - business correctness beyond declared invariants
@@ -44,6 +50,11 @@ If a block passes `bear check`, then:
 - transaction semantics
 - runtime enforcement beyond test harness
 - general behavioral verification
+- full static isolation of arbitrary implementation calls outside generated ports
+
+Important caveat:
+- v0 structural boundaries are strong at the generated surface.
+- v0 is not yet full static enforcement against every possible call pattern inside user impl code.
 
 BEAR v0 is structural enforcement plus deterministic guardrails.
 Idempotency in v0 means deterministic replay safety in the test harness, not concurrency-safe duplicate handling.
@@ -108,8 +119,8 @@ Only one target is supported:
 4. `bear check` runs:
    - validate
    - compile
+   - deterministic drift/governance signal checks
    - project tests
-   - drift detection
 
 Two-file approach:
 - generated skeleton is non-editable
@@ -135,3 +146,6 @@ v0 is done when:
 
 ## Future Ideas
 Keep future ideas in `doc/FUTURE.md`. Do not implement them in v0.
+
+## Governance Reference
+`doc/GOVERNANCE.md` is the normative source for IR diff classification and boundary-expansion review semantics in v0.

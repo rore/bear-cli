@@ -1,7 +1,9 @@
 # BEAR v0 Roadmap
 
-This roadmap is strictly for v0.  
+This roadmap is strictly for v0.
 If something is not listed here, it does not get built.
+
+Governance policy reference (normative): `doc/GOVERNANCE.md`.
 
 v0 uses:
 - Logic blocks only
@@ -15,16 +17,25 @@ v0 guarantees:
 - Structural effect boundary enforcement via generated structured ports
 - Deterministic invariant and idempotency test gating
 - Drift detection on generated artifacts
+- Deterministic signaling for boundary-expanding changes in check workflow
 
 v0 non-guarantees:
 - Business correctness beyond declared invariants
 - Real database/concurrency/transaction semantics
 - Runtime enforcement beyond test harness
-- General behavioral verification
+- Full static hard-blocking of all arbitrary impl-side calls (post-v0 hardening unless delivered)
 
----
+## Governance Milestone (Cross-Phase)
 
-## Phase 0 — Project Setup (bear-cli)
+- [x] Define normative IR diff classes: `ordinary` vs `boundary-expanding`
+- [x] Add concrete decision table for change classification
+- [ ] Ensure `bear check` emits deterministic boundary-expansion signals for covered v0 cases
+- [ ] Keep ordinary IR evolution low-friction under standard validate/compile/check loop
+
+Milestone:
+Boundary expansion cannot be silent in v0 workflow.
+
+## Phase 0 - Project Setup (bear-cli)
 
 - [x] Create Gradle multi-module project
 - [x] Create `kernel` module (trusted seed)
@@ -32,184 +43,110 @@ v0 non-guarantees:
 - [x] Ensure CLI entrypoint runs: `bear --help`
 - [x] Add JUnit 5 test setup
 - [x] Add README
-- [x] Add ARCHITECTURE.md (locked)
+- [x] Add `doc/ARCHITECTURE.md`
 
-Milestone: CLI builds and runs, no BEAR logic yet.
+Milestone:
+CLI builds and runs, no BEAR logic yet.
 
----
+## Phase 1 - BEAR IR Foundation (kernel)
 
-## Phase 1 — BEAR IR Foundation (kernel)
+Goal: deterministic parsing + validation + normalization.
 
-Goal: Deterministic parsing + validation + normalization.
-
-### Core Model
-
-- [x] Define `BlockModel`
-  - name
-  - kind (`logic` only in v0)
-  - contract (inputs/outputs)
-  - effects (structured ports)
-  - idempotency
-  - invariants (non_negative only)
-
-- [x] Define `EffectPortModel`
-  - port name
-  - list of ops
-- [x] Lock `doc/IR_SPEC.md` as the canonical v0 IR model
-
-### Parsing
-
-- [x] Add YAML parsing (SnakeYAML)
-- [x] Implement strict schema validation
-  - require root `version: v0`
-  - fail on unknown keys
-  - fail on invalid enums
-  - fail on invalid references
-
-### Validation Rules
-
-- [x] Unique input names
-- [x] Unique output names
-- [x] Unique port names
-- [x] Unique ops per port
-- [x] idempotency.key must reference input
-- [x] idempotency.store.port/getOp/putOp must reference declared effects
-- [x] invariant field must reference output
-
-### Normalization (Deterministic Canonical Form)
-
-- [x] Sort inputs by name
-- [x] Sort outputs by name
-- [x] Sort ports by name
-- [x] Sort ops within each port
-- [x] Sort invariants deterministically
-- [x] Emit canonical key order
-
+- [x] Define v0 IR model (`logic` block, contract, effects, idempotency, invariants)
+- [x] Implement strict YAML parsing + unknown-key rejection
+- [x] Implement semantic validation (field refs, effect refs, uniqueness)
+- [x] Implement deterministic normalization and canonical YAML emit
 - [x] Implement `bear validate <file>`
+- [x] Lock `doc/IR_SPEC.md` as canonical IR schema contract
 
-Milestone:  
-`bear validate spec/fixtures/withdraw.bear.yaml` succeeds/fails deterministically and emits canonical form.
+Milestone:
+`bear validate` succeeds/fails deterministically with canonical output.
 
----
+## Phase 2 - JVM Target (deterministic codegen)
 
-## Phase 2 — JVM Target (Deterministic Codegen)
+Goal: generate deterministic enforcement artifacts for demo projects.
 
-Goal: Generate enforcement artifacts for demo projects.
+- [x] Define `Target` abstraction
+- [x] Implement `JvmTarget`
+- [x] Generate BEAR-owned entrypoint, logic interface, models, ports, support types
+- [x] Generate user-owned impl stub once and preserve it
+- [x] Generate conditional idempotency/invariant test templates
+- [x] Lock compile contract in `spec/commands/compile.md`
+- [x] Add compile golden corpus + conformance tests
+- [x] Enforce replay payload integrity (`hit=true` requires all `result.*`)
 
-- [ ] Define `Target` interface
-- [ ] Implement `JvmTarget`
+Milestone:
+`bear compile` produces deterministic, byte-stable, spec-conformant output.
 
-Generation must produce:
+## Phase 3 - Drift Regeneration Gate (`bear check` v1)
 
-### 1. Logic Skeleton
+Goal: deterministic regeneration drift enforcement.
 
-- [ ] Non-editable skeleton class
-- [ ] Constructor receives generated port interfaces
-- [ ] Abstract or delegated `execute(...)` method
-- [ ] Deterministic structure
+- [x] Implement `bear check <ir-file> --project <path>`
+- [x] Validate + normalize IR before comparison
+- [x] Compile into temp project tree
+- [x] Diff candidate vs `<project>/build/generated/bear`
+- [x] Emit deterministic drift lines (`ADDED`/`REMOVED`/`CHANGED`)
+- [x] Fail deterministically on missing/empty baseline
+- [x] Ensure check is compare-only (no project mutation)
 
-### 2. Port Interfaces (Effects Boundary)
+Milestone:
+Generated artifact drift is a deterministic CI gate.
 
-- [ ] Generate one Java interface per declared port
-- [ ] Generate methods for each declared op
-- [ ] No extra methods
-- [ ] Deterministic method signatures
+## Phase 4 - Project Test Gate (`bear check` v1.1)
 
-### 3. Implementation Stub
+Goal: extend `check` to run project tests after drift passes.
 
-- [ ] Generate impl file if missing
-- [ ] Never overwrite existing impl
+- [x] Short-circuit: drift failure stops before test execution
+- [x] Use project wrapper only (`gradlew` / `gradlew.bat`), no system Gradle fallback
+- [x] Add deterministic timeout handling and exit code
+- [x] Add deterministic failed-test output tailing
+- [x] Freeze command contract in `spec/commands/check.md`
 
-### 4. JUnit Test Templates
+Milestone:
+Single command gate enforces regeneration conformance plus project test pass.
 
-- [ ] Idempotency test (if declared)
-  - same key invoked twice returns same output
-  - effect write op is applied at most once in deterministic harness
-- [ ] non_negative invariant test
-- [ ] Deterministic wiring with in-memory adapters
+## Phase 5 - Governance Signaling in Check (v0 completion target)
 
-- [ ] Output to `build/generated/bear`
-- [ ] Ensure deterministic generation (byte-stable output)
+Goal: make boundary expansion explicitly visible during check workflow.
 
-Milestone:  
-`bear compile` creates compilable artifacts.
+- [ ] Implement deterministic signaling for boundary-expanding changes (per `doc/GOVERNANCE.md`)
+- [ ] Keep ordinary changes non-blocking under normal flow
+- [ ] Add conformance tests for classification and signal output stability
+- [ ] Document expected CI usage pattern for quick human review
 
----
+Milestone:
+Boundary-expanding changes produce small, deterministic review signals.
 
-## Phase 3 — Two-File Enforcement
+## Phase 6 - Demo Proof (bear-account-demo)
 
-Goal: Prevent drift.
+Goal: prove value in a minimal app workflow.
 
-- [ ] Skeleton and impl separated
-- [ ] Skeleton always regenerated
-- [ ] Impl preserved
-- [ ] Drift detection:
-  - Fail if generated artifacts differ unexpectedly
+- [ ] Implement naive Withdraw logic
+- [ ] Confirm `bear check` fails deterministically
+- [ ] Implement corrected Withdraw logic
+- [ ] Confirm `bear check` passes deterministically
+- [ ] Capture concise before/after runbook
 
-Milestone:  
-Manual edits to skeleton are rejected or overwritten deterministically.
-
----
-
-## Phase 4 — bear check
-
-Goal: Single deterministic enforcement gate.
-
-- [ ] Implement `bear check --project <path>`
-  - validate IR
-  - compile artifacts
-  - invoke Gradle tests
-
-Fail on:
-
-- invalid IR
-- generation drift
-- invariant violation
-- idempotency violation
-
-Milestone:  
-One command enforces BEAR guarantees.
-
----
-
-## Phase 5 — Demo (bear-account-demo)
-
-Goal: Prove value.
-
-- [ ] Create simple bank account domain
-- [ ] Use canonical Withdraw IR fixture at `spec/fixtures/withdraw.bear.yaml` (single logic block)
-- [ ] Declare ledger + idempotency ports
-- [ ] Provide deterministic in-memory adapters
-- [ ] Implement naive Withdraw
-- [ ] Confirm `bear check` fails
-- [ ] Fix implementation
-- [ ] Confirm `bear check` passes
-
-Milestone:  
-Clear before/after demonstration.
-
----
+Milestone:
+"Naive withdraw fails. Correct withdraw passes." remains reproducible.
 
 ## Explicitly Not in v0
 
 - Capability blocks in IR
-- Block-to-block composition
+- Block-to-block composition graph
 - Behavior DSL
-- requires/ensures language
+- Requires/ensures language
 - State delta modeling
 - Infrastructure simulation
-- Spec → IR lowering
-- LLM inside BEAR core
+- Spec -> IR lowering automation
+- BEAR runtime enforcement layer
+- Embedded LLM logic in BEAR core
 - Cross-service modeling
 - Multi-language targets
 - Plugin architecture
 - UI support
 - Rich invariant catalog
 - Full self-hosting of kernel
-- Rewriting CLI wiring using BEAR
 
-If it does not contribute to:
-
-> "Naive withdraw fails. Correct withdraw passes."
-
-It is out of scope.
+If it does not contribute to deterministic boundary governance and the demo proof loop, it is out of scope.
