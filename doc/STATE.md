@@ -9,40 +9,38 @@ Last Updated: 2026-02-12
 
 ## Current Focus
 
-Phase 1 (IR foundation): implement strict `doc/IR_SPEC.md` parsing + validation + deterministic normalization.
+Phase 2 (JVM target): begin deterministic code generation (`bear compile`) from validated/normalized IR.
 
 ---
 
 ## Current Phase
 
-Phase: 1 -- BEAR IR Foundation
+Phase: 2 -- JVM Target
 
 Checklist:
-- [x] Gradle multi-module project created
-- [x] `kernel` module scaffolded (IR parser/validator/normalizer stubs)
-- [x] `app` module scaffolded (CLI placeholder commands)
-- [x] CLI entry point wired (including `--help`)
-- [x] JUnit 5 configured in Gradle
+- [x] Phase 1 `bear validate <file>` implemented end-to-end
+- [x] Strict schema + semantic validation implemented and tested
+- [x] Deterministic normalization + canonical YAML emission implemented and golden-tested
+- [ ] Phase 2 codegen scaffolding started
 
 Exit condition:
-`bear validate <file>` succeeds/fails deterministically and emits canonical form.
+`bear compile` emits deterministic JVM artifacts (ports + skeleton + test templates) for the demo IR.
 
 ---
 
 ## Next Concrete Task
 
-Implement Phase 1 core model + strict validation:
+Phase 2 (JVM target): start `bear compile` for v0 Withdraw demo:
 
-1. Replace map-based IR with `BlockModel` + structured `EffectPortModel`
-2. Define strict YAML schema (including root `version: v0`, fail on unknown keys)
-3. Implement semantic validation rules from `doc/ROADMAP.md`
-4. Implement deterministic canonicalization (sorted structure + canonical key order)
-5. Wire `bear validate <file>` to parse -> validate -> emit canonical form
+1. Generate ports (interfaces) from `effects.allow`
+2. Generate a skeleton `Withdraw` block that can only use declared ports/ops
+3. Generate deterministic JUnit tests for v0 invariants + idempotency pattern
+4. Add drift detection (regen + compare) only once codegen exists
 
 Notes:
 - Gradle wrapper is available: use `.\gradlew.bat` (Windows) to build/run without a global Gradle install.
 - Canonical IR specification is now `doc/IR_SPEC.md`.
-- Canonical demo IR path is `bear/withdraw.bear.yaml`.
+- Canonical demo IR fixture path is `spec/fixtures/withdraw.bear.yaml`.
 
 ---
 
@@ -62,7 +60,7 @@ It is scope drift.
 
 ---
 
-## Upcoming Design Decisions (Not Blocking Phase 0)
+## Upcoming Design Decisions (Not Blocking Current Phase)
 
 - Strictness model for effects enforcement (compile-time vs runtime test only)
 
@@ -97,3 +95,5 @@ No essays. No philosophy.
 - Added Gradle wrapper scripts + wrapper jar.
 - Aligned docs to v0 clarified scope: deterministic constraint compiler, structured ports, explicit guarantees/non-guarantees.
 - Locked canonical demo IR details (`version`, invariant `kind`, idempotency `store.port/getOp/putOp`).
+- Implemented `bear validate <file>` end-to-end (strict schema + semantic validation, deterministic normalization, canonical YAML emission) with spec fixtures + golden output.
+- Stabilized Gradle behavior for Windows locks: wrapper defaults `GRADLE_USER_HOME` to temp and Gradle build outputs are redirected to temp (`bear-cli-build/<runId>`).

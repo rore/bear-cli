@@ -39,14 +39,14 @@ Root object:
 
 Field shape:
 - `name` (string, required)
-- `type` (enum, required, allowed values in v0: `string`, `decimal`, `enum`)
+- `type` (enum, required, allowed values in v0: `string`, `decimal`, `int`, `bool`, `enum`)
 
 `effects` fields:
-- `allow` (array of effect ports, required)
+- `allow` (array of effect ports, required; may be empty)
 
 Effect port shape:
 - `port` (string, required)
-- `ops` (array of operation names, required)
+- `ops` (array of operation names, required; may be empty)
 
 `idempotency` fields:
 - `key` (string, required, must reference an input field name)
@@ -65,6 +65,8 @@ Invariant shape:
 - fail on unknown keys at any level
 - fail on invalid enum values
 - fail on invalid references
+- `contract.inputs` must be non-empty
+- `contract.outputs` must be non-empty
 - input names must be unique
 - output names must be unique
 - port names must be unique
@@ -83,8 +85,10 @@ Canonical form must:
 - sort ports by `port`
 - sort ops within each port
 - sort invariants deterministically by `kind` then `field`
+- omit `invariants` if it is absent or empty (`[]`)
 
 ## Canonical Demo IR (v0)
+See `spec/fixtures/withdraw.bear.yaml`.
 ```yaml
 version: v0
 block:

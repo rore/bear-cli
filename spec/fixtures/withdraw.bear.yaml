@@ -1,0 +1,37 @@
+version: v0
+block:
+  name: Withdraw
+  kind: logic
+  contract:
+    inputs:
+      - name: accountId
+        type: string
+      - name: amount
+        type: decimal
+      - name: currency
+        type: string
+      - name: txId
+        type: string
+    outputs:
+      - name: balance
+        type: decimal
+  effects:
+    allow:
+      - port: ledger
+        ops:
+          - getBalance
+          - setBalance
+      - port: idempotency
+        ops:
+          - get
+          - put
+  idempotency:
+    key: txId
+    store:
+      port: idempotency
+      getOp: get
+      putOp: put
+  invariants:
+    - kind: non_negative
+      field: balance
+

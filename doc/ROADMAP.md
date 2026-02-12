@@ -44,7 +44,7 @@ Goal: Deterministic parsing + validation + normalization.
 
 ### Core Model
 
-- [ ] Define `BlockModel`
+- [x] Define `BlockModel`
   - name
   - kind (`logic` only in v0)
   - contract (inputs/outputs)
@@ -52,15 +52,15 @@ Goal: Deterministic parsing + validation + normalization.
   - idempotency
   - invariants (non_negative only)
 
-- [ ] Define `EffectPortModel`
+- [x] Define `EffectPortModel`
   - port name
   - list of ops
-- [ ] Lock `doc/IR_SPEC.md` as the canonical v0 IR model
+- [x] Lock `doc/IR_SPEC.md` as the canonical v0 IR model
 
 ### Parsing
 
-- [ ] Add YAML parsing (SnakeYAML)
-- [ ] Implement strict schema validation
+- [x] Add YAML parsing (SnakeYAML)
+- [x] Implement strict schema validation
   - require root `version: v0`
   - fail on unknown keys
   - fail on invalid enums
@@ -68,27 +68,27 @@ Goal: Deterministic parsing + validation + normalization.
 
 ### Validation Rules
 
-- [ ] Unique input names
-- [ ] Unique output names
-- [ ] Unique port names
-- [ ] Unique ops per port
-- [ ] idempotency.key must reference input
-- [ ] idempotency.store.port/getOp/putOp must reference declared effects
-- [ ] invariant field must reference output
+- [x] Unique input names
+- [x] Unique output names
+- [x] Unique port names
+- [x] Unique ops per port
+- [x] idempotency.key must reference input
+- [x] idempotency.store.port/getOp/putOp must reference declared effects
+- [x] invariant field must reference output
 
 ### Normalization (Deterministic Canonical Form)
 
-- [ ] Sort inputs by name
-- [ ] Sort outputs by name
-- [ ] Sort ports by name
-- [ ] Sort ops within each port
-- [ ] Sort invariants deterministically
-- [ ] Emit canonical key order
+- [x] Sort inputs by name
+- [x] Sort outputs by name
+- [x] Sort ports by name
+- [x] Sort ops within each port
+- [x] Sort invariants deterministically
+- [x] Emit canonical key order
 
-- [ ] Implement `bear validate <file>`
+- [x] Implement `bear validate <file>`
 
 Milestone:  
-`bear validate withdraw.bear.yaml` succeeds/fails deterministically and emits canonical form.
+`bear validate spec/fixtures/withdraw.bear.yaml` succeeds/fails deterministically and emits canonical form.
 
 ---
 
@@ -177,7 +177,7 @@ One command enforces BEAR guarantees.
 Goal: Prove value.
 
 - [ ] Create simple bank account domain
-- [ ] Write canonical Withdraw IR at `bear/withdraw.bear.yaml` (single logic block)
+- [ ] Use canonical Withdraw IR fixture at `spec/fixtures/withdraw.bear.yaml` (single logic block)
 - [ ] Declare ledger + idempotency ports
 - [ ] Provide deterministic in-memory adapters
 - [ ] Implement naive Withdraw

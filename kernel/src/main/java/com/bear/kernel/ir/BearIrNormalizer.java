@@ -1,42 +1,61 @@
 package com.bear.kernel.ir;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 
 public final class BearIrNormalizer {
     public BearIr normalize(BearIr ir) {
-        Map<String, Object> normalized = normalizeMap(ir.document());
-        return new BearIr(normalized);
+        BearIr.Block block = ir.block();
+
+        List<BearIr.Field> inputs = sortFields(block.contract().inputs());
+        List<BearIr.Field> outputs = sortFields(block.contract().outputs());
+        BearIr.Contract contract = new BearIr.Contract(inputs, outputs);
+
+        List<BearIr.EffectPort> ports = sortPorts(block.effects().allow());
+        BearIr.Effects effects = new BearIr.Effects(ports);
+
+        List<BearIr.Invariant> invariants = block.invariants();
+        if (invariants != null) {
+            invariants = sortInvariants(invariants);
+            if (invariants.isEmpty()) {
+                invariants = null;
+            }
+        }
+
+        BearIr.Block normalizedBlock = new BearIr.Block(
+            block.name(),
+            block.kind(),
+            contract,
+            effects,
+            block.idempotency(),
+            invariants
+        );
+        return new BearIr(ir.version(), normalizedBlock);
     }
 
-    private Map<String, Object> normalizeMap(Map<String, Object> map) {
-        Map<String, Object> sorted = new LinkedHashMap<>();
-        map.entrySet().stream()
-            .sorted(Map.Entry.comparingByKey())
-            .forEach(e -> sorted.put(e.getKey(), normalizeValue(e.getValue())));
-        return sorted;
+    private List<BearIr.Field> sortFields(List<BearIr.Field> fields) {
+        List<BearIr.Field> list = new ArrayList<>(fields);
+        list.sort(Comparator.comparing(BearIr.Field::name));
+        return list;
     }
 
-    private Object normalizeValue(Object value) {
-        if (value instanceof Map<?, ?> rawMap) {
-            Map<String, Object> castMap = new LinkedHashMap<>();
-            for (Map.Entry<?, ?> entry : rawMap.entrySet()) {
-                castMap.put(String.valueOf(entry.getKey()), entry.getValue());
-            }
-            return normalizeMap(castMap);
+    private List<BearIr.EffectPort> sortPorts(List<BearIr.EffectPort> ports) {
+        List<BearIr.EffectPort> list = new ArrayList<>();
+        for (BearIr.EffectPort port : ports) {
+            List<String> ops = new ArrayList<>(port.ops());
+            ops.sort(String::compareTo);
+            list.add(new BearIr.EffectPort(port.port(), ops));
         }
-        if (value instanceof List<?> rawList) {
-            List<Object> list = new ArrayList<>();
-            for (Object item : rawList) {
-                list.add(normalizeValue(item));
-            }
-            return list;
-        }
-        if (value instanceof String text) {
-            return text.trim();
-        }
-        return value;
+        list.sort(Comparator.comparing(BearIr.EffectPort::port));
+        return list;
+    }
+
+    private List<BearIr.Invariant> sortInvariants(List<BearIr.Invariant> invariants) {
+        List<BearIr.Invariant> list = new ArrayList<>(invariants);
+        list.sort(Comparator
+            .comparing(BearIr.Invariant::kind)
+            .thenComparing(BearIr.Invariant::field));
+        return list;
     }
 }

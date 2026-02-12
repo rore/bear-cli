@@ -35,16 +35,16 @@ Run the CLI via Gradle (recommended during development).
 Windows (PowerShell):
 ```powershell
 .\gradlew.bat :app:run --args="--help"
-.\gradlew.bat :app:run --args="validate"
+.\gradlew.bat :app:run --args="validate spec/fixtures/withdraw.bear.yaml"
 ```
 
 macOS/Linux (bash/zsh):
 ```sh
 ./gradlew :app:run --args="--help"
-./gradlew :app:run --args="validate"
+./gradlew :app:run --args="validate spec/fixtures/withdraw.bear.yaml"
 ```
 
-If Gradle fails due to Windows file locking / permissions in your default Gradle home, set a custom per-user home once:
+The wrapper defaults `GRADLE_USER_HOME` to a temp location (`bear-cli-gradle-home`) when unset to avoid Windows lock/permission issues. You can still override it explicitly:
 ```powershell
 $env:GRADLE_USER_HOME = "$env:LOCALAPPDATA\bear-gradle-home"
 .\gradlew.bat --no-daemon :app:run --args="--help"
@@ -57,9 +57,8 @@ Build an installable CLI distribution:
 .\gradlew.bat :app:installDist
 ```
 
-Then run the generated launcher directly:
-- Windows: `app\build\install\bear\bin\bear.bat --help`
-- macOS/Linux: `app/build/install/bear/bin/bear --help`
+This repo writes Gradle outputs to a temp build root (`%TEMP%\bear-cli-build\...`) to avoid Windows file locks in workspace `build/` directories.
+For development, prefer running the CLI via `:app:run`.
 
 Docs:
 - `doc/STATE.md` (current focus + next steps)

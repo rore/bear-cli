@@ -10,3 +10,7 @@ application {
     mainClass = 'com.bear.app.BearCli'
     applicationName = 'bear'
 }
+
+tasks.named('run') {
+    workingDir = rootProject.projectDir
+}

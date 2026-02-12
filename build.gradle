@@ -2,8 +2,18 @@ plugins {
     id 'base'
 }
 
+ext.bearBuildRunId = System.currentTimeMillis().toString()
+ext.bearBuildRootDir = new File(System.getProperty("java.io.tmpdir"), "bear-cli-build/${ext.bearBuildRunId}")
+
+// Keep root-project outputs out of the repo to avoid Windows file locking issues.
+buildDir = new File(ext.bearBuildRootDir, "root")
+
 subprojects {
     apply plugin: 'java'
+
+    // Work around Windows file locking issues by writing Gradle outputs under temp.
+    // This keeps IDE indexing and AV scanners away from frequently-created build folders.
+    buildDir = new File(rootProject.ext.bearBuildRootDir, project.name)
 
     group = 'com.bear'
     version = '0.1.0-SNAPSHOT'
@@ -27,5 +37,10 @@ subprojects {
 
     test {
         useJUnitPlatform()
+    }
+
+    // Windows can hold open files under test results; use a fresh binary results dir per build run.
+    tasks.withType(Test).configureEach {
+        binaryResultsDirectory = new File(rootProject.ext.bearBuildRootDir, "${project.name}/test-results/binary")
     }
 }
