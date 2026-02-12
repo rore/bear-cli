@@ -135,4 +135,6 @@ block:
 ## Notes
 - This spec is structural, not behavioral.
 - v0 idempotency guarantees deterministic replay behavior in the test harness, not concurrency correctness.
+- In generated JVM artifacts, idempotency replay metadata key `hit` is compiler-generated protocol state, not an IR field.
+- Current v0 replay-hit behavior is: return the stored result payload (no exception-on-replay policy).
 - Do not expand IR expressiveness in v0.

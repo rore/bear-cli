@@ -23,6 +23,7 @@ class JvmTargetTest {
     void compileIsDeterministicAndCreatesExpectedFiles(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
         Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path goldenRoot = repoRoot.resolve("spec/golden/compile/withdraw");
 
         BearIrParser parser = new BearIrParser();
         BearIrValidator validator = new BearIrValidator();
@@ -37,16 +38,12 @@ class JvmTargetTest {
         Map<String, String> first = readTree(tempDir.resolve("build/generated/bear"));
         target.compile(normalized, tempDir);
         Map<String, String> second = readTree(tempDir.resolve("build/generated/bear"));
+        Map<String, String> expected = readTree(goldenRoot);
 
         assertEquals(first, second);
-        assertTrue(first.containsKey("src/main/java/com/bear/generated/withdraw/Withdraw.java"));
-        assertTrue(first.containsKey("src/main/java/com/bear/generated/withdraw/WithdrawLogic.java"));
-        assertTrue(first.containsKey("src/main/java/com/bear/generated/withdraw/WithdrawRequest.java"));
-        assertTrue(first.containsKey("src/main/java/com/bear/generated/withdraw/WithdrawResult.java"));
-        assertTrue(first.containsKey("src/main/java/com/bear/generated/withdraw/LedgerPort.java"));
-        assertTrue(first.containsKey("src/main/java/com/bear/generated/withdraw/IdempotencyPort.java"));
-        assertTrue(first.containsKey("src/test/java/com/bear/generated/withdraw/WithdrawIdempotencyTest.java"));
-        assertTrue(first.containsKey("src/test/java/com/bear/generated/withdraw/WithdrawInvariantNonNegativeTest.java"));
+        assertEquals(expected, first);
+        String withdrawJava = first.get("src/main/java/com/bear/generated/withdraw/Withdraw.java");
+        assertTrue(withdrawJava.contains("idempotency replay payload missing field: result.balance"));
     }
 
     @Test
@@ -79,7 +76,7 @@ class JvmTargetTest {
                 .forEach(path -> {
                     String rel = root.relativize(path).toString().replace('\\', '/');
                     try {
-                        files.put(rel, Files.readString(path));
+                        files.put(rel, normalizeLf(Files.readString(path)));
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
@@ -91,5 +88,9 @@ class JvmTargetTest {
             throw e;
         }
         return files;
+    }
+
+    private static String normalizeLf(String text) {
+        return text.replace("\r\n", "\n");
     }
 }

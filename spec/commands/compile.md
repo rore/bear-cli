@@ -79,7 +79,7 @@ Generated tests (conditional):
 - Entrypoint delegates business logic through `<BlockName>Logic`.
 - If idempotency is declared:
   - invoke declared `getOp` before logic
-  - on hit (`hit=true`) decode stored result and return
+  - on hit (`hit=true`) decode stored result and return (no exception-on-replay policy in v0)
   - on miss run logic, then call declared `putOp` with encoded result
 - If `non_negative` invariant is declared:
   - enforce at runtime before returning result
@@ -116,6 +116,10 @@ Result encoding/decoding rules:
   - `BigDecimal`: `toString()`
   - `Integer`: base-10 string
   - `Boolean`: `true`/`false`
+- Replay payload validity is strict in v0:
+  - when `hit="true"`, every declared `result.<outputFieldName>` key must be present
+  - missing required replay fields fail fast with deterministic exception:
+    - `idempotency replay payload missing field: result.<outputFieldName>`
 
 ## Determinism Guarantees
 - Deterministic generated file list, file paths, class names, method order, and imports.

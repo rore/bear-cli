@@ -9,7 +9,7 @@ Last Updated: 2026-02-12
 
 ## Current Focus
 
-Phase 2 (JVM target): `bear compile` first slice implemented with deterministic JVM artifact generation and two-tree ownership model.
+Phase 2 (JVM target): compile conformance hardening (golden corpus + strict replay payload integrity) completed.
 
 ---
 
@@ -30,12 +30,12 @@ Exit condition:
 
 ## Next Concrete Task
 
-Phase 2 (JVM target): harden compile surface and align generated templates with golden corpus:
+Phase 3 (Two-file enforcement): start drift detection (`bear check` regen + compare) using compile golden baseline:
 
-1. Add golden corpus for `bear compile` generated outputs
-2. Tighten generated idempotency/invariant tests beyond compile-only templates
-3. Add compile spec conformance checks for naming + package sanitation edge cases
-4. Start Phase 3 drift detection (`bear check` regen + compare)
+1. Implement deterministic regen+compare flow for generated artifacts
+2. Define mismatch reporting format (stable, path-focused)
+3. Wire initial `bear check --project <path>` skeleton to invoke validate+compile+drift check
+4. Keep demo loop minimal until drift gate is in place
 
 Notes:
 - Gradle wrapper is available: use `.\gradlew.bat` (Windows) to build/run without a global Gradle install.
@@ -104,3 +104,6 @@ No essays. No philosophy.
 - Parked feature request for later: configurable compile base package (`--base-package`) so adopter apps can own package namespace.
 - Integrated minimal demo wiring with `../bear-account-demo`: manual compile works, generated sourceSets are wired, demo tests run green, and user impl preservation was verified.
 - Fixed generator bug in runtime invariant emission for idempotency replay path (generated code now references correct result variable).
+- Added compile golden corpus at `spec/golden/compile/withdraw` and kernel tests now assert exact generated file list/content against golden.
+- Tightened generated replay decoding: `hit=true` now requires all `result.*` fields; missing field fails fast with deterministic error text.
+- Updated compile/IR docs to explicitly define current v0 replay-hit behavior and `hit` protocol semantics.

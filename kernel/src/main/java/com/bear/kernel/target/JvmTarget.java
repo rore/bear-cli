@@ -227,6 +227,15 @@ public final class JvmTarget implements Target {
         s.append("    }\n\n");
 
         s.append("    private ").append(blockName).append("Result decodeResult(BearValue value) {\n");
+        for (FieldModel output : outputs) {
+            s.append("        if (value.get(\"result.")
+                .append(output.originalName)
+                .append("\") == null) {\n");
+            s.append("            throw new IllegalStateException(\"idempotency replay payload missing field: result.")
+                .append(output.originalName)
+                .append("\");\n");
+            s.append("        }\n");
+        }
         s.append("        return new ").append(blockName).append("Result(");
         for (int i = 0; i < outputs.size(); i++) {
             if (i > 0) {
