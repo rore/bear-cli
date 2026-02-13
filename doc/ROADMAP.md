@@ -1,181 +1,127 @@
-# BEAR v0 Roadmap
+# BEAR Target Roadmap
 
-This roadmap is strictly for v0.
-If something is not listed here, it does not get built.
-For long-term north-star framing, see `doc/NORTH_STAR.md`.
+This roadmap expresses the broader target direction for BEAR.
+For current v0 contract details, see `doc/ARCHITECTURE.md` and `doc/GOVERNANCE.md`.
 
-Governance policy reference (normative): `doc/GOVERNANCE.md`.
+## Why This Roadmap
 
-v0 uses:
-- Logic blocks only
-- Effects expressed as structured ports
-- No capability blocks
-- No block-to-block composition
-- No behavior DSL
+BEAR is successful only if agent speed is paired with structural control:
+- agents can move fast inside blocks
+- new external power cannot be introduced silently
+- boundary expansion is explicit and reviewable
+- deterministic build/test gates enforce declared structure
+- developers are not burdened with IR micromanagement
 
-v0 guarantees:
-- Structural contract enforcement (inputs/outputs)
-- Structural effect boundary enforcement via generated structured ports
-- Deterministic invariant and idempotency test gating
-- Drift detection on generated artifacts
-- Deterministic signaling for boundary-expanding changes in check workflow
+## Phase 1 - Deterministic Core (current foundation)
 
-v0 non-guarantees:
-- Business correctness beyond declared invariants
-- Real database/concurrency/transaction semantics
-- Runtime enforcement beyond test harness
-- Full static hard-blocking of all arbitrary impl-side calls (post-v0 hardening unless delivered)
+Goal: IR and generation are stable and trustworthy.
 
-## Governance Milestone (Cross-Phase)
+Deliver:
+- strict IR validation
+- canonical normalization
+- deterministic canonical emission
+- drift detection
+- stable exit-code contract
+- golden fixtures/conformance corpus
 
-- [x] Define normative IR diff classes: `ordinary` vs `boundary-expanding`
-- [x] Add concrete decision table for change classification
-- [ ] Ensure `bear check` emits deterministic boundary-expansion signals for covered v0 cases
-- [ ] Keep ordinary IR evolution low-friction under standard validate/compile/check loop
+Success criteria:
+- IR diffs are stable
+- schema/semantic failures are deterministic
+- normalization has no silent behavior shifts
+- `bear check` is reliable and predictable
 
-Milestone:
-Boundary expansion cannot be silent in v0 workflow.
+Current status:
+- directionally complete; maintain and harden as baseline
 
-## Phase 0 - Project Setup (bear-cli)
+## Phase 2 - Real Structural Enforcement (critical)
 
-- [x] Create Gradle multi-module project
-- [x] Create `kernel` module (trusted seed)
-- [x] Create `app` module (CLI wrapper)
-- [x] Ensure CLI entrypoint runs: `bear --help`
-- [x] Add JUnit 5 test setup
-- [x] Add README
-- [x] Add `doc/ARCHITECTURE.md`
+Goal: declared effects/ports map to mechanical build enforcement.
 
-Milestone:
-CLI builds and runs, no BEAR logic yet.
+Initial JVM enforcement targets:
+- block modules cannot import integration modules directly
+- forbidden API/symbol checks (for example: network/filesystem/reflection surfaces)
+- only declared capability interfaces are visible to block logic
+- build fails on forbidden references
 
-## Phase 1 - BEAR IR Foundation (kernel)
+CI must fail if:
+- code uses undeclared external surfaces
+- implementation diverges from declared structural boundaries
 
-Goal: deterministic parsing + validation + normalization.
+Success criteria:
+- an agent cannot introduce a new HTTP call, filesystem write, or DB client usage without corresponding declared boundary change plus passing enforcement checks
 
-- [x] Define v0 IR model (`logic` block, contract, effects, idempotency, invariants)
-- [x] Implement strict YAML parsing + unknown-key rejection
-- [x] Implement semantic validation (field refs, effect refs, uniqueness)
-- [x] Implement deterministic normalization and canonical YAML emit
-- [x] Implement `bear validate <file>`
-- [x] Lock `doc/IR_SPEC.md` as canonical IR schema contract
+Notes:
+- start on JVM first
+- cross-language parity comes after JVM maturity
 
-Milestone:
-`bear validate` succeeds/fails deterministically with canonical output.
+## Phase 3 - Boundary Expansion Classification
 
-## Phase 2 - JVM Target (deterministic codegen)
+Goal: make power expansion visible and reviewable.
 
-Goal: generate deterministic enforcement artifacts for demo projects.
+Deliver:
+- deterministic IR diff classification:
+  - ordinary change
+  - boundary expansion
+- deterministic CI/report output that labels boundary expansion clearly
+- optional governance hooks (for example CODEOWNERS/approval on boundary-expanding diffs)
 
-- [x] Define `Target` abstraction
-- [x] Implement `JvmTarget`
-- [x] Generate BEAR-owned entrypoint, logic interface, models, ports, support types
-- [x] Generate user-owned impl stub once and preserve it
-- [x] Generate conditional idempotency/invariant test templates
-- [x] Lock compile contract in `spec/commands/compile.md`
-- [x] Add compile golden corpus + conformance tests
-- [x] Enforce replay payload integrity (`hit=true` requires all `result.*`)
+Success criteria:
+- when a block gains external power, reviewers can see it in seconds
 
-Milestone:
-`bear compile` produces deterministic, byte-stable, spec-conformant output.
+## Phase 4 - Agent-Native Integration
 
-## Phase 3 - Drift Regeneration Gate (`bear check` v1)
+Goal: BEAR becomes default operating mode in agentic development.
 
-Goal: deterministic regeneration drift enforcement.
+Deliver:
+- repo-level bootstrap context for agents
+- explicit agent protocol:
+  - update IR when boundary/contract changes require it
+  - run validate -> check (drift + tests)
+  - do not widen effects silently
+  - report human-readable boundary summary/diff
 
-- [x] Implement `bear check <ir-file> --project <path>`
-- [x] Validate + normalize IR before comparison
-- [x] Compile into temp project tree
-- [x] Diff candidate vs `<project>/build/generated/bear`
-- [x] Emit deterministic drift lines (`ADDED`/`REMOVED`/`CHANGED`)
-- [x] Fail deterministically on missing/empty baseline
-- [x] Ensure check is compare-only (no project mutation)
+Success criteria:
+- developers work in domain terms
+- agents operate BEAR-aware by default
+- BEAR does not require constant manual IR babysitting
 
-Milestone:
-Generated artifact drift is a deterministic CI gate.
+## Phase 5 - Controlled Behavioral Visibility (optional, high value)
 
-## Phase 4 - Project Test Gate (`bear check` v1.1)
+This phase starts only after structural enforcement is strong.
 
-Goal: extend `check` to run project tests after drift passes.
+Goal: detect meaningful boundary-usage changes, not just capability additions.
 
-- [x] Short-circuit: drift failure stops before test execution
-- [x] Use project wrapper only (`gradlew` / `gradlew.bat`), no system Gradle fallback
-- [x] Add deterministic timeout handling and exit code
-- [x] Add deterministic failed-test output tailing
-- [x] Freeze command contract in `spec/commands/check.md`
+Deliver (narrow boundary scope):
+- capability contract refinements (for example allowed topics/event types)
+- optional per-op interaction constraints (such as cardinality)
+- generated policy tests for observable interaction patterns
 
-Milestone:
-Single command gate enforces regeneration conformance plus project test pass.
+Non-goal:
+- full behavior modeling or business-logic DSL
 
-## Phase 5 - Governance Signaling in Check (v0 completion target)
+Success criteria:
+- meaningful interaction-pattern changes produce deterministic test diffs or constraint violations
 
-Goal: make boundary expansion explicitly visible during check workflow.
+## Explicitly Out of Scope (for now)
 
-- [ ] Implement deterministic signaling for boundary-expanding changes (per `doc/GOVERNANCE.md`)
-- [ ] Keep ordinary changes non-blocking under normal flow
-- [ ] Add conformance tests for classification and signal output stability
-- [ ] Document expected CI usage pattern for quick human review
+- runtime sandboxing
+- full formal behavioral verification
+- complex workflow/orchestration modeling
+- rich domain DSL for business semantics
+- cross-language parity before JVM enforcement is mature
 
-Milestone:
-Boundary-expanding changes produce small, deterministic review signals.
+## 12-Month Honest Success Definition
 
-## Phase 6 - Demo Proof (bear-account-demo)
+BEAR is successful if all are true:
+- agents move fast inside blocks
+- new external interactions cannot be introduced silently
+- boundary expansion is explicit and quickly reviewable
+- build/test gates enforce declared structure
+- developers do not feel burdened by BEAR mechanics
 
-Goal: prove value in a minimal app workflow.
+## Current Immediate Execution Focus (v0)
 
-- [ ] Implement naive Withdraw logic
-- [ ] Confirm `bear check` fails deterministically
-- [ ] Implement corrected Withdraw logic
-- [ ] Confirm `bear check` passes deterministically
-- [ ] Capture concise before/after runbook
-
-Milestone:
-"Naive withdraw fails. Correct withdraw passes." remains reproducible.
-
-## Explicitly Not in v0
-
-- Capability blocks in IR
-- Block-to-block composition graph
-- Behavior DSL
-- Requires/ensures language
-- State delta modeling
-- Infrastructure simulation
-- Spec -> IR lowering automation
-- BEAR runtime enforcement layer
-- Embedded LLM logic in BEAR core
-- Cross-service modeling
-- Multi-language targets
-- Plugin architecture
-- UI support
-- Rich invariant catalog
-- Full self-hosting of kernel
-
-If it does not contribute to deterministic boundary governance and the demo proof loop, it is out of scope.
-
-## Post-v0 Hardening Track (Planned, Not v0)
-
-These items are directional follow-ons after v0 completion and are not current commitments for v0 delivery.
-
-### Stage H1 - Capability Contract Hardening
-- [ ] Expand capability contract model with boundary-relevant metadata (event types, destinations, mode, schema/version constraints).
-- [ ] Keep constraints boundary-observable and target-agnostic.
-- [ ] Add deterministic conformance checks for contract consistency.
-
-Milestone:
-Declared capabilities encode not only "can call" but constrained interaction surface shape.
-
-### Stage H2 - Boundary Usage Constraints
-- [ ] Add optional declarative interaction constraints (counts/order/outcome-coupled expectations).
-- [ ] Ensure constraints are intentionally narrow (no business-behavior DSL).
-- [ ] Add deterministic validation and normalization for the new constraint subset.
-
-Milestone:
-Material changes in capability usage patterns become visible and testable.
-
-### Stage H3 - Generated Policy Assertions
-- [ ] Generate boundary assertion scaffolding in test layer.
-- [ ] Enforce interaction-shape checks in `bear check` test gate.
-- [ ] Keep enforcement build/compile/test-based and cross-language portable.
-
-Milestone:
-Agents cannot silently change interaction semantics at the boundary while keeping CI green.
+Near-term implementation still follows v0 execution documents:
+- `doc/STATE.md` for current task
+- `doc/ARCHITECTURE.md` for v0 guarantees/non-guarantees
+- `doc/GOVERNANCE.md` for normative classification policy

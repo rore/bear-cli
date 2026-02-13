@@ -72,6 +72,7 @@ Continue from here.
 Reference split:
 - `doc/NORTH_STAR.md`: broad motivation and long-horizon success criteria.
 - `doc/ARCHITECTURE.md`: current v0 guarantees/non-guarantees.
+- `doc/ROADMAP_V0.md`: current execution checklist for v0 delivery.
 
 ---
 
