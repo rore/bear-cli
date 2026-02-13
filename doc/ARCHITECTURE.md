@@ -34,6 +34,7 @@ In practical terms:
 - BEAR makes boundary changes explicit and reviewable.
 - BEAR treats ordinary internal evolution as fast-path work.
 - BEAR treats boundary expansion as governance-sensitive work.
+- BEAR governs side-effect surfaces, not general library usage.
 
 Core litmus:
 - If an agent can add new external interaction capability without a small, obvious, deterministic signal, BEAR is not doing its job.

@@ -121,3 +121,5 @@ No essays. No philosophy.
 - Expanded broader-vision docs to include post-v0 boundary-usage semantics direction: updated `doc/NORTH_STAR.md`, added post-v0 hardening stages in `doc/ROADMAP.md`, and added concrete boundary-usage constraint candidates in `doc/FUTURE.md`.
 - Reframed `doc/ROADMAP.md` into a target-phase roadmap (Deterministic Core -> Structural Enforcement -> Classification -> Agent-Native -> Controlled Behavioral Visibility) with explicit 12-month success definition and v0 execution cross-links.
 - Added `doc/ROADMAP_V0.md` as the concrete execution tracker for current v0 delivery, while keeping `doc/ROADMAP.md` as broader target strategy.
+- Added future roadmap direction for side-effect taxonomy and clarified principle "side-effect gating, not library gating" in target roadmap/future docs.
+- Repositioned side-effect gating principle: concise philosophy statement in `doc/ARCHITECTURE.md`, phase-scoped placement in `doc/ROADMAP.md` (Phase 2), detailed taxonomy retained in `doc/FUTURE.md`.

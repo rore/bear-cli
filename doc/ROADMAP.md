@@ -54,6 +54,13 @@ Notes:
 - start on JVM first
 - cross-language parity comes after JVM maturity
 
+Phase 2 explicit deliverable:
+- define and freeze a minimal side-effect taxonomy and JVM enforcement mapping
+- apply principle: side-effect gating, not library gating
+  - libraries are generally allowed
+  - external reach/escape-hatch surfaces are governed
+  - side effects should flow through declared capability ports
+
 ## Phase 3 - Boundary Expansion Classification
 
 Goal: make power expansion visible and reviewable.

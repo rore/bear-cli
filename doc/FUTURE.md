@@ -71,6 +71,34 @@ v0 supports only:
 
 ---
 
+## Side-Effect Taxonomy (v1 Candidate)
+
+Principle:
+- side-effect gating, not library gating
+- pure/internal libraries stay allowed
+- external reach and escape hatches are governed
+
+Candidate cross-language categories:
+- network
+- database
+- messaging
+- filesystem
+- process
+- time/random (policy-dependent)
+- reflection/escape-hatch
+
+JVM candidate enforcement artifacts:
+- forbidden package/class symbol lists per category
+- module boundary rules (block modules vs integration modules)
+- CI checks that fail on undeclared side-effect surface usage
+
+Success target:
+- agents can use pure libraries freely
+- new external side effects require declared boundary/IR changes
+- policy remains small and stable
+
+---
+
 ## Boundary Usage Constraints (Post-v0)
 
 This track addresses the gap between:
