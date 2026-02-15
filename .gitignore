@@ -6,6 +6,7 @@ build/
 !gradle/wrapper/gradle-wrapper.jar
 .tmp-wrapper-extract/
 .tmp-golden-compile/
+.tmp-manifest-check/
 *.class
 out/
 

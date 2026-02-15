@@ -60,6 +60,19 @@ Generated tests (conditional):
 - `<BlockName>IdempotencyTest.java` when idempotency is declared
 - `<BlockName>InvariantNonNegativeTest.java` when invariant is declared
 
+Generated metadata:
+- `bear.surface.json` at `<project>/build/generated/bear/bear.surface.json`
+  - deterministic surface manifest used by `bear check` boundary classification
+  - minified canonical JSON, UTF-8, LF, trailing newline
+  - fields:
+    - `schemaVersion` (`v0`)
+    - `target` (`jvm`)
+    - `block` (IR `block.name`)
+    - `irHash` (SHA-256 of canonical normalized IR YAML bytes)
+    - `generatorVersion` (`jvm-v0`)
+    - `capabilities` (`name` from IR `effects.allow[*].port`, sorted `ops`)
+    - `invariants` (v0: `kind=non_negative`, `field`)
+
 ## Port Method Contract
 - One interface per declared port.
 - One method per declared op.

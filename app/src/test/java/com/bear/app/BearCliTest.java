@@ -10,8 +10,13 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -283,6 +288,155 @@ class BearCliTest {
     }
 
     @Test
+    void checkEmitsCapabilityAddedBoundarySignalAndDrift(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+
+        Path manifest = tempDir.resolve("build/generated/bear/bear.surface.json");
+        ManifestData baseline = readManifestData(manifest);
+        baseline.capabilities.remove("idempotency");
+        writeManifestData(manifest, baseline);
+
+        CliRunResult run = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        String stderr = normalizeLf(run.stderr);
+        assertEquals(3, run.exitCode);
+        assertTrue(stderr.contains("boundary: EXPANSION: CAPABILITY_ADDED: idempotency"));
+        assertTrue(stderr.contains("drift: CHANGED: bear.surface.json"));
+    }
+
+    @Test
+    void checkEmitsCapabilityOpAddedBoundarySignalAndDrift(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+
+        Path manifest = tempDir.resolve("build/generated/bear/bear.surface.json");
+        ManifestData baseline = readManifestData(manifest);
+        baseline.capabilities.put("idempotency", new ArrayList<>(List.of("get")));
+        writeManifestData(manifest, baseline);
+
+        CliRunResult run = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        String stderr = normalizeLf(run.stderr);
+        assertEquals(3, run.exitCode);
+        assertTrue(stderr.contains("boundary: EXPANSION: CAPABILITY_OP_ADDED: idempotency.put"));
+        assertTrue(stderr.contains("drift: CHANGED: bear.surface.json"));
+    }
+
+    @Test
+    void checkEmitsInvariantRelaxedBoundarySignalAndDrift(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+
+        Path manifest = tempDir.resolve("build/generated/bear/bear.surface.json");
+        ManifestData baseline = readManifestData(manifest);
+        baseline.invariants.add("non_negative:shadow");
+        writeManifestData(manifest, baseline);
+
+        CliRunResult run = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        String stderr = normalizeLf(run.stderr);
+        assertEquals(3, run.exitCode);
+        assertTrue(stderr.contains("boundary: EXPANSION: INVARIANT_RELAXED: non_negative:shadow"));
+        assertTrue(stderr.contains("drift: CHANGED: bear.surface.json"));
+    }
+
+    @Test
+    void checkBoundarySignalOrderingIsTypeThenKey(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+
+        Path manifest = tempDir.resolve("build/generated/bear/bear.surface.json");
+        ManifestData baseline = readManifestData(manifest);
+        baseline.capabilities.remove("idempotency");
+        baseline.capabilities.put("ledger", new ArrayList<>(List.of("getBalance")));
+        baseline.invariants.add("non_negative:zzz");
+        writeManifestData(manifest, baseline);
+
+        CliRunResult run = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        List<String> boundaryLines = normalizeLf(run.stderr).lines()
+            .filter(line -> line.startsWith("boundary: "))
+            .toList();
+        assertEquals(List.of(
+            "boundary: EXPANSION: CAPABILITY_ADDED: idempotency",
+            "boundary: EXPANSION: CAPABILITY_OP_ADDED: ledger.setBalance",
+            "boundary: EXPANSION: INVARIANT_RELAXED: non_negative:zzz"
+        ), boundaryLines);
+    }
+
+    @Test
+    void checkWarnsWhenBaselineManifestMissing(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+
+        Path manifest = tempDir.resolve("build/generated/bear/bear.surface.json");
+        Files.delete(manifest);
+
+        CliRunResult run = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(3, run.exitCode);
+        assertTrue(normalizeLf(run.stderr).contains("check: BASELINE_MANIFEST_MISSING: " + manifest));
+    }
+
+    @Test
+    void checkWarnsWhenBaselineManifestInvalid(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+
+        Path manifest = tempDir.resolve("build/generated/bear/bear.surface.json");
+        Files.writeString(manifest, "{invalid", StandardCharsets.UTF_8);
+
+        CliRunResult run = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(3, run.exitCode);
+        assertTrue(normalizeLf(run.stderr).contains("check: BASELINE_MANIFEST_INVALID: MALFORMED_JSON"));
+    }
+
+    @Test
+    void checkWarnsOnBaselineStampMismatch(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+
+        Path manifest = tempDir.resolve("build/generated/bear/bear.surface.json");
+        ManifestData baseline = readManifestData(manifest);
+        baseline.irHash = "0000000000000000000000000000000000000000000000000000000000000000";
+        writeManifestData(manifest, baseline);
+
+        CliRunResult run = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(3, run.exitCode);
+        assertTrue(normalizeLf(run.stderr).contains(
+            "check: BASELINE_STAMP_MISMATCH: irHash/generatorVersion differ; classification may be stale"));
+    }
+
+    @Test
+    void checkFailsInternalWhenCandidateManifestMissingOrInvalid(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+
+        String previous = System.getProperty("bear.check.test.candidateManifestMode");
+        try {
+            System.setProperty("bear.check.test.candidateManifestMode", "missing");
+            CliRunResult missing = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+            assertEquals(70, missing.exitCode);
+            assertTrue(normalizeLf(missing.stderr).startsWith("internal: INTERNAL_ERROR: CANDIDATE_MANIFEST_MISSING"));
+
+            System.setProperty("bear.check.test.candidateManifestMode", "invalid");
+            CliRunResult invalid = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+            assertEquals(70, invalid.exitCode);
+            assertTrue(normalizeLf(invalid.stderr).startsWith("internal: INTERNAL_ERROR: CANDIDATE_MANIFEST_INVALID:"));
+        } finally {
+            if (previous == null) {
+                System.clearProperty("bear.check.test.candidateManifestMode");
+            } else {
+                System.setProperty("bear.check.test.candidateManifestMode", previous);
+            }
+        }
+    }
+
+    @Test
     void checkMissingProjectWrapperReturnsIoError(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
         Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
@@ -390,6 +544,103 @@ class BearCliTest {
         assertFalse(Files.exists(marker));
     }
 
+    private static ManifestData readManifestData(Path manifestPath) throws Exception {
+        String json = Files.readString(manifestPath, StandardCharsets.UTF_8);
+        ManifestData data = new ManifestData();
+        data.schemaVersion = extractString(json, "schemaVersion");
+        data.target = extractString(json, "target");
+        data.block = extractString(json, "block");
+        data.irHash = extractString(json, "irHash");
+        data.generatorVersion = extractString(json, "generatorVersion");
+
+        String capabilitiesPayload = extractArrayPayload(json, "capabilities");
+        Matcher capMatcher = Pattern.compile("\\{\"name\":\"([^\"]+)\",\"ops\":\\[([^\\]]*)\\]\\}").matcher(capabilitiesPayload);
+        while (capMatcher.find()) {
+            String name = capMatcher.group(1);
+            String opsPayload = capMatcher.group(2);
+            ArrayList<String> ops = new ArrayList<>();
+            Matcher opMatcher = Pattern.compile("\"([^\"]+)\"").matcher(opsPayload);
+            while (opMatcher.find()) {
+                ops.add(opMatcher.group(1));
+            }
+            data.capabilities.put(name, ops);
+        }
+
+        String invariantsPayload = extractArrayPayload(json, "invariants");
+        Matcher invMatcher = Pattern.compile("\\{\"kind\":\"([^\"]+)\",\"field\":\"([^\"]+)\"\\}").matcher(invariantsPayload);
+        while (invMatcher.find()) {
+            data.invariants.add(invMatcher.group(1) + ":" + invMatcher.group(2));
+        }
+        return data;
+    }
+
+    private static void writeManifestData(Path manifestPath, ManifestData data) throws Exception {
+        StringBuilder out = new StringBuilder();
+        out.append("{");
+        out.append("\"schemaVersion\":\"").append(data.schemaVersion).append("\",");
+        out.append("\"target\":\"").append(data.target).append("\",");
+        out.append("\"block\":\"").append(data.block).append("\",");
+        out.append("\"irHash\":\"").append(data.irHash).append("\",");
+        out.append("\"generatorVersion\":\"").append(data.generatorVersion).append("\",");
+        out.append("\"capabilities\":[");
+        boolean firstCap = true;
+        for (Map.Entry<String, ArrayList<String>> entry : data.capabilities.entrySet()) {
+            if (!firstCap) {
+                out.append(",");
+            }
+            firstCap = false;
+            out.append("{\"name\":\"").append(entry.getKey()).append("\",\"ops\":[");
+            for (int i = 0; i < entry.getValue().size(); i++) {
+                if (i > 0) {
+                    out.append(",");
+                }
+                out.append("\"").append(entry.getValue().get(i)).append("\"");
+            }
+            out.append("]}");
+        }
+        out.append("],");
+        out.append("\"invariants\":[");
+        for (int i = 0; i < data.invariants.size(); i++) {
+            if (i > 0) {
+                out.append(",");
+            }
+            String[] parts = data.invariants.get(i).split(":", 2);
+            out.append("{\"kind\":\"").append(parts[0]).append("\",\"field\":\"").append(parts[1]).append("\"}");
+        }
+        out.append("]}");
+        out.append("\n");
+        Files.writeString(manifestPath, out.toString(), StandardCharsets.UTF_8);
+    }
+
+    private static String extractString(String json, String key) {
+        Matcher m = Pattern.compile("\"" + key + "\":\"([^\"]*)\"").matcher(json);
+        if (!m.find()) {
+            throw new IllegalStateException("missing key " + key);
+        }
+        return m.group(1);
+    }
+
+    private static String extractArrayPayload(String json, String key) {
+        int keyIdx = json.indexOf("\"" + key + "\":[");
+        if (keyIdx < 0) {
+            throw new IllegalStateException("missing key " + key);
+        }
+        int start = json.indexOf('[', keyIdx);
+        int depth = 0;
+        for (int i = start; i < json.length(); i++) {
+            char c = json.charAt(i);
+            if (c == '[') {
+                depth++;
+            } else if (c == ']') {
+                depth--;
+                if (depth == 0) {
+                    return json.substring(start + 1, i);
+                }
+            }
+        }
+        throw new IllegalStateException("unterminated array " + key);
+    }
+
     private static void writeProjectWrapper(Path projectRoot, String windowsContent, String unixContent) throws Exception {
         Path wrapper = projectRoot.resolve(isWindows() ? "gradlew.bat" : "gradlew");
         String content = isWindows() ? windowsContent : unixContent;
@@ -436,6 +687,16 @@ class BearCliTest {
 
     private static String normalizeLf(String text) {
         return text.replace("\r\n", "\n");
+    }
+
+    private static final class ManifestData {
+        private String schemaVersion;
+        private String target;
+        private String block;
+        private String irHash;
+        private String generatorVersion;
+        private final TreeMap<String, ArrayList<String>> capabilities = new TreeMap<>();
+        private final ArrayList<String> invariants = new ArrayList<>();
     }
 
     private record CliRunResult(int exitCode, String stdout, String stderr) {

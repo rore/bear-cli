@@ -1,11 +1,12 @@
-# `bear check` (v1)
+# `bear check` (v1.2)
 
 ## Command
 `bear check <ir-file> --project <path>`
 
-`bear check` v1.1 is a deterministic gate for:
+`bear check` v1.2 is a deterministic gate for:
 1. drift regeneration enforcement on BEAR-owned artifacts
 2. project test execution after drift passes
+3. boundary-expansion signaling derived from BEAR surface manifests
 
 It performs:
 1. Parse + validate + normalize IR.
@@ -50,6 +51,54 @@ Missing baseline:
   - `<project>/build/generated/bear` does not exist, OR
   - it exists but contains no regular files
 - If drift is detected, project tests are not executed.
+
+## Boundary manifest source
+- Baseline manifest:
+  - `<project>/build/generated/bear/bear.surface.json`
+- Candidate manifest:
+  - `<tempRoot>/build/generated/bear/bear.surface.json`
+
+Boundary classification uses manifest data only (no Java source parsing).
+
+## Boundary signal format (stderr)
+Boundary lines:
+- `boundary: EXPANSION: CAPABILITY_ADDED: <capability>`
+- `boundary: EXPANSION: CAPABILITY_OP_ADDED: <capability>.<op>`
+- `boundary: EXPANSION: INVARIANT_RELAXED: non_negative:<field>`
+
+Scope in v0:
+- `CAPABILITY_ADDED`: capability appears in candidate but not baseline
+- `CAPABILITY_OP_ADDED`: op appears in candidate capability but not baseline capability
+- `INVARIANT_RELAXED`: baseline `non_negative:<field>` missing in candidate
+
+Ordering (deterministic):
+- sort by `(typePrecedence, key)`
+- type precedence:
+  1. `CAPABILITY_ADDED`
+  2. `CAPABILITY_OP_ADDED`
+  3. `INVARIANT_RELAXED`
+- then key lexicographic
+
+Output order in `check`:
+1. baseline manifest diagnostics (if any)
+2. boundary signal lines
+3. drift lines
+4. test failure/timeout output (if reached)
+
+Relationship to drift:
+- boundary signaling is a classification layer on top of drift context
+- not a separate verdict channel
+- exit codes remain unchanged
+
+## Manifest diagnostics
+Baseline manifest problems are warning-only:
+- `check: BASELINE_MANIFEST_MISSING: <path>`
+- `check: BASELINE_MANIFEST_INVALID: <reasonCode>`
+- `check: BASELINE_STAMP_MISMATCH: irHash/generatorVersion differ; classification may be stale`
+
+Candidate manifest problems are fatal internal errors:
+- missing candidate manifest => internal error (`70`)
+- invalid candidate manifest => internal error (`70`)
 
 ## Ordering (deterministic)
 - Primary key: relative path (lexicographic, `/` separators)

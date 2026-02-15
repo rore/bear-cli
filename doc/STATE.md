@@ -3,7 +3,7 @@
 This file captures execution state.  
 It must stay concise and operational.
 
-Last Updated: 2026-02-13
+Last Updated: 2026-02-15
 
 ---
 
@@ -123,3 +123,4 @@ No essays. No philosophy.
 - Added `doc/ROADMAP_V0.md` as the concrete execution tracker for current v0 delivery, while keeping `doc/ROADMAP.md` as broader target strategy.
 - Added future roadmap direction for side-effect taxonomy and clarified principle "side-effect gating, not library gating" in target roadmap/future docs.
 - Repositioned side-effect gating principle: concise philosophy statement in `doc/ARCHITECTURE.md`, phase-scoped placement in `doc/ROADMAP.md` (Phase 2), detailed taxonomy retained in `doc/FUTURE.md`.
+- Started Phase 5 implementation: compile now emits deterministic `bear.surface.json`; check now classifies boundary expansion from manifests with deterministic warning/failure semantics and boundary signal lines.

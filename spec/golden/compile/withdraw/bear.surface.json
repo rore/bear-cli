@@ -1,0 +1,1 @@
+{"schemaVersion":"v0","target":"jvm","block":"Withdraw","irHash":"1b6da2086a3ee4286d2f74fd10adb70e4c2cb9d7f49f826e562a0dc312ab6e38","generatorVersion":"jvm-v0","capabilities":[{"name":"idempotency","ops":["get","put"]},{"name":"ledger","ops":["getBalance","setBalance"]}],"invariants":[{"kind":"non_negative","field":"balance"}]}

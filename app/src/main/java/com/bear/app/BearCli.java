@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class BearCli {
     private BearCli() {
@@ -159,8 +161,50 @@ public final class BearCli {
             tempRoot = Files.createTempDirectory("bear-check-");
             target.compile(normalized, tempRoot);
             Path candidateRoot = tempRoot.resolve("build").resolve("generated").resolve("bear");
+            Path baselineManifestPath = baselineRoot.resolve("bear.surface.json");
+            Path candidateManifestPath = candidateRoot.resolve("bear.surface.json");
+
+            applyCandidateManifestTestMode(candidateManifestPath);
+
+            List<String> manifestWarnings = new ArrayList<>();
+            BoundaryManifest baselineManifest = null;
+            if (!Files.isRegularFile(baselineManifestPath)) {
+                manifestWarnings.add("check: BASELINE_MANIFEST_MISSING: " + baselineManifestPath);
+            } else {
+                try {
+                    baselineManifest = parseManifest(baselineManifestPath);
+                } catch (ManifestParseException e) {
+                    manifestWarnings.add("check: BASELINE_MANIFEST_INVALID: " + e.reasonCode());
+                }
+            }
+            if (!Files.isRegularFile(candidateManifestPath)) {
+                err.println("internal: INTERNAL_ERROR: CANDIDATE_MANIFEST_MISSING");
+                return ExitCode.INTERNAL;
+            }
+            BoundaryManifest candidateManifest;
+            try {
+                candidateManifest = parseManifest(candidateManifestPath);
+            } catch (ManifestParseException e) {
+                err.println("internal: INTERNAL_ERROR: CANDIDATE_MANIFEST_INVALID:" + e.reasonCode());
+                return ExitCode.INTERNAL;
+            }
+
+            List<BoundarySignal> boundarySignals = List.of();
+            if (baselineManifest != null) {
+                if (!baselineManifest.irHash().equals(candidateManifest.irHash())
+                    || !baselineManifest.generatorVersion().equals(candidateManifest.generatorVersion())) {
+                    manifestWarnings.add("check: BASELINE_STAMP_MISMATCH: irHash/generatorVersion differ; classification may be stale");
+                }
+                boundarySignals = computeBoundarySignals(baselineManifest, candidateManifest);
+            }
 
             List<DriftItem> drift = computeDrift(baselineRoot, candidateRoot);
+            for (String warning : manifestWarnings) {
+                err.println(warning);
+            }
+            for (BoundarySignal signal : boundarySignals) {
+                err.println("boundary: EXPANSION: " + signal.type().label + ": " + signal.key());
+            }
             if (!drift.isEmpty()) {
                 for (DriftItem item : drift) {
                     err.println("drift: " + item.type().label + ": " + item.path());
@@ -227,6 +271,174 @@ public final class BearCli {
             .comparing(DriftItem::path)
             .thenComparing(item -> item.type().order));
         return drift;
+    }
+
+    private static List<BoundarySignal> computeBoundarySignals(BoundaryManifest baseline, BoundaryManifest candidate) {
+        List<BoundarySignal> signals = new ArrayList<>();
+        for (String capability : candidate.capabilities().keySet()) {
+            if (!baseline.capabilities().containsKey(capability)) {
+                signals.add(new BoundarySignal(BoundaryType.CAPABILITY_ADDED, capability));
+            }
+        }
+        for (Map.Entry<String, TreeSet<String>> entry : candidate.capabilities().entrySet()) {
+            String capability = entry.getKey();
+            if (!baseline.capabilities().containsKey(capability)) {
+                continue;
+            }
+            TreeSet<String> baselineOps = baseline.capabilities().get(capability);
+            for (String op : entry.getValue()) {
+                if (!baselineOps.contains(op)) {
+                    signals.add(new BoundarySignal(BoundaryType.CAPABILITY_OP_ADDED, capability + "." + op));
+                }
+            }
+        }
+        for (String invariant : baseline.invariants()) {
+            if (!candidate.invariants().contains(invariant)) {
+                signals.add(new BoundarySignal(BoundaryType.INVARIANT_RELAXED, invariant));
+            }
+        }
+        signals.sort(Comparator
+            .comparing((BoundarySignal signal) -> signal.type().order)
+            .thenComparing(BoundarySignal::key));
+        return signals;
+    }
+
+    private static BoundaryManifest parseManifest(Path path) throws IOException, ManifestParseException {
+        String json = Files.readString(path, StandardCharsets.UTF_8).trim();
+        if (!json.startsWith("{") || !json.endsWith("}")) {
+            throw new ManifestParseException("MALFORMED_JSON");
+        }
+        String schemaVersion = extractRequiredString(json, "schemaVersion");
+        String target = extractRequiredString(json, "target");
+        String block = extractRequiredString(json, "block");
+        String irHash = extractRequiredString(json, "irHash");
+        String generatorVersion = extractRequiredString(json, "generatorVersion");
+
+        String capabilitiesPayload = extractRequiredArrayPayload(json, "capabilities");
+        String invariantsPayload = extractRequiredArrayPayload(json, "invariants");
+        Map<String, TreeSet<String>> capabilities = parseCapabilities(capabilitiesPayload);
+        TreeSet<String> invariants = parseInvariants(invariantsPayload);
+        return new BoundaryManifest(schemaVersion, target, block, irHash, generatorVersion, capabilities, invariants);
+    }
+
+    private static String extractRequiredString(String json, String key) throws ManifestParseException {
+        Matcher m = Pattern.compile("\"" + Pattern.quote(key) + "\":\"((?:\\\\.|[^\\\\\"])*)\"").matcher(json);
+        if (!m.find()) {
+            throw new ManifestParseException("MISSING_KEY_" + key);
+        }
+        return jsonUnescape(m.group(1));
+    }
+
+    private static String extractRequiredArrayPayload(String json, String key) throws ManifestParseException {
+        int keyIdx = json.indexOf("\"" + key + "\":[");
+        if (keyIdx < 0) {
+            throw new ManifestParseException("MISSING_KEY_" + key);
+        }
+        int start = json.indexOf('[', keyIdx);
+        if (start < 0) {
+            throw new ManifestParseException("MALFORMED_ARRAY_" + key);
+        }
+        int depth = 0;
+        for (int i = start; i < json.length(); i++) {
+            char c = json.charAt(i);
+            if (c == '[') {
+                depth++;
+            } else if (c == ']') {
+                depth--;
+                if (depth == 0) {
+                    return json.substring(start + 1, i);
+                }
+            }
+        }
+        throw new ManifestParseException("MALFORMED_ARRAY_" + key);
+    }
+
+    private static Map<String, TreeSet<String>> parseCapabilities(String payload) throws ManifestParseException {
+        Map<String, TreeSet<String>> capabilities = new TreeMap<>();
+        if (payload.isBlank()) {
+            return capabilities;
+        }
+
+        Matcher m = Pattern.compile("\\{\"name\":\"((?:\\\\.|[^\\\\\"])*)\",\"ops\":\\[([^\\]]*)\\]\\}").matcher(payload);
+        int count = 0;
+        while (m.find()) {
+            count++;
+            String name = jsonUnescape(m.group(1));
+            TreeSet<String> ops = new TreeSet<>();
+            String opsPayload = m.group(2);
+            if (!opsPayload.isBlank()) {
+                Matcher opMatcher = Pattern.compile("\"((?:\\\\.|[^\\\\\"])*)\"").matcher(opsPayload);
+                while (opMatcher.find()) {
+                    ops.add(jsonUnescape(opMatcher.group(1)));
+                }
+            }
+            capabilities.put(name, ops);
+        }
+
+        if (count == 0) {
+            throw new ManifestParseException("INVALID_CAPABILITIES");
+        }
+        return capabilities;
+    }
+
+    private static TreeSet<String> parseInvariants(String payload) throws ManifestParseException {
+        TreeSet<String> invariants = new TreeSet<>();
+        if (payload.isBlank()) {
+            return invariants;
+        }
+
+        Matcher m = Pattern.compile("\\{\"kind\":\"((?:\\\\.|[^\\\\\"])*)\",\"field\":\"((?:\\\\.|[^\\\\\"])*)\"\\}")
+            .matcher(payload);
+        int count = 0;
+        while (m.find()) {
+            count++;
+            String kind = jsonUnescape(m.group(1));
+            String field = jsonUnescape(m.group(2));
+            if ("non_negative".equals(kind)) {
+                invariants.add("non_negative:" + field);
+            }
+        }
+
+        if (count == 0) {
+            throw new ManifestParseException("INVALID_INVARIANTS");
+        }
+        return invariants;
+    }
+
+    private static String jsonUnescape(String value) {
+        StringBuilder out = new StringBuilder(value.length());
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (c == '\\' && i + 1 < value.length()) {
+                char next = value.charAt(++i);
+                if (next == 'n') {
+                    out.append('\n');
+                } else if (next == 'r') {
+                    out.append('\r');
+                } else if (next == 't') {
+                    out.append('\t');
+                } else {
+                    out.append(next);
+                }
+            } else {
+                out.append(c);
+            }
+        }
+        return out.toString();
+    }
+
+    private static void applyCandidateManifestTestMode(Path candidateManifestPath) throws IOException {
+        String mode = System.getProperty("bear.check.test.candidateManifestMode");
+        if (mode == null || mode.isBlank()) {
+            return;
+        }
+        if ("missing".equals(mode)) {
+            Files.deleteIfExists(candidateManifestPath);
+            return;
+        }
+        if ("invalid".equals(mode)) {
+            Files.writeString(candidateManifestPath, "{", StandardCharsets.UTF_8);
+        }
     }
 
     private static Map<String, byte[]> readRegularFiles(Path root) throws IOException {
@@ -392,6 +604,47 @@ public final class BearCli {
     }
 
     private record DriftItem(String path, DriftType type) {
+    }
+
+    private enum BoundaryType {
+        CAPABILITY_ADDED("CAPABILITY_ADDED", 0),
+        CAPABILITY_OP_ADDED("CAPABILITY_OP_ADDED", 1),
+        INVARIANT_RELAXED("INVARIANT_RELAXED", 2);
+
+        private final String label;
+        private final int order;
+
+        BoundaryType(String label, int order) {
+            this.label = label;
+            this.order = order;
+        }
+    }
+
+    private record BoundarySignal(BoundaryType type, String key) {
+    }
+
+    private record BoundaryManifest(
+        String schemaVersion,
+        String target,
+        String block,
+        String irHash,
+        String generatorVersion,
+        Map<String, TreeSet<String>> capabilities,
+        TreeSet<String> invariants
+    ) {
+    }
+
+    private static final class ManifestParseException extends Exception {
+        private final String reasonCode;
+
+        private ManifestParseException(String reasonCode) {
+            super(reasonCode);
+            this.reasonCode = reasonCode;
+        }
+
+        private String reasonCode() {
+            return reasonCode;
+        }
     }
 
     private enum ProjectTestStatus {

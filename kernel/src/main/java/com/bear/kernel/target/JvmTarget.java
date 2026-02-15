@@ -1,12 +1,15 @@
 package com.bear.kernel.target;
 
 import com.bear.kernel.ir.BearIr;
+import com.bear.kernel.ir.BearIrYamlEmitter;
 import com.bear.kernel.ir.BearIr.FieldType;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -64,6 +67,7 @@ public final class JvmTarget implements Target {
         if (ir.block().invariants() != null && !ir.block().invariants().isEmpty()) {
             write(generatedTest.resolve(blockName + "InvariantNonNegativeTest.java"), renderInvariantTest(packageName, blockName));
         }
+        write(generatedRoot.resolve("bear.surface.json"), renderSurfaceManifest(ir));
 
         Path userImpl = userMain.resolve(blockName + "Impl.java");
         if (!Files.exists(userImpl)) {
@@ -350,6 +354,99 @@ public final class JvmTarget implements Target {
             case "Boolean" -> "Boolean.FALSE";
             default -> "null";
         };
+    }
+
+    private String renderSurfaceManifest(BearIr ir) {
+        String irHash = sha256Hex(canonicalIrBytes(ir));
+        List<BearIr.EffectPort> ports = new ArrayList<>(ir.block().effects().allow());
+        ports.sort(Comparator.comparing(BearIr.EffectPort::port));
+        List<BearIr.Invariant> invariants = new ArrayList<>();
+        if (ir.block().invariants() != null) {
+            invariants.addAll(ir.block().invariants());
+        }
+        invariants.sort(Comparator.comparing(BearIr.Invariant::kind).thenComparing(BearIr.Invariant::field));
+
+        StringBuilder out = new StringBuilder();
+        out.append("{");
+        out.append("\"schemaVersion\":\"v0\",");
+        out.append("\"target\":\"jvm\",");
+        out.append("\"block\":\"").append(jsonEscape(ir.block().name())).append("\",");
+        out.append("\"irHash\":\"").append(irHash).append("\",");
+        out.append("\"generatorVersion\":\"jvm-v0\",");
+        out.append("\"capabilities\":[");
+        for (int i = 0; i < ports.size(); i++) {
+            BearIr.EffectPort port = ports.get(i);
+            if (i > 0) {
+                out.append(",");
+            }
+            List<String> ops = new ArrayList<>(port.ops());
+            ops.sort(String::compareTo);
+            out.append("{\"name\":\"").append(jsonEscape(port.port())).append("\",\"ops\":[");
+            for (int j = 0; j < ops.size(); j++) {
+                if (j > 0) {
+                    out.append(",");
+                }
+                out.append("\"").append(jsonEscape(ops.get(j))).append("\"");
+            }
+            out.append("]}");
+        }
+        out.append("],");
+        out.append("\"invariants\":[");
+        boolean first = true;
+        for (BearIr.Invariant invariant : invariants) {
+            if (invariant.kind() != BearIr.InvariantKind.NON_NEGATIVE) {
+                continue;
+            }
+            if (!first) {
+                out.append(",");
+            }
+            first = false;
+            out.append("{\"kind\":\"non_negative\",\"field\":\"")
+                .append(jsonEscape(invariant.field()))
+                .append("\"}");
+        }
+        out.append("]}");
+        out.append("\n");
+        return out.toString();
+    }
+
+    private byte[] canonicalIrBytes(BearIr ir) {
+        BearIrYamlEmitter emitter = new BearIrYamlEmitter();
+        String yaml = emitter.toCanonicalYaml(ir);
+        return yaml.getBytes(StandardCharsets.UTF_8);
+    }
+
+    private String sha256Hex(byte[] bytes) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(bytes);
+            StringBuilder out = new StringBuilder(hash.length * 2);
+            for (byte b : hash) {
+                out.append(String.format("%02x", b));
+            }
+            return out.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 unavailable", e);
+        }
+    }
+
+    private String jsonEscape(String value) {
+        StringBuilder out = new StringBuilder(value.length() + 8);
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            if (c == '\\' || c == '"') {
+                out.append('\\').append(c);
+            } else if (c == '\n') {
+                out.append("\\n");
+            } else if (c == '\r') {
+                out.append("\\r");
+            } else if (c == '\t') {
+                out.append("\\t");
+            } else {
+                out.append(c);
+            }
+        }
+        return out.toString();
     }
 
     private List<PortModel> mapPorts(List<BearIr.EffectPort> ports) {
