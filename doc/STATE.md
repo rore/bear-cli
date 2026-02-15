@@ -9,34 +9,36 @@ Last Updated: 2026-02-15
 
 ## Current Focus
 
-Documentation normalization complete: BEAR philosophy/roadmap now frames v0 as boundary-governance enforcement for agentic workflows.
+Phase 5 completed: manifest-based boundary expansion signaling is active in `bear check`.
 
 ---
 
 ## Current Phase
 
-Phase: 5 -- Governance signaling in check (v0 completion track)
+Phase: 6 -- Demo proof (bear-account-demo)
 
 Checklist:
 - [x] Phase 1 deterministic IR validation + normalization
 - [x] Phase 2 deterministic JVM compile + golden conformance
 - [x] Phase 3 drift regeneration gate
 - [x] Phase 4 project test execution gate
-- [ ] Phase 5 deterministic boundary-expansion signaling in `bear check`
+- [x] Phase 5 deterministic boundary-expansion signaling in `bear check`
+- [ ] Phase 6 demo proof: naive fails, corrected passes
 
 Exit condition:
-`bear check` emits deterministic, reviewable boundary-expansion signals per `doc/GOVERNANCE.md`.
+Demo runbook proves deterministic failure for naive Withdraw and pass for corrected Withdraw.
 
 ---
 
 ## Next Concrete Task
 
-Implement deterministic boundary-expansion signaling in `bear check` output flow:
+Execute Phase 6 demo proof loop in `bear-account-demo`:
 
-1. Add classification step (`ordinary` vs `boundary-expanding`) based on `doc/GOVERNANCE.md`
-2. Emit stable, parseable boundary-expansion lines in check output
-3. Add app tests for signal determinism and ordering
-4. Update `spec/commands/check.md` with signal contract
+1. Implement/confirm naive Withdraw logic variant in demo
+2. Run `bear check` and capture deterministic failure output
+3. Implement corrected Withdraw logic variant
+4. Run `bear check` and capture deterministic pass output
+5. Publish concise reproducible demo runbook steps
 
 Notes:
 - Gradle wrapper is available: use `.\gradlew.bat` (Windows) to build/run without a global Gradle install.

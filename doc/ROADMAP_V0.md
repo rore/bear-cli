@@ -67,10 +67,10 @@ Single command enforces regen conformance + project tests.
 
 ## Phase 5 - Boundary-Expansion Signaling (v0 closeout)
 
-- [ ] implement deterministic boundary-expansion classification in check
-- [ ] emit stable boundary-signal output lines
-- [ ] conformance tests for signal determinism/order
-- [ ] update check spec with boundary-signal contract
+- [x] implement deterministic boundary-expansion classification in check
+- [x] emit stable boundary-signal output lines
+- [x] conformance tests for signal determinism/order
+- [x] update check spec with boundary-signal contract
 
 Milestone:
 Boundary expansion cannot be introduced without explicit CI-visible signal.
