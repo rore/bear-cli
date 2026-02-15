@@ -79,3 +79,7 @@ Docs:
 - `doc/PROJECT_LOG.md` (background + major decisions)
 - `doc/FUTURE.md` (explicitly out-of-scope ideas)
 - `doc/PROMPT_BOOTSTRAP.md` (paste into a fresh AI session to restore context)
+
+Demo repo (sibling):
+- `../bear-account-demo/README.md` (spec-first baseline usage)
+- `../bear-account-demo/doc/SCENARIOS.md` (scenario branch matrix and expected outputs)

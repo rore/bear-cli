@@ -77,14 +77,20 @@ Boundary expansion cannot be introduced without explicit CI-visible signal.
 
 ## Phase 6 - Demo Proof (bear-account-demo)
 
-- [ ] implement naive Withdraw variant
-- [ ] prove `bear check` fails deterministically
-- [ ] implement corrected Withdraw variant
-- [ ] prove `bear check` passes deterministically
-- [ ] publish concise reproducible runbook
+- [x] implement naive Withdraw variant
+- [x] prove `bear check` fails deterministically
+- [x] implement corrected Withdraw variant
+- [x] prove `bear check` passes deterministically
+- [x] publish concise reproducible runbook
 
 Milestone:
 "Naive withdraw fails. Correct withdraw passes."
+
+Scenario branch model (demo repo):
+- `main`: spec-first runnable baseline
+- `scenario/naive-fail-withdraw`: deterministic test-failure proof (`check: TEST_FAILED...`, exit `4`)
+- `scenario/corrected-pass-withdraw`: deterministic pass proof (`check: OK`, exit `0`)
+- `scenario/boundary-expansion-visible`: reserved next BEAR-specific scenario
 
 ## v0 Done Criteria
 

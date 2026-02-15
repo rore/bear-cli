@@ -9,13 +9,13 @@ Last Updated: 2026-02-15
 
 ## Current Focus
 
-Phase 5 completed: manifest-based boundary expansion signaling is active in `bear check`.
+Phase 6 completed: demo proof loop and scenario-branch model are established in `bear-account-demo`.
 
 ---
 
 ## Current Phase
 
-Phase: 6 -- Demo proof (bear-account-demo)
+Phase: v0 complete; next iteration planning
 
 Checklist:
 - [x] Phase 1 deterministic IR validation + normalization
@@ -23,22 +23,22 @@ Checklist:
 - [x] Phase 3 drift regeneration gate
 - [x] Phase 4 project test execution gate
 - [x] Phase 5 deterministic boundary-expansion signaling in `bear check`
-- [ ] Phase 6 demo proof: naive fails, corrected passes
+- [x] Phase 6 demo proof: naive fails, corrected passes
 
 Exit condition:
-Demo runbook proves deterministic failure for naive Withdraw and pass for corrected Withdraw.
+All v0 phase gates and demo proof milestones are complete.
 
 ---
 
 ## Next Concrete Task
 
-Execute Phase 6 demo proof loop in `bear-account-demo`:
+Implement the reserved BEAR-specific demo scenario in `bear-account-demo`:
 
-1. Implement/confirm naive Withdraw logic variant in demo
-2. Run `bear check` and capture deterministic failure output
-3. Implement corrected Withdraw logic variant
-4. Run `bear check` and capture deterministic pass output
-5. Publish concise reproducible demo runbook steps
+1. Create `scenario/boundary-expansion-visible` branch
+2. Introduce deterministic capability/op expansion change
+3. Keep project tests passing
+4. Show `bear check` boundary signal + drift failure (`exit 3`)
+5. Capture exact expected output snippet in scenario docs
 
 Notes:
 - Gradle wrapper is available: use `.\gradlew.bat` (Windows) to build/run without a global Gradle install.
@@ -128,3 +128,4 @@ No essays. No philosophy.
 - Started Phase 5 implementation: compile now emits deterministic `bear.surface.json`; check now classifies boundary expansion from manifests with deterministic warning/failure semantics and boundary signal lines.
 - Added BEAR logo assets under `assets/logo/` (lockup + mark SVG) and wired lockup logo into `README.md`.
 - Switched `README.md` logo source to the user-provided `assets/logo/bear.png` for exact visual match.
+- Completed Phase 6 demo proof in `bear-account-demo` with branch-per-scenario model: `main` spec-first baseline, `scenario/naive-fail-withdraw` (deterministic exit `4`), and `scenario/corrected-pass-withdraw` (deterministic exit `0`), plus scenario matrix/runbook docs.
