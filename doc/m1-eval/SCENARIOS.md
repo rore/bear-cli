@@ -11,7 +11,7 @@ Primary operator guide:
 | Branch | Start Condition | Agent Task | Expected High-Level Outcome |
 | --- | --- | --- | --- |
 | `scenario/greenfield-build` | minimal app + domain specs; no completed BEAR block implementation | create initial block IR(s), compile/generate, implement, pass gate | canonical gate exits `0` |
-| `scenario/feature-extension` | existing app passes gate | decide update-existing-block vs create-new-block for new feature; perform IR-first boundary work when needed | stale-baseline check emits boundary expansion + drift (`3`) when applicable, then final gate exits `0` |
+| `scenario/feature-extension` | baseline promoted from successful greenfield result | decide update-existing-block vs create-new-block for new feature; perform IR-first boundary work when needed | stale-baseline check emits boundary expansion + drift (`3`) when applicable, then final gate exits `0` |
 
 ## Canonical Gate Behavior Expectations
 

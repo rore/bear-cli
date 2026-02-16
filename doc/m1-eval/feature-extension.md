@@ -13,8 +13,10 @@ while following IR-first boundary governance.
 ## Setup
 
 1. Checkout `bear-account-demo` branch: `scenario/feature-extension`.
-2. Provide a feature request that requires meaningful design choice (update vs new block).
-3. Include at least one requested capability that should trigger boundary expansion signaling.
+2. Ensure branch baseline has been promoted from successful `scenario/greenfield-build` commit(s).
+   - example: `git cherry-pick <greenfield_success_commit_sha>`
+3. Provide a feature request that requires meaningful design choice (update vs new block).
+4. Include at least one requested capability that should trigger boundary expansion signaling.
 
 ## Expected Agent Behavior
 

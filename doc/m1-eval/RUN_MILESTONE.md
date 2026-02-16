@@ -22,7 +22,7 @@ Prove that, from demo repo context only, an agent can:
 
 3. Branch states:
 - `scenario/greenfield-build`: greenfield-ready (no initial `spec/*.bear.yaml`, no initial impl)
-- `scenario/feature-extension`: based on current `main` baseline
+- `scenario/feature-extension`: based on successful greenfield result (ported from `scenario/greenfield-build`)
 
 ## One-Time Setup
 
@@ -32,7 +32,13 @@ From `bear-cli`:
 .\gradlew.bat :app:installDist
 ```
 
-Ensure demo wrapper can execute BEAR CLI (`bin/bear.ps1` / `bin/bear.sh`).
+In this repo, `installDist` outputs under:
+- `%TEMP%\bear-cli-build\<runId>\app\install\bear`
+
+Copy/link that directory to demo expected path:
+- `bear-account-demo/.bear/tools/bear-cli`
+
+Then ensure demo wrapper can execute BEAR CLI (`bin/bear.ps1` / `bin/bear.sh`).
 
 ## Run 1: Greenfield Build
 
@@ -64,6 +70,19 @@ Pass criteria:
 - final gate exit `0`
 - no generated-file edits
 - agent report includes IR/code/test changes
+
+## Promote Greenfield Result To Feature Baseline
+
+After greenfield success, port the resulting commit(s) to `scenario/feature-extension`.
+
+Example:
+
+```powershell
+git checkout scenario/feature-extension
+git cherry-pick <greenfield_success_commit_sha>
+```
+
+Feature-extension run must start from this promoted baseline, not from an older placeholder implementation.
 
 ## Run 2: Feature Extension
 
