@@ -90,6 +90,7 @@ Demo repo (sibling):
 - `../bear-account-demo/README.md` (realistic app-facing demo context)
 
 M1 evaluator docs (this repo):
+- `doc/m1-eval/RUN_MILESTONE.md`
 - `doc/m1-eval/SCENARIOS.md`
 - `doc/m1-eval/greenfield-build.md`
 - `doc/m1-eval/feature-extension.md`

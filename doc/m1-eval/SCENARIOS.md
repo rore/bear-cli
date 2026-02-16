@@ -3,6 +3,9 @@
 Evaluator-facing docs only.
 Do not copy these runbooks into `bear-account-demo`.
 
+Primary operator guide:
+- `doc/m1-eval/RUN_MILESTONE.md`
+
 ## Canonical M1 Branches
 
 | Branch | Start Condition | Agent Task | Expected High-Level Outcome |

@@ -147,3 +147,4 @@ No essays. No philosophy.
 - M1 realism reset started: scenario evaluation guidance moves to `bear-cli/doc/m1-eval/*`; demo should keep only realistic project artifacts.
 - Completed realism reset core wiring: removed demo scenario answer-key docs, created canonical branches (`scenario/greenfield-build`, `scenario/feature-extension`), and moved evaluator runbooks into `bear-cli/doc/m1-eval/`.
 - Added M1 comprehension hardening requirements: local BEAR primer, stronger read-order guidance, and greenfield-safe canonical gate behavior.
+- Added evaluator operator runbook `doc/m1-eval/RUN_MILESTONE.md` with end-to-end instructions for running both M1 scenario flows in isolated demo sessions.
