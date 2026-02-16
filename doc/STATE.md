@@ -18,8 +18,8 @@ Post-v0 M1 execution: prove isolated BEAR agent workflow in `bear-account-demo` 
 Phase: M1 workflow proof (active)
 
 Checklist:
-- [x] Add canonical BEAR workflow source texts in `bear-cli` (`doc/m1-canonical/BEAR_PRIMER.md`, `doc/m1-canonical/AGENT.md`, `doc/m1-canonical/WORKFLOW.md`)
-- [x] Add demo-local `BEAR_PRIMER.md`, `AGENT.md` and `WORKFLOW.md`
+- [x] Add canonical BEAR workflow source texts in `bear-cli` (`doc/m1-canonical/BEAR_PRIMER.md`, `doc/m1-canonical/AGENTS.md`, `doc/m1-canonical/BEAR_AGENT.md`, `doc/m1-canonical/WORKFLOW.md`)
+- [x] Add demo-local `BEAR_PRIMER.md`, `AGENTS.md`, `BEAR_AGENT.md`, and `WORKFLOW.md`
 - [x] Add demo-local spec pack (`doc/spec/*`) + local IR (`spec/withdraw.bear.yaml`)
 - [x] Add demo wrapper + canonical gate scripts (`bin/bear*`)
 - [x] Add minimal `verifyNoUndeclaredReach` and wire to demo verification
@@ -94,7 +94,7 @@ It is scope drift.
 
 All of the following must be true:
 
-- Demo has direct, isolated workflow assets (`BEAR_PRIMER.md`, `AGENT.md`, `WORKFLOW.md`, spec pack)
+- Demo has direct, isolated workflow assets (`BEAR_PRIMER.md`, `AGENTS.md`, `BEAR_AGENT.md`, `WORKFLOW.md`, spec pack)
 - Demo has one canonical gate command (`bin/bear-all.*`)
 - Canonical gate handles greenfield deterministically when no IR files exist
 - Demo does not contain evaluator answer-key scenario docs
@@ -145,7 +145,8 @@ No essays. No philosophy.
 - Completed Phase 6 demo proof in `bear-account-demo` with branch-per-scenario model: `main` spec-first baseline, `scenario/naive-fail-withdraw` (deterministic exit `4`), and `scenario/corrected-pass-withdraw` (deterministic exit `0`), plus scenario matrix/runbook docs.
 - Split post-v0 execution into M1 (minimal workflow proof) and future packaging/versioning (not immediate), with roadmap/state updates.
 - Added canonical BEAR workflow source texts under `doc/m1-canonical/` and aligned demo-copied workflow resources to source-of-truth references.
-- Implemented demo-local M1 assets in `bear-account-demo`: `AGENT.md`, `WORKFLOW.md`, block index, spec pack, local IR, canonical scripts (`bin/bear*`), boundary scenario runbook, and `verifyNoUndeclaredReach` wired into tests.
+- Implemented demo-local M1 assets in `bear-account-demo`: `AGENTS.md`, `BEAR_AGENT.md`, `WORKFLOW.md`, spec pack, local IR, canonical scripts (`bin/bear*`), and `verifyNoUndeclaredReach` wired into tests.
+- Synced canonical naming model in `bear-cli/doc/m1-canonical/`: thin bootstrap in `AGENTS.md` and BEAR contract in `BEAR_AGENT.md`.
 - M1 realism reset started: scenario evaluation guidance moves to `bear-cli/doc/m1-eval/*`; demo should keep only realistic project artifacts.
 - Completed realism reset core wiring: removed demo scenario answer-key docs, created canonical branches (`scenario/greenfield-build`, `scenario/feature-extension`), and moved evaluator runbooks into `bear-cli/doc/m1-eval/`.
 - Added M1 comprehension hardening requirements: local BEAR primer, stronger read-order guidance, and greenfield-safe canonical gate behavior.

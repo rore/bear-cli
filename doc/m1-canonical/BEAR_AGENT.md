@@ -1,7 +1,7 @@
-# AGENT.md (M1 Canonical Source)
+# BEAR_AGENT.md (M1 Canonical Source)
 
 Purpose:
-- This file is the canonical source text for demo-repo `AGENT.md` in M1.
+- This file is the canonical BEAR agent contract for demo-repo `BEAR_AGENT.md` in M1.
 - In M1, demo copies are synchronized manually.
 
 ## Read In This Order
@@ -9,6 +9,12 @@ Purpose:
 1. `doc/BEAR_PRIMER.md`
 2. `doc/spec/*`
 3. the feature request
+
+## Session Baseline Check
+
+Before planning or editing:
+1. Run `git status --short`.
+2. If pre-existing changes exist, explicitly report them and confirm whether to treat them as baseline before proceeding.
 
 ## Mandatory BEAR Loop
 
@@ -40,6 +46,10 @@ Update IR first if any of these are introduced or changed:
 
 If unsure:
 - inspect IR and confirm capability already exists before writing impl code.
+
+Boundary-expanding change expectation:
+- after IR update and before regeneration, `bear-all` can fail with drift/boundary signals on stale generated baseline
+- this is expected; compile/regenerate, implement, then rerun gate to green
 
 ## Edit Boundaries
 

@@ -106,7 +106,7 @@ All must be true:
 ### M1 (active): isolated workflow proof
 
 Deliver:
-- demo-local `BEAR_PRIMER.md` + `BEAR_AGENT.md` + `WORKFLOW.md` + minimal spec pack
+- demo-local `BEAR_PRIMER.md` + `AGENTS.md` (thin bootstrap) + `BEAR_AGENT.md` + `WORKFLOW.md` + minimal spec pack
 - demo-local canonical gate scripts (`bin/bear-all.ps1`, `bin/bear-all.sh`)
 - demo-local BEAR wrapper scripts (`bin/bear.ps1`, `bin/bear.sh`) with pinned local CLI path
 - canonical scenario branches:

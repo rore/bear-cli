@@ -4,7 +4,8 @@
 
 In scope here:
 - `BEAR_PRIMER.md`
-- `AGENT.md`
+- `AGENTS.md`
+- `BEAR_AGENT.md`
 - `WORKFLOW.md`
 
 Out of scope here:

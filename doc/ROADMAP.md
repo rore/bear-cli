@@ -163,4 +163,4 @@ Near-term implementation follows the M1 workflow-proof split and references:
 - `doc/STATE.md` for current task
 - `doc/ARCHITECTURE.md` for v0 guarantees/non-guarantees
 - `doc/GOVERNANCE.md` for normative classification policy
-- `doc/m1-canonical/` for canonical BEAR workflow source texts (`AGENT.md`, `WORKFLOW.md`)
+- `doc/m1-canonical/` for canonical BEAR workflow source texts (`AGENTS.md`, `BEAR_AGENT.md`, `WORKFLOW.md`)

@@ -13,7 +13,7 @@ These docs are primarily for in-repo sessions (Codex/agent with repo access).
 5. `doc/IR_SPEC.md` -- canonical v0 IR schema, validation, normalization, and demo IR shape.
 6. `doc/ROADMAP_V0.md` -- concrete v0 execution plan and phase checkpoints.
 7. `doc/ROADMAP.md` -- broader target roadmap beyond immediate v0 execution.
-8. `doc/m1-canonical/` -- canonical BEAR workflow source texts (`AGENT.md`, `WORKFLOW.md`) for demo-copied resources.
+8. `doc/m1-canonical/` -- canonical BEAR workflow source texts (`AGENTS.md`, `BEAR_AGENT.md`, `WORKFLOW.md`) for demo-copied resources.
 9. `doc/PROJECT_LOG.md` -- historical rationale and major decisions.
 10. `doc/FUTURE.md` -- deferred ideas (explicitly not v0).
 11. `doc/PROMPT_BOOTSTRAP.md` -- copy/paste seed for a fresh AI session.
@@ -27,7 +27,7 @@ These docs are primarily for in-repo sessions (Codex/agent with repo access).
 - `doc/IR_SPEC.md`: schema contract; if fields conflict elsewhere, this wins for IR shape.
 - `doc/ROADMAP_V0.md`: implementation order for current v0 delivery.
 - `doc/ROADMAP.md`: broader target direction and longer-horizon phases.
-- `doc/m1-canonical/`: canonical BEAR workflow source texts (`AGENT.md`, `WORKFLOW.md`) used by demo copies.
+- `doc/m1-canonical/`: canonical BEAR workflow source texts (`AGENTS.md`, `BEAR_AGENT.md`, `WORKFLOW.md`) used by demo copies.
 - `doc/PROMPT_BOOTSTRAP.md`: transport context into a new chat, not a full architecture doc.
   - Use this for non-repo sessions (for example ChatGPT without workspace file access).
 
