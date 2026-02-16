@@ -1,7 +1,15 @@
 # BEAR Target Roadmap
 
 This roadmap expresses the broader target direction for BEAR.
+For current execution order and milestone sequencing, see `doc/ROADMAP_V0.md` (historical filename; now post-v0 execution tracker).
 For current v0 contract details, see `doc/ARCHITECTURE.md` and `doc/GOVERNANCE.md`.
+
+## Status Snapshot
+
+- v0 core is complete.
+- active work is post-v0 milestone execution (currently M1.1 governance signal hardening).
+- target milestone is `Preview Release` (reached via M1 -> M1.1 -> preview).
+- this file is strategic; do not treat it as the step-by-step execution tracker.
 
 ## Why This Roadmap
 
@@ -12,31 +20,11 @@ BEAR is successful only if agent speed is paired with structural control:
 - deterministic build/test gates enforce declared structure
 - developers are not burdened with IR micromanagement
 
-## Current Execution Split (Post-v0)
+## Execution Layering
 
-### M1 - Workflow Proof (minimal, active)
-
-Goal: prove a generic agent can use BEAR correctly from an isolated demo repo.
-
-Required outcome:
-- one non-boundary feature completed (impl/tests edits only) with canonical gate passing
-- one boundary-expanding feature completed with IR-first updates, deterministic boundary signal on stale-baseline check, and canonical gate passing after regen + implementation
-- one obvious command indicates done/not-done status
-
-Explicitly not in M1:
-- resource bundle/manifest/checksum/lock architecture
-- distribution platform work
-- IR expressiveness expansion
-
-### M2 - Resource Packaging and Versioning (future, not immediate)
-
-Goal: industrialize delivery and synchronization of BEAR-owned agent resources once BEAR is mature enough for packaging decisions.
-
-Candidate deliverables (future candidates, not scheduled immediately after M1):
-- versioned resource bundles
-- import/export automation
-- lock/checksum validation
-- formal distribution/version pin strategy
+Two roadmap files are intentional:
+- `doc/ROADMAP.md` (this file): long-horizon strategy and phase intent.
+- `doc/ROADMAP_V0.md`: near-term execution order, milestone definitions, and done criteria.
 
 ## Phase 1 - Deterministic Core (current foundation)
 
@@ -157,10 +145,6 @@ BEAR is successful if all are true:
 - build/test gates enforce declared structure
 - developers do not feel burdened by BEAR mechanics
 
-## Current Immediate Execution Focus (M1)
+## Current Immediate Execution Focus
 
-Near-term implementation follows the M1 workflow-proof split and references:
-- `doc/STATE.md` for current task
-- `doc/ARCHITECTURE.md` for v0 guarantees/non-guarantees
-- `doc/GOVERNANCE.md` for normative classification policy
-- `doc/m1-canonical/` for canonical BEAR workflow source texts (`AGENTS.md`, `BEAR_AGENT.md`, `WORKFLOW.md`)
+Near-term implementation is tracked in `doc/ROADMAP_V0.md` and `doc/STATE.md`.

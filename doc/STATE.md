@@ -9,13 +9,13 @@ Last Updated: 2026-02-16
 
 ## Current Focus
 
-Post-v0 M1 execution: prove isolated BEAR agent workflow in `bear-account-demo` with minimal packaging.
+Post-v0 milestone execution toward Preview Release: execute M1.1 governance signal hardening.
 
 ---
 
 ## Current Phase
 
-Phase: M1 workflow proof (active)
+Phase: M1 workflow proof (completed), M1.1 governance signal hardening (active)
 
 Checklist:
 - [x] Add canonical BEAR workflow source texts in `bear-cli` (`doc/m1-canonical/BEAR_PRIMER.md`, `doc/m1-canonical/AGENTS.md`, `doc/m1-canonical/BEAR_AGENT.md`, `doc/m1-canonical/WORKFLOW.md`)
@@ -29,11 +29,12 @@ Checklist:
   - `scenario/feature-extension`
 - [x] Move evaluator scenario matrix/runbooks to `bear-cli/doc/m1-eval/*`
 - [x] Update canonical gate contract to deterministic `spec/*.bear.yaml` discovery with actionable no-IR guidance
-- [ ] Execute isolated acceptance run: greenfield build flow
-- [ ] Execute isolated acceptance run: feature-extension flow
+- [x] Execute isolated acceptance run: greenfield build flow
+- [x] Execute isolated acceptance run: feature-extension flow
 
-Exit condition:
-M1 acceptance passes:
+M1 acceptance status:
+Completed.
+M1 acceptance required:
 1. Non-boundary feature flow succeeds with canonical gate.
 2. Boundary-expanding feature flow is IR-first, emits deterministic boundary signal in stale-baseline check, then succeeds after regen + implementation.
 3. Workflow is runnable from demo repo alone.
@@ -42,17 +43,18 @@ M1 acceptance passes:
 
 ## Next Concrete Task
 
-Run the two acceptance proofs for M1 in isolated-agent style:
+Start M1.1 implementation (entry gate to Preview Release):
 
-1. Greenfield branch (`scenario/greenfield-build`):
-   - confirm deterministic no-IR guidance from canonical gate
-   - create first IR + compile + implementation
-   - reach final `check: OK`
-2. Feature-extension branch (`scenario/feature-extension`):
-   - force update-vs-create decision
-   - run stale-baseline check and observe boundary signal + drift (`exit 3`) when boundary expands
-   - regenerate + implement to final `check: OK`
-3. Capture concise evaluator evidence in `bear-cli/doc/m1-eval/*` only (not in demo repo)
+1. Define `pr-check` command contract (or equivalent):
+   - input model (base branch + project/IR targets)
+   - deterministic output schema for boundary deltas
+   - exit-code contract
+2. Implement base-branch boundary diff classification:
+   - ports/ops/effects/contract/invariants delta categories
+   - stable, greppable output lines for CI
+3. Normalize stale/boundary exit-code semantics:
+   - remove ambiguous generic failures for classified boundary/drift paths
+4. Add tests/spec coverage and CI usage notes for M1.1 behavior.
 
 Notes:
 - Gradle wrapper is available: use `.\gradlew.bat` (Windows) to build/run without a global Gradle install.
@@ -63,7 +65,7 @@ Notes:
 
 ## Phase Pipeline (Do Not Skip)
 
-v0 complete -> M1 workflow proof -> future hardening/maturity decisions
+v0 complete -> M1 workflow proof -> M1.1 governance hardening -> preview release -> future maturity decisions
 
 If work does not advance:
 
@@ -101,6 +103,9 @@ All of the following must be true:
 - Canonical scenario branches are `scenario/greenfield-build` and `scenario/feature-extension`
 - Demo includes minimal no-undeclared-reach verification in test/check path
 - First-time isolated agent can explain core BEAR concepts from demo-local docs before coding
+
+Status:
+- Achieved.
 
 ---
 

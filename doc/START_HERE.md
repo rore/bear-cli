@@ -11,7 +11,7 @@ These docs are primarily for in-repo sessions (Codex/agent with repo access).
 3. `doc/NORTH_STAR.md` -- broader motivation and long-horizon success criteria.
 4. `doc/GOVERNANCE.md` -- normative IR diff classification (`ordinary` vs `boundary-expanding`) and review policy.
 5. `doc/IR_SPEC.md` -- canonical v0 IR schema, validation, normalization, and demo IR shape.
-6. `doc/ROADMAP_V0.md` -- concrete v0 execution plan and phase checkpoints.
+6. `doc/ROADMAP_V0.md` -- concrete post-v0 execution roadmap (historical filename) and milestone checkpoints.
 7. `doc/ROADMAP.md` -- broader target roadmap beyond immediate v0 execution.
 8. `doc/m1-canonical/` -- canonical BEAR workflow source texts (`AGENTS.md`, `BEAR_AGENT.md`, `WORKFLOW.md`) for demo-copied resources.
 9. `doc/PROJECT_LOG.md` -- historical rationale and major decisions.
@@ -25,7 +25,7 @@ These docs are primarily for in-repo sessions (Codex/agent with repo access).
 - `doc/NORTH_STAR.md`: broader BEAR motivation and long-term success litmus.
 - `doc/GOVERNANCE.md`: normative governance contract for classifying IR changes and signaling boundary expansion.
 - `doc/IR_SPEC.md`: schema contract; if fields conflict elsewhere, this wins for IR shape.
-- `doc/ROADMAP_V0.md`: implementation order for current v0 delivery.
+- `doc/ROADMAP_V0.md`: implementation order for current post-v0 milestone execution.
 - `doc/ROADMAP.md`: broader target direction and longer-horizon phases.
 - `doc/m1-canonical/`: canonical BEAR workflow source texts (`AGENTS.md`, `BEAR_AGENT.md`, `WORKFLOW.md`) used by demo copies.
 - `doc/PROMPT_BOOTSTRAP.md`: transport context into a new chat, not a full architecture doc.
