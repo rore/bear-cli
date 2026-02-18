@@ -159,3 +159,4 @@ No essays. No philosophy.
 - Created demo branches `scenario/pr-non-boundary` (impl/test-only delta) and `scenario/pr-boundary-expand` (invariant relaxation boundary delta) and validated with `bear pr-check` against `origin/main` (`0` vs `5` behavior).
 - Extended evaluator runbooks in `doc/m1-eval/RUN_MILESTONE.md` and `doc/m1-eval/SCENARIOS.md` to include PR governance pass/fail scenario runs and expected outputs.
 - Added explicit expected boundary `pr-gate` output snippet to `doc/m1-eval/RUN_MILESTONE.md` (with note that additional boundary delta lines are acceptable while exit `5` + fail verdict remain required).
+- Updated `bear-account-demo` PR gate setup to avoid cross-repo checkout failures: vendored BEAR CLI bundle under `tools/bear-cli`, wrappers now prefer vendored bundle, and CI workflow runs `pr-gate` directly from repo assets.
