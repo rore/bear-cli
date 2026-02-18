@@ -17,6 +17,7 @@ These docs are primarily for in-repo sessions (Codex/agent with repo access).
 9. `doc/PROJECT_LOG.md` -- historical rationale and major decisions.
 10. `doc/FUTURE.md` -- deferred ideas (explicitly not v0).
 11. `doc/PROMPT_BOOTSTRAP.md` -- copy/paste seed for a fresh AI session.
+12. `doc/USER_GUIDE.md` -- user-facing command usage and failure/exit contract quick reference.
 
 ## What each file is for
 
@@ -30,6 +31,7 @@ These docs are primarily for in-repo sessions (Codex/agent with repo access).
 - `doc/m1-canonical/`: canonical BEAR workflow source texts (`AGENTS.md`, `BEAR_AGENT.md`, `WORKFLOW.md`) used by demo copies.
 - `doc/PROMPT_BOOTSTRAP.md`: transport context into a new chat, not a full architecture doc.
   - Use this for non-repo sessions (for example ChatGPT without workspace file access).
+- `doc/USER_GUIDE.md`: practical operator guide for running commands and interpreting failure envelopes.
 
 ## Repo layout
 

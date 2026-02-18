@@ -76,6 +76,7 @@ For development, prefer running the CLI via `:app:run`.
 
 Docs:
 - `doc/STATE.md` (current focus + next steps)
+- `doc/USER_GUIDE.md` (user-facing command usage + failure envelope quick reference)
 - `doc/NORTH_STAR.md` (broader motivation + long-horizon success criteria)
 - `doc/ARCHITECTURE.md` (what BEAR is + v0 scope)
 - `doc/GOVERNANCE.md` (normative IR diff classification and boundary-expansion policy)

@@ -164,3 +164,6 @@ No essays. No philosophy.
 - Added hosted CI evidence snippets to `doc/m1-eval/RUN_MILESTONE.md`.
 - Implemented preview failure-envelope hardening in CLI: all non-zero exits in `validate`/`compile`/`check`/`pr-check` now emit deterministic footer (`CODE`/`PATH`/`REMEDIATION`) exactly once and as terminal stderr lines.
 - Added centralized exit/failure-code registry at `spec/commands/exit-codes.md` and aligned command specs + CLI contract tests, including `pr-check` exit `5` boundary verdict envelope and app-level internal fault-injection coverage.
+- Added user-facing CLI documentation at `doc/USER_GUIDE.md` and linked it from `README.md` and `doc/START_HERE.md` so command usage + failure envelope semantics are discoverable outside command-spec docs.
+- Expanded `doc/USER_GUIDE.md` intro to explicitly state BEAR’s intent in AI-assisted development: preserve implementation speed while making boundary expansion deterministic, reviewable, and CI-actionable.
+- Clarified `doc/USER_GUIDE.md` operating model: developers provide domain intent/review while agents are expected to handle IR updates and BEAR command mechanics within declared boundaries.
