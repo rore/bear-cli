@@ -184,6 +184,24 @@ Capture in `bear-cli/doc/m1-eval/` only:
 
 Do not add evaluator expected-output hints into `bear-account-demo`.
 
+Hosted CI evidence (M1.1 PR governance):
+
+Non-boundary PR run snippet:
+
+```text
+pr-gate: checking spec/withdraw.bear.yaml against origin/main
+pr-check: OK: NO_BOUNDARY_EXPANSION
+```
+
+Boundary-expanding PR run snippet:
+
+```text
+pr-gate: checking spec/withdraw.bear.yaml against origin/main
+pr-delta: BOUNDARY_EXPANDING: INVARIANTS: REMOVED: non_negative:balance
+pr-check: FAIL: BOUNDARY_EXPANSION_DETECTED
+Error: Process completed with exit code 5.
+```
+
 ## Quick Failure Triage
 
 1. Exit `64` from `bear-all`:

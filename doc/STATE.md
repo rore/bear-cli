@@ -9,7 +9,7 @@ Last Updated: 2026-02-18
 
 ## Current Focus
 
-Post-v0 milestone execution toward Preview Release: complete M1.1 demo PR-governance integration on top of `pr-check`.
+Post-v0 milestone execution toward Preview Release: M1.1 governance signal hardening completed (local + hosted CI proof); move to next preview hardening slice.
 
 ---
 
@@ -43,11 +43,11 @@ M1 acceptance required:
 
 ## Next Concrete Task
 
-Run end-to-end M1.1 PR governance verification in hosted CI:
+Start preview hard-requirement implementation in CLI contracts:
 
-1. Open demo PR from `scenario/pr-non-boundary` to `main` and confirm `pr-gate` workflow exits `0`.
-2. Open demo PR from `scenario/pr-boundary-expand` to `main` and confirm deterministic boundary output with exit `5`.
-3. Capture CI snippets and add concise evaluator evidence notes under `doc/m1-eval/`.
+1. Define and implement a deterministic failure envelope (`CODE`, `PATH`, `REMEDIATION`) for non-zero exits in `validate`, `compile`, `check`, and `pr-check`.
+2. Add/lock a single exit-code registry section across command specs and align tests/docs.
+3. Prioritize first preview enforcement slice in `check` (deterministic undeclared-reach detection target + dedicated exit semantics).
 
 Notes:
 - Gradle wrapper is available: use `.\gradlew.bat` (Windows) to build/run without a global Gradle install.
@@ -160,3 +160,5 @@ No essays. No philosophy.
 - Extended evaluator runbooks in `doc/m1-eval/RUN_MILESTONE.md` and `doc/m1-eval/SCENARIOS.md` to include PR governance pass/fail scenario runs and expected outputs.
 - Added explicit expected boundary `pr-gate` output snippet to `doc/m1-eval/RUN_MILESTONE.md` (with note that additional boundary delta lines are acceptable while exit `5` + fail verdict remain required).
 - Updated `bear-account-demo` PR gate setup to avoid cross-repo checkout failures: vendored BEAR CLI bundle under `tools/bear-cli`, wrappers now prefer vendored bundle, and CI workflow runs `pr-gate` directly from repo assets.
+- Confirmed hosted CI proof on GitHub PRs for M1.1: non-boundary scenario run emitted `pr-check: OK: NO_BOUNDARY_EXPANSION`; boundary scenario run emitted deterministic boundary delta + `pr-check: FAIL: BOUNDARY_EXPANSION_DETECTED` with exit `5`.
+- Added hosted CI evidence snippets to `doc/m1-eval/RUN_MILESTONE.md`.
