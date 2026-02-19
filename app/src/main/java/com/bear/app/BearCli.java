@@ -428,7 +428,20 @@ public final class BearCli {
                 }
 
                 ProjectTestResult testResult = runProjectTests(root);
-                if (testResult.status == ProjectTestStatus.FAILED) {
+                if (testResult.status == ProjectTestStatus.LOCKED) {
+                    String detail = "root-level project test runner lock in projectRoot " + entry.getKey();
+                    for (int idx : entry.getValue()) {
+                        blockResults.set(idx, rootFailure(
+                            blockResults.get(idx),
+                            ExitCode.IO,
+                            "IO_ERROR",
+                            FailureCode.IO_ERROR,
+                            "project.tests",
+                            detail,
+                            "Release Gradle wrapper lock or set isolated GRADLE_USER_HOME, then rerun `bear check --all`."
+                        ));
+                    }
+                } else if (testResult.status == ProjectTestStatus.FAILED) {
                     rootTestFailed++;
                     for (int idx : entry.getValue()) {
                         blockResults.set(idx, rootFailure(
@@ -821,6 +834,23 @@ public final class BearCli {
             }
 
             ProjectTestResult testResult = runProjectTests(projectRoot);
+            if (testResult.status == ProjectTestStatus.LOCKED) {
+                String lockLine = firstGradleLockLine(testResult.output);
+                String ioLine = lockLine == null
+                    ? "io: IO_ERROR: PROJECT_TEST_LOCK: Gradle wrapper lock detected"
+                    : "io: IO_ERROR: PROJECT_TEST_LOCK: " + lockLine;
+                diagnostics.add(ioLine);
+                diagnostics.addAll(tailLines(testResult.output));
+                return checkFailure(
+                    ExitCode.IO,
+                    diagnostics,
+                    "IO_ERROR",
+                    FailureCode.IO_ERROR,
+                    "project.tests",
+                    "Release Gradle wrapper lock or set isolated GRADLE_USER_HOME, then rerun `bear check <ir-file> --project <path>`.",
+                    ioLine
+                );
+            }
             if (testResult.status == ProjectTestStatus.FAILED) {
                 diagnostics.add("check: TEST_FAILED: project tests failed");
                 diagnostics.addAll(tailLines(testResult.output));
@@ -2477,6 +2507,10 @@ public final class BearCli {
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.directory(projectRoot.toFile());
         pb.redirectErrorStream(true);
+        Map<String, String> environment = pb.environment();
+        if (!environment.containsKey("GRADLE_USER_HOME")) {
+            environment.put("GRADLE_USER_HOME", projectRoot.resolve(".bear-gradle-user-home").toString());
+        }
         Process process = pb.start();
 
         String output;
@@ -2494,7 +2528,31 @@ public final class BearCli {
         if (process.exitValue() == 0) {
             return new ProjectTestResult(ProjectTestStatus.PASSED, output);
         }
+        if (isGradleWrapperLockOutput(output)) {
+            return new ProjectTestResult(ProjectTestStatus.LOCKED, output);
+        }
         return new ProjectTestResult(ProjectTestStatus.FAILED, output);
+    }
+
+    private static boolean isGradleWrapperLockOutput(String output) {
+        String lower = normalizeLf(output).toLowerCase();
+        if (lower.contains(".zip.lck")) {
+            return true;
+        }
+        if (lower.contains("gradlewrappermain") && lower.contains("access is denied")) {
+            return true;
+        }
+        return lower.contains("project_test_gradle_lock_simulated");
+    }
+
+    private static String firstGradleLockLine(String output) {
+        for (String line : normalizeLf(output).lines().toList()) {
+            String lower = line.toLowerCase();
+            if (lower.contains(".zip.lck") || lower.contains("access is denied")) {
+                return line.trim();
+            }
+        }
+        return null;
     }
 
     private static Path resolveWrapper(Path projectRoot) throws IOException {
@@ -2835,7 +2893,8 @@ public final class BearCli {
     private enum ProjectTestStatus {
         PASSED,
         FAILED,
-        TIMEOUT
+        TIMEOUT,
+        LOCKED
     }
 
     private record ProjectTestResult(ProjectTestStatus status, String output) {

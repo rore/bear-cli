@@ -607,6 +607,53 @@ class BearCliTest {
     }
 
     @Test
+    void checkSetsGradleUserHomeByDefault(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+
+        Path marker = tempDir.resolve("gradle-user-home.txt");
+        String markerPath = marker.toString();
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho %GRADLE_USER_HOME%>\"" + markerPath + "\"\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho \"$GRADLE_USER_HOME\" > \"" + markerPath.replace("\\", "\\\\") + "\"\nexit 0\n"
+        );
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(0, check.exitCode);
+        String actual = Files.readString(marker, StandardCharsets.UTF_8).trim();
+        String expected = System.getenv("GRADLE_USER_HOME");
+        if (expected == null || expected.isBlank()) {
+            expected = tempDir.resolve(".bear-gradle-user-home").toString();
+        }
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    void checkProjectTestGradleLockReturnsIoError(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho java.io.FileNotFoundException: C:\\\\tmp\\\\gradle-8.12.1-bin.zip.lck (Access is denied)\r\necho PROJECT_TEST_GRADLE_LOCK_SIMULATED\r\nexit /b 1\r\n",
+            "#!/usr/bin/env sh\necho \"java.io.FileNotFoundException: /tmp/gradle-8.12.1-bin.zip.lck (Access is denied)\"\necho \"PROJECT_TEST_GRADLE_LOCK_SIMULATED\"\nexit 1\n"
+        );
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(74, check.exitCode);
+        assertTrue(normalizeLf(check.stderr).startsWith("io: IO_ERROR: PROJECT_TEST_LOCK:"));
+        assertFailureEnvelope(
+            check.stderr,
+            "IO_ERROR",
+            "project.tests",
+            "Release Gradle wrapper lock or set isolated GRADLE_USER_HOME, then rerun `bear check <ir-file> --project <path>`."
+        );
+    }
+
+    @Test
     void checkProjectTestFailureReturnsExit4AndTail(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
         Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
@@ -964,6 +1011,29 @@ class BearCliTest {
         });
         assertEquals(74, run.exitCode);
         assertTrue(run.stderr.startsWith("check: IO_ERROR: ORPHAN_MARKER: z/build/generated/bear/surfaces/orphan.surface.json"));
+    }
+
+    @Test
+    void checkAllClassifiesGradleLockAsIoError(@TempDir Path tempDir) throws Exception {
+        MultiBlockFixture fixture = createMultiBlockFixture(tempDir);
+        Path alphaRoot = fixture.projectRoots().get(0);
+        writeProjectWrapper(
+            alphaRoot,
+            "@echo off\r\necho java.io.FileNotFoundException: C:\\\\tmp\\\\gradle-8.12.1-bin.zip.lck (Access is denied)\r\nexit /b 1\r\n",
+            "#!/usr/bin/env sh\necho \"java.io.FileNotFoundException: /tmp/gradle-8.12.1-bin.zip.lck (Access is denied)\"\nexit 1\n"
+        );
+
+        CliRunResult run = runCli(new String[] {
+            "check", "--all", "--project", fixture.repoRoot().toString()
+        });
+        assertEquals(74, run.exitCode);
+        assertTrue(normalizeLf(run.stderr).contains("CATEGORY: IO_ERROR"));
+        assertFailureEnvelope(
+            run.stderr,
+            "REPO_MULTI_BLOCK_FAILED",
+            "bear.blocks.yaml",
+            "Review per-block results above and fix failing blocks, then rerun the command."
+        );
     }
 
     @Test

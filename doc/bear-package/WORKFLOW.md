@@ -98,6 +98,15 @@ Index troubleshooting:
 8. `70` internal failure:
 - collect output and report as tool defect
 
+Lock and environment troubleshooting:
+- If BEAR compile/check fails with file-lock/permission signatures (for example `.zip.lck`, `Access is denied`, generated-file replacement lock), treat it as tooling/environment IO issue first.
+- Do not change unrelated IR to match stale generated outputs.
+- Do not introduce workaround classes under `com.bear.generated.*`.
+- Remediate by:
+  - rerunning with isolated `GRADLE_USER_HOME`
+  - ensuring no concurrent gate/test process holds locks
+  - rerunning compile/check after lock release
+
 ## Constraints
 
 - No generated-file edits.
@@ -106,6 +115,7 @@ Index troubleshooting:
 - No implementation-first bypass in greenfield mode.
 - Prefer minimal sufficient design; avoid unnecessary architecture expansion.
 - If new production architecture is introduced, include a short necessity rationale mapped to requirements and BEAR boundaries.
+- For extension prompts that keep existing behavior unchanged, prefer extending existing blocks; add new blocks only for distinct lifecycle/effect boundaries.
 
 ## Invalid Patterns (Fail the Run)
 

@@ -27,6 +27,8 @@ Purpose:
 11. If `bear validate`/`bear compile`/`bear check` fails, fix BEAR artifacts and rerun; do not bypass by writing non-BEAR replacement architecture.
 12. Prefer the smallest design that satisfies requirements and BEAR constraints.
 13. If you add new production architecture (platform/adapters/executors/etc.), include a brief necessity rationale tied to requirements and boundary ownership.
+14. If BEAR tooling fails with IO/lock/environment defects, stop and report the tooling failure; do not mutate unrelated IR to fit stale generated outputs.
+15. Never add workaround type stubs/classes under `src/main/java/com/bear/generated/**` (for example fake `BigDecimal`); only generated files and user-owned `*Impl.java` are allowed there.
 
 ## Session Baseline Check
 
@@ -69,6 +71,7 @@ Split into multiple blocks when responsibilities imply distinct authority bounda
 - different contract ownership/evolution cadence
 
 Keep a single block when work stays within one existing responsibility boundary.
+When a prompt says to keep existing behavior unchanged, prefer extending existing blocks unless a new lifecycle/effect boundary is explicitly required.
 
 ## IR-First Rules
 

@@ -195,3 +195,11 @@ No essays. No philosophy.
 - Hardened agent/runbook anti-bypass rules after an implementation-first greenfield run: package docs now require IR->validate->compile before implementation edits, forbid replacement contracts bypassing BEAR generation, and mark greenfield implementation-first behavior as eval failure.
 - Synced hardened anti-bypass rules into demo-distributed `BEAR_AGENT.md` and `WORKFLOW.md` so isolated eval agents receive the same IR-first constraints as package source docs.
 - Added minimal-sufficient-design policy to package+demo BEAR instructions, including required architecture rationale when new production components are introduced.
+- Updated `doc/m1-eval/RUN_MULTI_BLOCK.md` Scenario 1 prompt to a lower-complexity multi-block target (scheduled debit worker, no durability/external integration requirement) while preserving the BEAR checks under evaluation.
+- Corrected `doc/m1-eval/RUN_MULTI_BLOCK.md` to match executed flow: Scenario 1 prompt restored to the run-used version and Scenario 2 now explicitly starts from `scenario/2-extension-from-greenfield-output` with a new-block notification extension prompt.
+- Added runbook timeout handling note for Scenario 2: exit `124` from tooling/harness during long gate/test commands is treated as infrastructure timeout noise and requires rerun with longer timeout before evaluating BEAR outcomes.
+- Refined Scenario 2 eval prompt to a minimal feature phrasing that still pressures decomposition into existing-block extension plus a separate async failure-notification responsibility.
+- Hardened JVM codegen for non-decimal blocks by always importing `java.math.BigDecimal` in generated entrypoints and preventing doubled `Port` suffixes in generated interface names.
+- Made compile generation lock-resilient on Windows using staging-tree sync plus bounded retry/backoff and deterministic `WINDOWS_FILE_LOCK` IO diagnostics.
+- Updated `bear check` project-test execution to default `GRADLE_USER_HOME` isolation and classify Gradle wrapper lock signatures as `IO_ERROR` (not `TEST_FAILURE`).
+- Strengthened BEAR package rules to stop on tooling/IO defects and forbid workaround non-`*Impl.java` classes under `com.bear.generated.*`.

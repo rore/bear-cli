@@ -70,6 +70,7 @@ Prompt:
 
 Prompt note:
 - This is the tracked Scenario 1 prompt version for current multi-block reruns.
+- In-memory storage/adapters are acceptable for this eval; durability and external integrations are out of scope for Scenario 1.
 
 Expected agent behavior:
 1. Create `spec/*.bear.yaml` from scratch.
@@ -115,15 +116,16 @@ Use this as deterministic base for extension PR governance.
 ## Scenario 2: Extension (Update Existing + Add New)
 
 Start branch:
-- create from `scenario/1-greenfield-pass`
+- current cycle baseline is `scenario/2-extension-from-greenfield-output`
+- create a new working branch from that baseline (do not modify `scenario/1-greenfield-multiblock-start`)
 
 Prompt:
 
-`Add scheduled transfers. Scheduling must be durable (survive restart) and executed asynchronously. Enforce daily limits by tier at execution time and record audit for both scheduling and execution.`
+`Extend the current scheduled-transfer service with two features: (1) add a read API to return schedule status and failure reason by scheduleId, and (2) add a separate asynchronous notification job that scans failed schedules and emits exactly one notification per scheduleId. Keep existing immediate API and existing execution worker behavior unchanged. Notification emission must be idempotent by notification request id and must not emit for executed schedules.`
 
 Expected agent behavior:
-1. Modify at least one existing block.
-2. Add at least one new block for scheduling/execution responsibility.
+1. Modify at least one existing block (account-service and/or scheduled-transfer-worker).
+2. Add one new block for failed-schedule notification responsibility.
 3. Update `bear.blocks.yaml`.
 4. Compile and implement to green.
 
@@ -137,8 +139,12 @@ Commands:
 
 ```powershell
 .\bin\bear-all.ps1
-.\bin\pr-gate.ps1 origin/scenario/1-greenfield-pass
+.\bin\pr-gate.ps1 origin/scenario/2-extension-from-greenfield-output
 ```
+
+Timeout handling note:
+- If a tool/harness returns `124` while running `bear-all`/`pr-gate`/Gradle, treat it as execution-timeout noise, not an automatic BEAR-methodology failure.
+- Re-run the same command with a longer timeout budget and use the final deterministic exit/output as evidence.
 
 ## Evidence to Capture
 
