@@ -2,7 +2,7 @@
 
 ## Status
 
-Ready
+Parked (non-blocking)
 
 ## Milestone Target
 
@@ -14,13 +14,13 @@ P1
 
 ## Goal
 
-Close or explicitly waive all open Preview Release checklist items tracked in `doc/PROGRAM_BOARD.md`.
+Optional release-closure cleanup for Preview milestone artifacts.
 
 ## Scope
 
-- Capture explicit self-hosting acceptance evidence for preview baseline.
-- Resolve external integration requirement (implement + prove, or formally scope out with release decision note).
-- Publish a closure addendum that maps each preview checklist requirement to `DONE`/`OPEN` with concrete evidence links.
+- Optional documentation cleanup for preview-release notes.
+- Optional decision-note cleanup for historical milestone artifacts.
+- No required product/code changes.
 
 ## Non-goals
 
@@ -30,11 +30,9 @@ Close or explicitly waive all open Preview Release checklist items tracked in `d
 
 ## Acceptance criteria
 
-1. `doc/PROGRAM_BOARD.md` Preview checklist has no ambiguous items (`OPEN` items are either closed or formally waived with decision note).
-2. Self-hosting evidence is linked from board and release notes.
-3. External-integration requirement is either evidenced or explicitly re-scoped with dated rationale.
-4. Preview closure addendum exists under `doc/releases/` and is linked from board.
+1. Any edits remain documentation-only.
+2. No impact to active feature queue or milestone feature status.
 
-## Dependencies
+## Note
 
-- Existing preview checkpoint notes in `doc/releases/PREVIEW_CHECKPOINT_2026-02-19.md`
+This item is intentionally non-blocking for feature development.

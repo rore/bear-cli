@@ -10,13 +10,14 @@ Session handoff status is tracked in `doc/STATE.md`.
 
 Use these files by intent, not interchangeably:
 - `doc/ROADMAP.md`: milestone feature contracts and done criteria (what BEAR must do).
-- `doc/PROGRAM_BOARD.md`: milestone closure checklist/evidence state and execution queue (what remains to close/release).
+- `doc/PROGRAM_BOARD.md`: milestone feature status and execution queue (what to build next).
 - `doc/STATE.md`: short session handoff (what to do next in this work window).
 
 Important:
-- The active queue in `doc/PROGRAM_BOARD.md` can contain closure/admin work items.
+- The active queue in `doc/PROGRAM_BOARD.md` is product-development first.
 - Do not treat queue order as the canonical feature list for a milestone.
 - For "what are preview features?", use `Preview Release -> Preview contract (must ship)` in this file.
+- For "where do we stand on Preview features right now?", use `doc/PROGRAM_BOARD.md` -> `Preview Feature Status (Roadmap Contract)`.
 
 ## Milestone Pipeline
 

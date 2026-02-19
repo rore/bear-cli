@@ -39,4 +39,4 @@ or (repo mode, later):
 
 ## Dependencies
 
-- `doc/backlog/P1_PREVIEW_CLOSURE_GAPS.md` closed or explicitly waived.
+- none (ready to start).
