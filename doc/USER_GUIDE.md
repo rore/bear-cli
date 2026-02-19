@@ -46,6 +46,9 @@ For full normative command contracts, see:
 - `spec/commands/pr-check.md`
 - `spec/commands/exit-codes.md`
 
+For full invariant intent and enforcement status (`ENFORCED`/`PARTIAL`/`PLANNED`), see:
+- `doc/INVARIANT_CHARTER.md`
+
 ## Core commands
 
 ### 1. Validate IR
@@ -87,6 +90,7 @@ Use when:
 
 Behavior:
 - fails with drift exit code when generated baseline is stale/missing
+- fails with undeclared-reach exit code when covered direct HTTP client usage bypasses declared ports
 - runs project tests only after no-drift result
 
 ### 4. PR governance gate (base diff classification)
@@ -135,10 +139,31 @@ Disallowed:
 - `3` drift failure
 - `4` project test failure (including timeout)
 - `5` boundary expansion detected in `pr-check`
-- `6` reserved for undeclared-reach enforcement (not active yet)
+- `6` undeclared reach detected in `check` (`CODE=UNDECLARED_REACH`)
 - `64` usage/argument failure
 - `70` internal/unexpected failure
 - `74` IO/git failure
+
+## Invariant Contract (preview)
+
+`bear check` enforces:
+- deterministic generated-artifact drift gate
+- covered undeclared-reach gate for direct HTTP bypass surfaces
+- project tests (only after drift and undeclared-reach pass)
+
+`bear pr-check` enforces:
+- deterministic base-vs-head boundary-delta visibility
+- explicit boundary-expansion verdict for CI/review
+
+Planned after preview:
+- broader undeclared-reach coverage classes
+- dependency-direction and cross-domain leakage hardening
+- additional structural invariants listed in `doc/INVARIANT_CHARTER.md`
+
+All non-zero command exits include deterministic footer lines:
+- `CODE=...`
+- `PATH=...`
+- `REMEDIATION=...`
 
 ## Typical loop
 

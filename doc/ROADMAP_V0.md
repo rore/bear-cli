@@ -67,6 +67,8 @@ Preview philosophy and constraints (frozen):
   - impl code is user/agent-owned and never overwritten
 - `bear check` is the canonical CI gate.
 - all commands must emit stable exit codes and greppable output lines.
+- preview invariant contract is defined in `doc/INVARIANT_CHARTER.md`.
+- preview "must enforce" invariants are charter preview items 1-7 (with explicit preview scope caveat on undeclared-reach coverage).
 
 Preview feature contract (must all ship with acceptance criteria):
 
@@ -228,6 +230,9 @@ Potential scope:
 
 ## Priority 2 (next after preview)
 
+Invariant charter mapping:
+- this section corresponds to charter Priority 2 invariants (8-12).
+
 1. `bear fix` for generated artifacts only
 - auto-normalize/rewrite generated outputs to canonical form
 - never touches impl code
@@ -250,6 +255,9 @@ Potential scope:
 - optional deterministic explain mode
 
 ## Priority 3 (strategic extensions)
+
+Invariant charter mapping:
+- this section corresponds to charter Priority 3 invariants (13-16).
 
 1. Capability templates
 - packs that generate ports/effects scaffolding, invariants, structural tests, standard stubs

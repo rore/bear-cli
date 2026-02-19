@@ -1,6 +1,7 @@
 # BEAR v0 Governance Policy
 
 This document is normative for BEAR v0 governance.
+For the full invariant catalog and enforcement status, see `doc/INVARIANT_CHARTER.md`.
 
 ## Purpose
 

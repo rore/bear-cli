@@ -13,7 +13,7 @@ This file is the single source of truth for:
 - `3`: drift failure
 - `4`: project test failure (including timeout)
 - `5`: boundary expansion detected (`pr-check`)
-- `6`: reserved for `UNDECLARED_REACH` (not active yet)
+- `6`: undeclared reach detected (`check`)
 - `64`: usage/argument failure
 - `70`: internal/unexpected failure
 - `74`: IO/git failure
@@ -55,6 +55,7 @@ Disallowed:
 - `TEST_FAILURE`
 - `TEST_TIMEOUT`
 - `BOUNDARY_EXPANSION`
+- `UNDECLARED_REACH`
 - `INTERNAL_ERROR`
 
 ## IO Classification Rule
@@ -66,3 +67,14 @@ Use `IO_GIT` when failure comes from:
 Use `IO_ERROR` when failure comes from:
 - filesystem/path/permission operations
 - project-root file reads/writes not owned by git invocation/result handling
+
+## Undeclared Reach Classification Rule
+
+Use `UNDECLARED_REACH` when `bear check` detects covered preview direct external-reach usage that bypasses declared ports.
+
+Expected locator/remediation pattern:
+- `PATH` should identify the first violating repo-relative source file (deterministic ordering).
+- `REMEDIATION` should instruct:
+  - declare required port/op in IR
+  - regenerate via `bear compile`
+  - route call through generated port interface

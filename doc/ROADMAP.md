@@ -44,6 +44,11 @@ Preview additions that are now mandatory:
   - one numeric registry across commands
   - contract tests enforce failure-envelope coverage
 
+Preview invariant alignment:
+- preview invariant source of truth is `doc/INVARIANT_CHARTER.md`
+- preview "must enforce" set is the charter preview list
+- broad charter claims use explicit scope caveat for preview static detection coverage
+
 Position in the wider stack:
 - In scope: static/CI structural enforcement.
 - Out of scope for preview: runtime orchestration, sandboxing, policy gateways, eval platforms.
@@ -167,6 +172,7 @@ Success criteria:
 ## Explicitly Out of Scope (for now)
 
 - runtime sandboxing
+- runtime permission enforcement and policy engines
 - full formal behavioral verification
 - complex workflow/orchestration modeling
 - rich domain DSL for business semantics

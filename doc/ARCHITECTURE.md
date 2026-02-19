@@ -39,6 +39,9 @@ In practical terms:
 Core litmus:
 - If an agent can add new external interaction capability without a small, obvious, deterministic signal, BEAR is not doing its job.
 
+Invariant source of truth:
+- `doc/INVARIANT_CHARTER.md` is normative for invariant definitions and current enforcement status (`ENFORCED`/`PARTIAL`/`PLANNED`).
+
 ## Core Principles
 1. Deterministic core
    - Validation, normalization, and code generation are deterministic and reproducible.
@@ -85,6 +88,7 @@ If a block passes `bear check`, then:
 - it respects declared idempotency semantics under generated tests
 - generated artifacts are unchanged from deterministic regeneration (drift detection)
 - boundary-governance signals are deterministic for covered v0 expansion cases
+- covered undeclared-reach bypass patterns fail deterministically (`UNDECLARED_REACH`, exit `6`) in preview scope
 
 ## What BEAR Does Not Guarantee in v0
 - business correctness beyond declared invariants
@@ -97,7 +101,7 @@ If a block passes `bear check`, then:
 
 Important caveat:
 - v0 structural boundaries are strong at the generated surface.
-- v0 is not yet full static enforcement against every possible call pattern inside user impl code.
+- v0 undeclared-reach static detection is intentionally scoped to covered preview surfaces, not every possible external API.
 
 BEAR v0 is structural enforcement plus deterministic guardrails.
 Idempotency in v0 means deterministic replay safety in the test harness, not concurrency-safe duplicate handling.

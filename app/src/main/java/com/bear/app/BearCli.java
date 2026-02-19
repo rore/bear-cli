@@ -12,8 +12,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -295,6 +298,20 @@ public final class BearCli {
                     FailureCode.DRIFT_DETECTED,
                     "build/generated/bear",
                     "Run `bear compile <ir-file> --project <path>`, then rerun `bear check <ir-file> --project <path>`."
+                );
+            }
+
+            List<UndeclaredReachFinding> undeclaredReach = scanUndeclaredReach(projectRoot);
+            if (!undeclaredReach.isEmpty()) {
+                for (UndeclaredReachFinding finding : undeclaredReach) {
+                    err.println("check: UNDECLARED_REACH: " + finding.path() + ": " + finding.surface());
+                }
+                return fail(
+                    err,
+                    ExitCode.UNDECLARED_REACH,
+                    FailureCode.UNDECLARED_REACH,
+                    undeclaredReach.get(0).path(),
+                    "Declare a port/op in IR, run bear compile, and route call through generated port interface."
                 );
             }
 
@@ -1039,6 +1056,44 @@ public final class BearCli {
         return files;
     }
 
+    private static List<UndeclaredReachFinding> scanUndeclaredReach(Path projectRoot) throws IOException {
+        List<UndeclaredReachFinding> findings = new ArrayList<>();
+        if (!Files.isDirectory(projectRoot)) {
+            return findings;
+        }
+        Files.walkFileTree(projectRoot, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                if (!attrs.isRegularFile()) {
+                    return FileVisitResult.CONTINUE;
+                }
+                String rel = projectRoot.relativize(file).toString().replace('\\', '/');
+                if (!rel.endsWith(".java") || isUndeclaredReachExcluded(rel)) {
+                    return FileVisitResult.CONTINUE;
+                }
+                String content = Files.readString(file, StandardCharsets.UTF_8);
+                for (UndeclaredReachSurface surface : UNDECLARED_REACH_SURFACES) {
+                    if (surface.matches(content)) {
+                        findings.add(new UndeclaredReachFinding(rel, surface.label()));
+                    }
+                }
+                return FileVisitResult.CONTINUE;
+            }
+        });
+        findings.sort(
+            Comparator.comparing(UndeclaredReachFinding::path)
+                .thenComparing(UndeclaredReachFinding::surface)
+        );
+        return findings;
+    }
+
+    private static boolean isUndeclaredReachExcluded(String relPath) {
+        return relPath.startsWith("build/")
+            || relPath.startsWith(".gradle/")
+            || relPath.startsWith("src/test/")
+            || relPath.startsWith("build/generated/bear/");
+    }
+
     private static ProjectTestResult runProjectTests(Path projectRoot) throws IOException, InterruptedException {
         Path wrapper = resolveWrapper(projectRoot);
         List<String> command = new ArrayList<>();
@@ -1212,6 +1267,7 @@ public final class BearCli {
         private static final int DRIFT = 3;
         private static final int TEST_FAILURE = 4;
         private static final int BOUNDARY_EXPANSION = 5;
+        private static final int UNDECLARED_REACH = 6;
         private static final int USAGE = 64;
         private static final int IO = 74;
         private static final int INTERNAL = 70;
@@ -1228,8 +1284,29 @@ public final class BearCli {
         private static final String TEST_FAILURE = "TEST_FAILURE";
         private static final String TEST_TIMEOUT = "TEST_TIMEOUT";
         private static final String BOUNDARY_EXPANSION = "BOUNDARY_EXPANSION";
+        private static final String UNDECLARED_REACH = "UNDECLARED_REACH";
         private static final String INTERNAL_ERROR = "INTERNAL_ERROR";
     }
+
+    private record UndeclaredReachFinding(String path, String surface) {
+    }
+
+    private record UndeclaredReachSurface(String label, Pattern pattern) {
+        private boolean matches(String content) {
+            return pattern.matcher(content).find();
+        }
+    }
+
+    private static final List<UndeclaredReachSurface> UNDECLARED_REACH_SURFACES = List.of(
+        new UndeclaredReachSurface("java.net.http.HttpClient", Pattern.compile("\\bjava\\.net\\.http\\.HttpClient\\b")),
+        new UndeclaredReachSurface("java.net.URL#openConnection", Pattern.compile("\\bjava\\.net\\.URL\\b(?s).*\\bopenConnection\\s*\\(")),
+        new UndeclaredReachSurface("okhttp3.OkHttpClient", Pattern.compile("\\bokhttp3\\.OkHttpClient\\b")),
+        new UndeclaredReachSurface(
+            "org.springframework.web.client.RestTemplate",
+            Pattern.compile("\\borg\\.springframework\\.web\\.client\\.RestTemplate\\b")
+        ),
+        new UndeclaredReachSurface("java.net.HttpURLConnection", Pattern.compile("\\bjava\\.net\\.HttpURLConnection\\b"))
+    );
 
     private enum DriftType {
         ADDED("ADDED", 0),

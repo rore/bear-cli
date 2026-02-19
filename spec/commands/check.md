@@ -1,12 +1,13 @@
-# `bear check` (v1.2)
+# `bear check` (v1.3)
 
 ## Command
 `bear check <ir-file> --project <path>`
 
-`bear check` v1.2 is a deterministic gate for:
+`bear check` v1.3 is a deterministic gate for:
 1. drift regeneration enforcement on BEAR-owned artifacts
-2. project test execution after drift passes
-3. boundary-expansion signaling derived from BEAR surface manifests
+2. undeclared-reach enforcement for covered preview JVM direct HTTP surfaces
+3. project test execution after drift and undeclared-reach pass
+4. boundary-expansion signaling derived from BEAR surface manifests
 
 For base-branch PR governance classification, use `bear pr-check`.
 
@@ -14,17 +15,19 @@ It performs:
 1. Parse + validate + normalize IR.
 2. Compile normalized IR into a temporary project root.
 3. Diff temp BEAR-owned tree against project BEAR-owned tree.
-4. If drift passes, execute project tests via Gradle wrapper.
-5. Fail deterministically on mismatch or test failure.
+4. If drift passes, run undeclared-reach scan on project source tree.
+5. If undeclared-reach passes, execute project tests via Gradle wrapper.
+6. Fail deterministically on mismatch or test failure.
 
 ## Scope (v1)
 - Includes:
   - drift detection for BEAR-owned generated tree
 - Includes:
   - project test execution after no-drift result
+- Includes:
+  - covered undeclared-reach static checks for preview JVM HTTP surfaces
 - Excludes:
-  - user-owned impl file checks
-  - static boundary isolation checks
+  - full static isolation checks for arbitrary external surfaces beyond preview coverage
 
 ## Baseline and Candidate
 - Baseline:
@@ -38,6 +41,7 @@ Exit codes are defined centrally in `spec/commands/exit-codes.md`.
 - `2`: schema/semantic IR validation error
 - `3`: drift detected (including missing baseline)
 - `4`: project test failure (including timeout)
+- `6`: undeclared reach detected
 - `64`: usage error
 - `74`: IO error
 - `70`: internal/unexpected error
@@ -97,13 +101,40 @@ Output order in `check`:
 1. baseline manifest diagnostics (if any)
 2. boundary signal lines
 3. drift lines
-4. test failure/timeout output (if reached)
-5. failure envelope (if non-zero)
+4. undeclared-reach lines (if any)
+5. test failure/timeout output (if reached)
+6. failure envelope (if non-zero)
 
 Relationship to drift:
 - boundary signaling is a classification layer on top of drift context
 - not a separate verdict channel
 - exit codes remain unchanged
+
+## Undeclared Reach Enforcement (v1.3 preview)
+Detection runs only after drift pass and before project tests.
+
+Fatal output lines (stderr):
+- `check: UNDECLARED_REACH: <relative/path>: <surface>`
+
+Surfaces (preview JVM contract):
+- `java.net.http.HttpClient`
+- `java.net.URL#openConnection`
+- `okhttp3.OkHttpClient`
+- `org.springframework.web.client.RestTemplate`
+- `java.net.HttpURLConnection`
+
+Exclusions:
+- generated tree under `build/generated/bear/**`
+- test sources under `src/test/**`
+- build output directories (`build/**`, `.gradle/**`)
+
+Ordering (deterministic):
+- sort by relative path lexicographic
+- then by surface token lexicographic
+
+Verdict:
+- any undeclared-reach finding fails with exit `6` and `CODE=UNDECLARED_REACH`
+- project tests do not run when undeclared-reach is detected
 
 ## Manifest diagnostics
 Baseline manifest problems are warning-only:

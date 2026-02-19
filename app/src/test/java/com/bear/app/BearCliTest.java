@@ -702,6 +702,134 @@ class BearCliTest {
     }
 
     @Test
+    void checkUndeclaredReachReturnsExit6AndSkipsProjectTests(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+
+        Path marker = tempDir.resolve("wrapper-ran.txt");
+        String markerPath = marker.toString();
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho ran>\"" + markerPath + "\"\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho ran > \"" + markerPath.replace("\\", "\\\\") + "\"\nexit 0\n"
+        );
+
+        Path impl = tempDir.resolve("src/main/java/com/bear/generated/withdraw/WithdrawImpl.java");
+        Files.writeString(impl, "\n// violation\njava.net.http.HttpClient\n", StandardOpenOption.APPEND);
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(6, check.exitCode);
+        String stderr = normalizeLf(check.stderr);
+        assertTrue(stderr.contains("check: UNDECLARED_REACH: src/main/java/com/bear/generated/withdraw/WithdrawImpl.java: java.net.http.HttpClient"));
+        assertFalse(Files.exists(marker));
+        assertFailureEnvelope(
+            check.stderr,
+            "UNDECLARED_REACH",
+            "src/main/java/com/bear/generated/withdraw/WithdrawImpl.java",
+            "Declare a port/op in IR, run bear compile, and route call through generated port interface."
+        );
+    }
+
+    @Test
+    void checkUndeclaredReachDetectsCoveredHttpSurfaces(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+
+        Path srcRoot = tempDir.resolve("src/main/java/example");
+        Files.createDirectories(srcRoot);
+        Files.writeString(srcRoot.resolve("A.java"), "class A { String s = \"java.net.http.HttpClient\"; }");
+        Files.writeString(srcRoot.resolve("B.java"), "class B { String s = \"java.net.URL\"; String t = \"openConnection(\"; }");
+        Files.writeString(srcRoot.resolve("C.java"), "class C { String s = \"okhttp3.OkHttpClient\"; }");
+        Files.writeString(srcRoot.resolve("D.java"), "class D { String s = \"org.springframework.web.client.RestTemplate\"; }");
+        Files.writeString(srcRoot.resolve("E.java"), "class E { String s = \"java.net.HttpURLConnection\"; }");
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(6, check.exitCode);
+        List<String> lines = nonEnvelopeLines(check.stderr).stream()
+            .filter(line -> line.startsWith("check: UNDECLARED_REACH: "))
+            .toList();
+        assertEquals(List.of(
+            "check: UNDECLARED_REACH: src/main/java/example/A.java: java.net.http.HttpClient",
+            "check: UNDECLARED_REACH: src/main/java/example/B.java: java.net.URL#openConnection",
+            "check: UNDECLARED_REACH: src/main/java/example/C.java: okhttp3.OkHttpClient",
+            "check: UNDECLARED_REACH: src/main/java/example/D.java: org.springframework.web.client.RestTemplate",
+            "check: UNDECLARED_REACH: src/main/java/example/E.java: java.net.HttpURLConnection"
+        ), lines);
+    }
+
+    @Test
+    void checkUndeclaredReachSkipsExcludedPaths(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+
+        Files.createDirectories(tempDir.resolve("src/test/java/example"));
+        Files.writeString(tempDir.resolve("src/test/java/example/TestOnly.java"), "class T { String s = \"java.net.http.HttpClient\"; }");
+        Files.createDirectories(tempDir.resolve("build/tmp/example"));
+        Files.writeString(tempDir.resolve("build/tmp/example/BuildOnly.java"), "class B { String s = \"okhttp3.OkHttpClient\"; }");
+        Files.createDirectories(tempDir.resolve(".gradle/tmp/example"));
+        Files.writeString(tempDir.resolve(".gradle/tmp/example/GradleOnly.java"), "class G { String s = \"java.net.HttpURLConnection\"; }");
+
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(0, check.exitCode);
+        assertEquals("", check.stderr);
+        assertTrue(check.stdout.startsWith("check: OK"));
+    }
+
+    @Test
+    void checkUndeclaredReachOrderingIsDeterministic(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+
+        Path a = tempDir.resolve("src/main/java/example/A.java");
+        Path b = tempDir.resolve("src/main/java/example/B.java");
+        Files.createDirectories(a.getParent());
+        Files.writeString(a, "class A { String s = \"org.springframework.web.client.RestTemplate\"; String t = \"okhttp3.OkHttpClient\"; }");
+        Files.writeString(b, "class B { String s = \"java.net.http.HttpClient\"; }");
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(6, check.exitCode);
+        List<String> lines = nonEnvelopeLines(check.stderr).stream()
+            .filter(line -> line.startsWith("check: UNDECLARED_REACH: "))
+            .toList();
+        assertEquals(List.of(
+            "check: UNDECLARED_REACH: src/main/java/example/A.java: okhttp3.OkHttpClient",
+            "check: UNDECLARED_REACH: src/main/java/example/A.java: org.springframework.web.client.RestTemplate",
+            "check: UNDECLARED_REACH: src/main/java/example/B.java: java.net.http.HttpClient"
+        ), lines);
+    }
+
+    @Test
+    void checkDriftTakesPrecedenceOverUndeclaredReach(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+
+        Files.writeString(tempDir.resolve("build/generated/bear/drift-added.txt"), "drift");
+        Path impl = tempDir.resolve("src/main/java/com/bear/generated/withdraw/WithdrawImpl.java");
+        Files.writeString(impl, "\njava.net.http.HttpClient\n", StandardOpenOption.APPEND);
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(3, check.exitCode);
+        assertFalse(normalizeLf(check.stderr).contains("check: UNDECLARED_REACH:"));
+        assertFailureEnvelope(
+            check.stderr,
+            "DRIFT_DETECTED",
+            "build/generated/bear",
+            "Run `bear compile <ir-file> --project <path>`, then rerun `bear check <ir-file> --project <path>`."
+        );
+    }
+
+    @Test
     void prCheckRequiresExpectedArgs() {
         CliRunResult run = runCli(new String[] { "pr-check" });
         assertEquals(64, run.exitCode);

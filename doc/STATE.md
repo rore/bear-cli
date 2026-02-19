@@ -3,13 +3,13 @@
 This file captures execution state.  
 It must stay concise and operational.
 
-Last Updated: 2026-02-18
+Last Updated: 2026-02-19
 
 ---
 
 ## Current Focus
 
-Post-v0 milestone execution toward Preview Release: deterministic failure-envelope and exit-registry hardening completed for CLI contracts; move to undeclared-reach enforcement slice.
+Post-v0 milestone execution toward Preview Release: invariant charter aligned as normative contract and preview undeclared-reach enforcement activated in `check` with exit `6` contract coverage.
 
 ---
 
@@ -43,11 +43,11 @@ M1 acceptance required:
 
 ## Next Concrete Task
 
-Start preview undeclared-reach enforcement slice in `check`:
+Harden preview undeclared-reach rollout and CI/operator proofs:
 
-1. Implement deterministic JVM direct-HTTP detection for covered surfaces in impl code.
-2. Add dedicated exit semantics (`6`, `UNDECLARED_REACH`) with failure envelope contract.
-3. Extend command/spec/tests to lock detection scope, exclusions, and remediation output.
+1. Execute and capture full CLI test pass for new `UNDECLARED_REACH` check-stage contract.
+2. Validate docs/spec consistency for invariant charter references and preview scope caveat language.
+3. Run end-to-end demo scenario that shows undeclared direct HTTP failure in `bear check`.
 
 Notes:
 - Gradle wrapper is available: use `.\gradlew.bat` (Windows) to build/run without a global Gradle install.
@@ -167,3 +167,7 @@ No essays. No philosophy.
 - Added user-facing CLI documentation at `doc/USER_GUIDE.md` and linked it from `README.md` and `doc/START_HERE.md` so command usage + failure envelope semantics are discoverable outside command-spec docs.
 - Expanded `doc/USER_GUIDE.md` intro to explicitly state BEAR’s intent in AI-assisted development: preserve implementation speed while making boundary expansion deterministic, reviewable, and CI-actionable.
 - Clarified `doc/USER_GUIDE.md` operating model: developers provide domain intent/review while agents are expected to handle IR updates and BEAR command mechanics within declared boundaries.
+- Added normative invariant catalog at `doc/INVARIANT_CHARTER.md` and linked it from `doc/START_HERE.md`, `doc/ARCHITECTURE.md`, `doc/GOVERNANCE.md`, `doc/ROADMAP.md`, `doc/ROADMAP_V0.md`, and `doc/USER_GUIDE.md`.
+- Activated preview undeclared-reach enforcement in `bear check`: deterministic JVM covered direct-HTTP detection, dedicated exit `6`, `CODE=UNDECLARED_REACH`, and fixed remediation guidance.
+- Updated command contracts in `spec/commands/check.md` and `spec/commands/exit-codes.md` to freeze undeclared-reach stage ordering, detection scope/exclusions, and failure-envelope semantics.
+- Added CLI tests for undeclared-reach detection scope, exclusions, deterministic ordering, drift precedence, envelope correctness, and check-stage short-circuit before project tests.
