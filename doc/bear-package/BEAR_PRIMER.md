@@ -1,4 +1,4 @@
-# BEAR Primer (M1 Minimal)
+# BEAR Primer (Package)
 
 Purpose:
 - Give a first-time isolated agent enough BEAR context to start correctly.

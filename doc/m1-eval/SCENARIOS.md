@@ -6,6 +6,15 @@ Do not copy these runbooks into `bear-account-demo`.
 Primary operator guide:
 - `doc/m1-eval/RUN_MILESTONE.md`
 
+Shared-root multi-block operator guide:
+- `doc/m1-eval/RUN_MULTI_BLOCK.md`
+
+## Current Active Eval Track
+
+For current multi-block enforcement validation, use:
+- `scenario/1-greenfield-multiblock-start` -> run Scenario 1 from `RUN_MULTI_BLOCK.md`
+- `scenario/1-greenfield-pass` as base for Scenario 2 PR governance checks
+
 ## Canonical M1 Branches
 
 | Branch | Start Condition | Agent Task | Expected High-Level Outcome |

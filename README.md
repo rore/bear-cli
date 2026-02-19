@@ -33,7 +33,7 @@ Start here: `doc/START_HERE.md`
 Current execution focus:
 - `M1` workflow proof (minimal): isolated demo repo proves IR-first agent loop with one canonical gate command.
 - Packaging/versioning is future work only, to be revisited when BEAR is mature enough for distribution design.
-- Canonical BEAR workflow source texts for demo-copied resources: `doc/m1-canonical/` (`BEAR_PRIMER.md`, `AGENTS.md`, `BEAR_AGENT.md`, `WORKFLOW.md`).
+- BEAR package source texts for distributed workflow docs: `doc/bear-package/` (`BEAR_PRIMER.md`, `AGENTS.md`, `BEAR_AGENT.md`, `WORKFLOW.md`).
 - M1 evaluator harness docs (kept out of demo to avoid agent cheat hints): `doc/m1-eval/`.
 
 - `kernel`: deterministic core. Contains BEAR IR parsing (YAML), validation, normalization, and target abstractions. This module is trusted seed code and is never BEAR-generated.

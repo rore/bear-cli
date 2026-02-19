@@ -1,13 +1,13 @@
-# BEAR_AGENT.md (M1 Canonical Source)
+# BEAR_AGENT.md (Package Source)
 
 Purpose:
-- This file is the canonical BEAR agent contract for demo-repo `BEAR_AGENT.md` in M1.
-- In M1, demo copies are synchronized manually.
+- Canonical BEAR agent contract distributed to adopter repos as `BEAR_AGENT.md`.
+- Demo/adopter copies should be synced from this file.
 
 ## Read In This Order
 
 1. `doc/BEAR_PRIMER.md`
-2. `doc/spec/*`
+2. `WORKFLOW.md`
 3. the feature request
 
 ## Session Baseline Check
@@ -21,6 +21,7 @@ Before planning or editing:
 1. Read the feature request in domain terms.
 2. Discover existing BEAR structure:
 - inspect `spec/*.bear.yaml`
+- inspect `bear.blocks.yaml` if present
 - inspect generated package namespaces and existing `*Impl.java` files
 3. Decide if boundary/contract/effect changes are required.
 4. If required, update IR before implementation edits.
@@ -59,7 +60,7 @@ Do not edit generated files:
 Editable locations:
 - implementation: `src/main/java/**/<BlockName>Impl.java`
 - tests: `src/test/java/**`
-- IR/spec docs/scripts in repo-owned paths
+- IR/docs/scripts in repo-owned paths
 
 ## Canonical Command
 

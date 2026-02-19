@@ -1,15 +1,12 @@
-# M1 Canonical Scope
+﻿# Deprecated Path
 
-`doc/m1-canonical/` contains BEAR workflow guidance that may be copied into demo repos.
+`doc/m1-canonical/` is deprecated.
 
-In scope here:
-- `BEAR_PRIMER.md`
-- `AGENTS.md`
-- `BEAR_AGENT.md`
-- `WORKFLOW.md`
+Use:
+- `doc/bear-package/`
 
-Out of scope here:
-- demo-domain app specs
-- demo block index content
-
-Those artifacts are owned directly by `bear-account-demo`.
+Package source files:
+- `doc/bear-package/BEAR_PRIMER.md`
+- `doc/bear-package/AGENTS.md`
+- `doc/bear-package/BEAR_AGENT.md`
+- `doc/bear-package/WORKFLOW.md`

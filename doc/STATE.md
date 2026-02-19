@@ -53,7 +53,7 @@ Harden and prove multi-block repo orchestration contract:
 Notes:
 - Gradle wrapper is available: use `.\gradlew.bat` (Windows) to build/run without a global Gradle install.
 - Canonical IR specification is now `doc/IR_SPEC.md`.
-- Canonical BEAR workflow source texts for M1 are stored in `doc/m1-canonical/`.
+- BEAR package source texts for distributed workflow docs are stored in `doc/bear-package/`.
 
 ---
 
@@ -182,3 +182,5 @@ No essays. No philosophy.
 - Refactored `check --all` to run structural checks per block, then undeclared-reach/tests once per `projectRoot`, and emit root-level summary counters.
 - Added managed-root default orphan guard and strict repo-wide orphan/legacy marker scans for `check --all` / `pr-check --all`.
 - Removed block-index unique-enabled-`projectRoot` constraint and aligned tests/specs for shared-root multi-block behavior.
+- Added evaluator runbook `doc/m1-eval/RUN_MULTI_BLOCK.md` and linked it from `doc/m1-eval/SCENARIOS.md` for two-scenario shared-root multi-block demo execution.
+- Tightened demo realism packaging: removed evaluator scenario docs from `bear-account-demo` and aligned distributed BEAR content (`BEAR_AGENT.md`/`WORKFLOW.md` + `doc/bear-package/*`) to no-`doc/spec/*` assumptions.

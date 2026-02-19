@@ -1,4 +1,4 @@
-# WORKFLOW.md (M1 Canonical Source)
+# WORKFLOW.md (Package Source)
 
 Purpose:
 - Human-readable operating guide for isolated BEAR workflow.
@@ -6,14 +6,14 @@ Purpose:
 ## Read In This Order
 
 1. `doc/BEAR_PRIMER.md`
-2. `doc/spec/*`
-3. the feature request
+2. the feature request
 
 ## Standard Flow
 
 1. Read request.
 2. Discover current BEAR structure from repo state:
 - inspect `spec/*.bear.yaml` if present
+- inspect `bear.blocks.yaml` if present
 - inspect generated package namespaces and existing `*Impl.java` files
 3. Apply IR-first rule if boundary/contract/effect changes are needed.
 4. Decide create-vs-update for blocks:
@@ -23,7 +23,7 @@ Purpose:
 6. Implement in `*Impl.java` and tests only.
 7. Run canonical gate:
 - `.\bin\bear-all.ps1` or `./bin/bear-all.sh`
- - if repo uses `bear.blocks.yaml`, canonical CLI gate is `bear check --all --project <repoRoot>`
+  - if repo uses `bear.blocks.yaml`, canonical CLI gate is `bear check --all --project <repoRoot>`
 8. Resolve failures by category until gate exits `0`.
 
 ## Failure Triage
@@ -47,7 +47,7 @@ Purpose:
 - fix impl/tests/verification issue
 - rerun gate
 
-## M1 Constraints
+## Constraints
 
 - No generated-file edits.
 - No silent boundary expansion.

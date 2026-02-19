@@ -1,4 +1,4 @@
-# AGENTS.md (M1 Canonical Source)
+# AGENTS.md (Package Source)
 
 Purpose:
 - Thin project bootstrap file for Codex-style sessions.
