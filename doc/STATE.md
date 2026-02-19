@@ -184,3 +184,5 @@ No essays. No philosophy.
 - Removed block-index unique-enabled-`projectRoot` constraint and aligned tests/specs for shared-root multi-block behavior.
 - Added evaluator runbook `doc/m1-eval/RUN_MULTI_BLOCK.md` and linked it from `doc/m1-eval/SCENARIOS.md` for two-scenario shared-root multi-block demo execution.
 - Tightened demo realism packaging: removed evaluator scenario docs from `bear-account-demo` and aligned distributed BEAR content (`BEAR_AGENT.md`/`WORKFLOW.md` + `doc/bear-package/*`) to no-`doc/spec/*` assumptions.
+- Upgraded BEAR package definition to portable generic v0.1: added `doc/bear-package/IR_QUICKREF.md` and `doc/bear-package/IR_EXAMPLES.md`, enforced anti-reverse-engineering guidance in `BEAR_AGENT.md`, expanded deterministic workflow/failure triage docs, and synced the updated package files into `bear-account-demo`.
+- De-domainized BEAR package IR samples/quickref terms (removed account-like names such as balance/ledger/audit-stream) to prevent steering eval agents toward the account-demo solution shape.

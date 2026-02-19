@@ -1,75 +1,99 @@
-# BEAR_AGENT.md (Package Source)
+# BEAR_AGENT.md
 
 Purpose:
-- Canonical BEAR agent contract distributed to adopter repos as `BEAR_AGENT.md`.
-- Demo/adopter copies should be synced from this file.
+- Canonical BEAR agent operating contract for generic backend projects.
 
 ## Read In This Order
 
 1. `doc/BEAR_PRIMER.md`
-2. `WORKFLOW.md`
-3. the feature request
+2. `doc/IR_QUICKREF.md`
+3. `doc/IR_EXAMPLES.md`
+4. `WORKFLOW.md`
+5. the feature request
+
+## Hard Rules
+
+1. Do not reverse engineer BEAR binaries (`jar tf`, `javap`, decompiler tools) to infer IR shape.
+2. Treat `doc/IR_QUICKREF.md` and `doc/IR_EXAMPLES.md` as the IR source of truth.
+3. Do not edit generated files under `build/generated/bear/**`.
+4. Use deterministic BEAR gates; no ad-hoc substitute scripts.
 
 ## Session Baseline Check
 
 Before planning or editing:
 1. Run `git status --short`.
-2. If pre-existing changes exist, explicitly report them and confirm whether to treat them as baseline before proceeding.
+2. If pre-existing changes exist, report them and confirm how to treat them.
 
 ## Mandatory BEAR Loop
 
-1. Read the feature request in domain terms.
-2. Discover existing BEAR structure:
+1. Read request in domain terms.
+2. Discover current BEAR structure:
 - inspect `spec/*.bear.yaml`
 - inspect `bear.blocks.yaml` if present
-- inspect generated package namespaces and existing `*Impl.java` files
-3. Decide if boundary/contract/effect changes are required.
-4. If required, update IR before implementation edits.
-5. Decide create-vs-update block:
-- update an existing block when feature fits same contract responsibility and boundary
-- create a new block when feature introduces a new responsibility/contract boundary
-6. If no IR exists yet, create the first `spec/*.bear.yaml` before expecting gate success.
-7. Run canonical gate command.
-8. Fix failures by category (schema/validation, drift, boundary signal, tests).
-9. Report exactly what changed:
-- IR and boundary deltas
-- implementation files
-- tests and gate result
+- inspect generated namespaces and existing `*Impl.java` files
+3. Decide whether boundaries change (contract/effects/idempotency/invariants).
+4. Apply IR-first updates before implementation edits when boundaries change.
+5. Decide block strategy:
+- update an existing block when responsibility boundary is unchanged
+- create a new block when responsibility implies a distinct authority boundary
+6. If decomposition yields multiple governed blocks:
+- create/update `bear.blocks.yaml`
+- run `--all` command variants as canonical gates
+7. Compile/generate after IR changes.
+8. Implement only in user-owned implementation/tests.
+9. Run canonical gate to `0`.
+10. Report deterministic completion summary.
 
-## IR-First Decision Rules
+## Generic Decomposition Rules
 
-Update IR first if any of these are introduced or changed:
-- new external call/reach
-- new capability port or operation
-- contract input/output shape changes
-- persistence interaction changes
-- new invariant or invariant relaxation/removal
+Split into multiple blocks when responsibilities imply distinct authority boundaries. Common split signals:
+- different external ports/effects
+- different lifecycle/trigger model (sync path vs async/scheduled/worker)
+- different contract ownership/evolution cadence
 
-If unsure:
-- inspect IR and confirm capability already exists before writing impl code.
+Keep a single block when work stays within one existing responsibility boundary.
+
+## IR-First Rules
+
+Update IR first if any of these change:
+- new external call/reach capability
+- new effect port or operation
+- contract input/output shape
+- idempotency key/store wiring
+- invariants (add/remove/relax)
 
 Boundary-expanding change expectation:
-- after IR update and before regeneration, `bear-all` can fail with drift/boundary signals on stale generated baseline
-- this is expected; compile/regenerate, implement, then rerun gate to green
+- stale baseline can fail with drift/boundary signals before regeneration
+- compile/regenerate, implement, rerun gate
 
-## Edit Boundaries
+## Editable Boundaries
 
-Do not edit generated files:
+Do not edit:
 - `build/generated/bear/**`
 
-Editable locations:
-- implementation: `src/main/java/**/<BlockName>Impl.java`
-- tests: `src/test/java/**`
-- IR/docs/scripts in repo-owned paths
+Edit:
+- `src/main/java/**/<BlockName>Impl.java`
+- `src/test/java/**`
+- repo-owned IR/docs/scripts
 
-## Canonical Command
+## Canonical Gates
 
-Use one command as the done gate:
+Use wrappers when provided:
 - PowerShell: `.\bin\bear-all.ps1`
 - Bash: `./bin/bear-all.sh`
+- PR/base gate: `.\bin\pr-gate.ps1 <base-ref>` or `./bin/pr-gate.sh <base-ref>`
 
-Interpretation:
-- `0` => done
-- `3` => drift (regen/update flow required)
-- `4` => test/verification failure
-- `2` => IR/schema/semantic issue
+Direct CLI equivalents:
+- single-block: `bear check <ir-file> --project <repoRoot>`
+- multi-block: `bear check --all --project <repoRoot>`
+- PR/base: `bear pr-check ...`
+
+## Completion Report Template
+
+Report completion in this format:
+- `Request summary: <one line>`
+- `Block decision: updated=<...> added=<...>`
+- `IR delta: <files + boundary notes>`
+- `Implementation delta: <files>`
+- `Tests delta: <files>`
+- `Gate result: <command> => <exit>`

@@ -1,54 +1,84 @@
-# WORKFLOW.md (Package Source)
+# WORKFLOW.md
 
 Purpose:
-- Human-readable operating guide for isolated BEAR workflow.
+- Deterministic operating loop for BEAR in a generic backend project.
 
 ## Read In This Order
 
 1. `doc/BEAR_PRIMER.md`
-2. the feature request
+2. `doc/IR_QUICKREF.md`
+3. `doc/IR_EXAMPLES.md`
+4. the feature request
 
-## Standard Flow
+## Canonical Flows
 
-1. Read request.
-2. Discover current BEAR structure from repo state:
-- inspect `spec/*.bear.yaml` if present
-- inspect `bear.blocks.yaml` if present
-- inspect generated package namespaces and existing `*Impl.java` files
-3. Apply IR-first rule if boundary/contract/effect changes are needed.
-4. Decide create-vs-update for blocks:
-- update existing block when feature fits current contract/capability boundary
-- create a new block when feature introduces a distinct contract/responsibility boundary
-5. If no IR exists, create initial `spec/*.bear.yaml` first.
-6. Implement in `*Impl.java` and tests only.
-7. Run canonical gate:
-- `.\bin\bear-all.ps1` or `./bin/bear-all.sh`
-  - if repo uses `bear.blocks.yaml`, canonical CLI gate is `bear check --all --project <repoRoot>`
-8. Resolve failures by category until gate exits `0`.
+### A) Greenfield Flow (no IR yet)
 
-## Failure Triage
+1. Read request and identify responsibilities.
+2. Decide block decomposition (single or multi-block).
+3. Create initial `spec/*.bear.yaml`.
+4. If multiple governed blocks exist, create `bear.blocks.yaml`.
+5. For each touched IR file run:
+- `bear validate <ir-file>`
+- `bear compile <ir-file> --project <repoRoot>`
+6. Run gate:
+- single-block mode: `bear check <ir-file> --project <repoRoot>`
+- multi-block mode: `bear check --all --project <repoRoot>`
+7. Implement in `*Impl.java` and tests only.
+8. Re-run check to `0`.
 
-1. `exit 2` (validation/schema/semantic):
-- fix IR shape/references
-- rerun gate
+### B) Extension Flow (existing BEAR repo)
 
-2. `exit 3` (drift):
-- run compile for the IR file that triggered drift:
-  - `./bin/bear.* compile <ir-file> --project .`
-- ensure generated tree matches current IR
-- rerun gate
+1. Discover existing IR/index/impl state.
+2. Decide update-existing-block vs add-new-block.
+3. Apply IR changes first when boundaries change.
+4. Compile touched IR files.
+5. Run check gate (`check` or `check --all`).
+6. Implement and test.
+7. Re-run check gate to `0`.
+8. For PR/base governance run:
+- `bear pr-check <ir-file> --project <repoRoot> --base <ref>`
+- or `bear pr-check --all --project <repoRoot> --base <ref>` when indexed
 
-3. boundary expansion lines present:
-- confirm this is intended
-- ensure IR change is explicit and reviewed
-- continue with compile + implementation + gate
+## Wrapper Preference
 
-4. `exit 4` (tests/verification):
-- fix impl/tests/verification issue
-- rerun gate
+If wrappers are shipped in the project, use them as canonical gates:
+- `.\bin\bear-all.ps1` / `./bin/bear-all.sh`
+- `.\bin\pr-gate.ps1 <base-ref>` / `./bin/pr-gate.sh <base-ref>`
+
+Wrappers should route to `--all` when `bear.blocks.yaml` exists.
+
+## Failure Triage (Deterministic)
+
+1. `64` usage error:
+- fix args/command invocation
+
+2. `2` validation/schema/semantic failure:
+- fix IR structure/references/enums/duplicates
+
+3. `3` drift failure:
+- rerun compile for changed IR
+- rerun check
+
+4. `6` undeclared reach:
+- declare required port/op in IR
+- compile
+- route call through generated port interface
+
+5. `4` project tests failed:
+- fix implementation/tests
+
+6. `5` boundary expansion (`pr-check`):
+- confirm expansion is intentional and reviewable
+
+7. `74` IO/git failure:
+- fix path/ref/permission/repo state
+
+8. `70` internal failure:
+- collect output and report as tool defect
 
 ## Constraints
 
 - No generated-file edits.
 - No silent boundary expansion.
-- One command determines done/not-done.
+- One deterministic gate determines done/not-done.
