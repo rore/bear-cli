@@ -61,4 +61,36 @@ class BlockIndexParserTest {
         );
         assertTrue(error.getMessage().contains("name must match"));
     }
+
+    @Test
+    void allowsProjectRootDotAndCanonicalizes(@TempDir Path tempDir) throws Exception {
+        Path index = tempDir.resolve("bear.blocks.yaml");
+        Files.writeString(index, ""
+            + "version: v0\n"
+            + "blocks:\n"
+            + "  - name: alpha\n"
+            + "    ir: spec/a.bear.yaml\n"
+            + "    projectRoot: .\n", StandardCharsets.UTF_8);
+
+        BlockIndex parsed = new BlockIndexParser().parse(tempDir, index);
+        assertEquals(".", parsed.blocks().get(0).projectRoot());
+    }
+
+    @Test
+    void rejectsIrDot(@TempDir Path tempDir) throws Exception {
+        Path index = tempDir.resolve("bear.blocks.yaml");
+        Files.writeString(index, ""
+            + "version: v0\n"
+            + "blocks:\n"
+            + "  - name: alpha\n"
+            + "    ir: .\n"
+            + "    projectRoot: .\n", StandardCharsets.UTF_8);
+
+        BlockIndexValidationException error = assertThrows(
+            BlockIndexValidationException.class,
+            () -> new BlockIndexParser().parse(tempDir, index)
+        );
+        assertTrue(error.path().endsWith(".ir"));
+        assertTrue(error.getMessage().contains("path must be repo-relative"));
+    }
 }

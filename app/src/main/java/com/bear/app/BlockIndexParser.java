@@ -56,10 +56,15 @@ final class BlockIndexParser {
                 throw new BlockIndexValidationException("INDEX_INVALID: duplicate block name: " + name, blockPath + ".name");
             }
 
-            String ir = normalizeRepoRelativePath(requireString(blockMap.get("ir"), blockPath + ".ir"), blockPath + ".ir");
+            String ir = normalizeRepoRelativePath(
+                requireString(blockMap.get("ir"), blockPath + ".ir"),
+                blockPath + ".ir",
+                false
+            );
             String projectRoot = normalizeRepoRelativePath(
                 requireString(blockMap.get("projectRoot"), blockPath + ".projectRoot"),
-                blockPath + ".projectRoot"
+                blockPath + ".projectRoot",
+                true
             );
             boolean enabled = readEnabled(blockMap.get("enabled"), blockPath + ".enabled");
 
@@ -87,12 +92,23 @@ final class BlockIndexParser {
         return value;
     }
 
-    private static String normalizeRepoRelativePath(String rawValue, String path) throws BlockIndexValidationException {
+    private static String normalizeRepoRelativePath(
+        String rawValue,
+        String path,
+        boolean allowCurrentDirectory
+    ) throws BlockIndexValidationException {
         Path normalized = Path.of(rawValue).normalize();
-        if (normalized.isAbsolute() || normalized.toString().isBlank() || normalized.startsWith("..")) {
+        String normalizedText = normalized.toString().replace('\\', '/');
+        if (normalizedText.isBlank()) {
+            if (allowCurrentDirectory) {
+                return ".";
+            }
             throw new BlockIndexValidationException("INDEX_INVALID: path must be repo-relative", path);
         }
-        return normalized.toString().replace('\\', '/');
+        if (normalized.isAbsolute() || normalized.startsWith("..")) {
+            throw new BlockIndexValidationException("INDEX_INVALID: path must be repo-relative", path);
+        }
+        return normalizedText;
     }
 
     private static void ensureUnderRepoRoot(Path repoRoot, String relativePath, String path) throws BlockIndexValidationException {
