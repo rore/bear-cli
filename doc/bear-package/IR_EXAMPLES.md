@@ -49,10 +49,10 @@ version: v0
 blocks:
   - name: execution-core
     ir: spec/execution-core.bear.yaml
-    projectRoot: services/app
+    projectRoot: .
   - name: activity-log
     ir: spec/activity-log.bear.yaml
-    projectRoot: services/app
+    projectRoot: .
 ```
 
 `spec/execution-core.bear.yaml`

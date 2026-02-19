@@ -26,7 +26,9 @@ Prove this claim in realistic agent workflow:
 
 4. Gate behavior contract in demo wrappers:
 - if `bear.blocks.yaml` exists, use `check/pr-check --all`
-- else fallback to deterministic `spec/*.bear.yaml` loop
+- if no index and no IR files, return deterministic greenfield guidance (`64`)
+- if no index and exactly one IR file, single-block fallback is allowed
+- if no index and two or more IR files, fail `64` and require index creation (no fallback)
 
 ## Scenario 1: Greenfield Multi-Block Build
 
@@ -35,7 +37,10 @@ Branch:
 
 Prompt:
 
-`Build account service with deposit, withdraw, transfer. Keep non-negative balance and idempotent request handling. Every operation must write an append-only audit record and emit an event.`
+`Build an account service with immediate DEPOSIT, WITHDRAW, and TRANSFER APIs. Also add scheduled transfers with these requirements: (1) scheduling is durable (survives restart) and has its own create/cancel/query API, (2) execution is asynchronous via a background worker, (3) failed executions are retried with backoff, (4) enforce daily transfer limits by account tier at execution time, (5) keep immediate transfer APIs synchronous and unchanged in behavior, (6) every schedule/create/cancel and every execution attempt/success/failure must write append-only audit records and emit events, (7) enforce non-negative balances and idempotent request handling for both scheduling and execution paths.`
+
+Prompt note:
+- This is the tracked Scenario 1 prompt version for current multi-block reruns.
 
 Expected agent behavior:
 1. Create `spec/*.bear.yaml` from scratch.
@@ -46,9 +51,11 @@ Expected agent behavior:
 
 Acceptance:
 1. At least two enabled blocks exist in `bear.blocks.yaml`.
-2. Multiple blocks share `projectRoot: services/account`.
+2. Multiple blocks share `projectRoot: .`.
 3. Blocks are materially distinct (not copy-split placeholders).
 4. `bear-all` exits `0`.
+5. `bear.blocks.yaml` remains present at end of run.
+6. `.\bin\bear.ps1 check --all --project .` exits `0`.
 
 Command:
 
@@ -59,6 +66,9 @@ Command:
 If greenfield starts with no IR/index, expected guidance is:
 - `No BEAR block index or IR files found`
 - `Create initial IR file(s), create bear.blocks.yaml, compile, then rerun bear-all.`
+
+Explicit failure condition:
+- multi-IR run without `bear.blocks.yaml` is invalid even if per-IR fallback could otherwise pass.
 
 ## Promote Baseline for Scenario 2
 
@@ -107,7 +117,9 @@ Store evidence in `bear-cli/doc/m1-eval/` only:
 3. First failing gate output snippet.
 4. Final passing gate output snippet.
 5. PR gate snippet for Scenario 2.
-6. Brief IR/code/test delta summary.
+6. `bear.blocks.yaml` snippet.
+7. Explicit `check --all` output snippet.
+8. Brief IR/code/test delta summary.
 
 ## Failure Triage
 

@@ -8,8 +8,9 @@ Purpose:
 1. `doc/BEAR_PRIMER.md`
 2. `doc/IR_QUICKREF.md`
 3. `doc/IR_EXAMPLES.md`
-4. `WORKFLOW.md`
-5. the feature request
+4. `doc/BLOCK_INDEX_QUICKREF.md`
+5. `WORKFLOW.md`
+6. the feature request
 
 ## Hard Rules
 
@@ -17,6 +18,8 @@ Purpose:
 2. Treat `doc/IR_QUICKREF.md` and `doc/IR_EXAMPLES.md` as the IR source of truth.
 3. Do not edit generated files under `build/generated/bear/**`.
 4. Use deterministic BEAR gates; no ad-hoc substitute scripts.
+5. If multiple governed blocks or multiple IR files exist, `bear.blocks.yaml` is mandatory.
+6. Do not remove `bear.blocks.yaml` to bypass `--all` governance.
 
 ## Session Baseline Check
 
@@ -39,6 +42,7 @@ Before planning or editing:
 6. If decomposition yields multiple governed blocks:
 - create/update `bear.blocks.yaml`
 - run `--all` command variants as canonical gates
+  - if index validation fails, fix `name`/`ir`/`projectRoot` entries and rerun `check --all`
 7. Compile/generate after IR changes.
 8. Implement only in user-owned implementation/tests.
 9. Run canonical gate to `0`.

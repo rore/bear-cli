@@ -26,6 +26,7 @@ Required package files:
 - `doc/BEAR_PRIMER.md`
 - `doc/IR_QUICKREF.md`
 - `doc/IR_EXAMPLES.md`
+- `doc/BLOCK_INDEX_QUICKREF.md`
 - `AGENTS_SHIM.md`
 
 Optional package file:
@@ -34,6 +35,13 @@ Optional package file:
 Wrapper scripts are policy-dependent:
 - `bin/bear-all.*` and `bin/pr-gate.*` may be shipped by adopter/project policy
 - when present, agents should use them as canonical done gates
+
+## Multi-Block Governance Requirement
+
+When a project has multiple governed BEAR blocks:
+1. `bear.blocks.yaml` is mandatory.
+2. Canonical gates must run `--all` variants (`check --all` / `pr-check --all`).
+3. Removing index files to bypass `--all` governance is invalid workflow.
 
 ## Integration Rule: Existing `AGENTS.md`
 

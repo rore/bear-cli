@@ -8,7 +8,8 @@ Purpose:
 1. `doc/BEAR_PRIMER.md`
 2. `doc/IR_QUICKREF.md`
 3. `doc/IR_EXAMPLES.md`
-4. the feature request
+4. `doc/BLOCK_INDEX_QUICKREF.md`
+5. the feature request
 
 ## Canonical Flows
 
@@ -39,6 +40,15 @@ Purpose:
 8. For PR/base governance run:
 - `bear pr-check <ir-file> --project <repoRoot> --base <ref>`
 - or `bear pr-check --all --project <repoRoot> --base <ref>` when indexed
+
+## Block Index Gate
+
+1. Multi-block state requires `bear.blocks.yaml`.
+2. In multi-block state, use only:
+- `bear check --all --project <repoRoot>`
+- `bear pr-check --all --project <repoRoot> --base <ref>`
+3. Single-block fallback loops are valid only when exactly one IR file exists and no index exists.
+4. Removing `bear.blocks.yaml` to continue via per-IR fallback is invalid.
 
 ## Wrapper Preference
 
@@ -73,6 +83,11 @@ Wrappers should route to `--all` when `bear.blocks.yaml` exists.
 
 7. `74` IO/git failure:
 - fix path/ref/permission/repo state
+
+Index troubleshooting:
+- `projectRoot` must be a repo-relative directory path.
+- repo root is valid and represented as `.`.
+- if index fails validation, fix `name`/`ir`/`projectRoot` and rerun `check --all`.
 
 8. `70` internal failure:
 - collect output and report as tool defect
