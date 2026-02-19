@@ -6,6 +6,18 @@ It defines milestone contracts, done criteria, and post-preview priorities.
 Live execution status is tracked in `doc/PROGRAM_BOARD.md`.
 Session handoff status is tracked in `doc/STATE.md`.
 
+## How To Read Planning Docs
+
+Use these files by intent, not interchangeably:
+- `doc/ROADMAP.md`: milestone feature contracts and done criteria (what BEAR must do).
+- `doc/PROGRAM_BOARD.md`: milestone closure checklist/evidence state and execution queue (what remains to close/release).
+- `doc/STATE.md`: short session handoff (what to do next in this work window).
+
+Important:
+- The active queue in `doc/PROGRAM_BOARD.md` can contain closure/admin work items.
+- Do not treat queue order as the canonical feature list for a milestone.
+- For "what are preview features?", use `Preview Release -> Preview contract (must ship)` in this file.
+
 ## Milestone Pipeline
 
 `v0 complete -> M1 workflow proof -> M1.1 governance hardening -> Preview Release -> P2 -> P3`

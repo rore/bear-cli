@@ -12,6 +12,12 @@
 
 `v0 complete -> M1 complete -> M1.1 complete -> Preview Release active -> P2 -> P3`
 
+## Interpretation Guardrails
+
+- This file tracks milestone closure state and queue order.
+- This file is not the canonical milestone feature-definition document.
+- For "what features are in Preview?", use `doc/ROADMAP.md` -> `Preview Release` -> `Preview contract (must ship)`.
+
 ## Milestone Closure Checklist (Active)
 
 Preview Release closure checks:
@@ -62,7 +68,7 @@ Preview Release closure checks:
 - Invariant status source: `doc/INVARIANT_CHARTER.md`
 - M1/M1.1 runbooks and evidence framing: `doc/m1-eval/RUN_MILESTONE.md`, `doc/m1-eval/RUN_MULTI_BLOCK.md`
 
-## Ready Queue (Ordered)
+## Ready Queue (Ordered, Execution Work Items)
 
 1. `doc/backlog/P1_PREVIEW_CLOSURE_GAPS.md`
 2. `doc/backlog/P2_BEAR_FIX_GENERATED_ONLY.md`

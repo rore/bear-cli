@@ -27,6 +27,11 @@ This is the navigation map for active work.
 - `doc/STATE.md`: only source for short session handoff.
 - `doc/archive/*`: historical references only, never active planning inputs.
 
+Interpretation guardrail:
+- "What are the milestone features?" -> `doc/ROADMAP.md`.
+- "What closure/release tasks are still open?" -> `doc/PROGRAM_BOARD.md`.
+- "What should I do in this session?" -> `doc/STATE.md`.
+
 ## Repo Layout
 
 - `kernel/` -- deterministic seed: IR parse/validate/normalize and target abstractions
