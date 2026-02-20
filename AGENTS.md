@@ -20,3 +20,8 @@ Session hygiene:
 - Update `doc/PROGRAM_BOARD.md` when milestone feature status/queue/risk entries change.
 - Update `doc/PROJECT_LOG.md` only for major architectural shifts/decisions.
 - Before ending a session, follow `doc/START_HERE.md` -> "Session close protocol".
+
+Safety guardrails:
+- Read `doc/SAFETY_RULES.md` before running any delete/cleanup command.
+- Never run recursive deletes outside the repository root.
+- For temp cleanup, prefer `scripts/safe-clean-temp.ps1` over ad-hoc `Remove-Item`.
