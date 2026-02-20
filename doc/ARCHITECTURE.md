@@ -174,9 +174,10 @@ Two-file approach:
 - implementation file is editable
 
 ## Demo Scope (bear-account-demo)
-The v0 proof is:
-- naive Withdraw implementation fails `bear check`
-- corrected Withdraw implementation passes `bear check`
+The preview demo proof is:
+- `main` is spec-only and agent-autopilot ready
+- developer gives one instruction (`Implement the specs.`)
+- scenario branches preserve real agent output progression
 
 If work does not move toward this proof, it is scope drift.
 
@@ -189,7 +190,7 @@ v0 is done when:
    - JUnit tests for idempotency (if declared) and `non_negative`
 3. Two-file enforcement is active (skeleton regenerated, impl preserved).
 4. `bear check --project <path>` fails deterministically on violations.
-5. Demo proves naive Withdraw fails and corrected Withdraw passes.
+5. Demo proves spec-only baseline -> greenfield implementation -> governed extension progression with deterministic gates.
 
 ## Future Ideas
 Keep future ideas in `doc/FUTURE.md`. Do not implement them in v0.

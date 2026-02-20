@@ -13,12 +13,13 @@ This is the navigation map for active work.
 7. `doc/IR_SPEC.md` -- canonical v0 IR schema and normalization rules.
 8. `spec/repo/block-index.md` -- canonical `bear.blocks.yaml` contract for `--all` enforcement.
 9. `doc/USER_GUIDE.md` -- operator-facing command and failure-envelope guide.
-10. `doc/bear-package/` -- distributed workflow source texts (`AGENTS.md`, `BEAR_AGENT.md`, `WORKFLOW.md`, `BEAR_PRIMER.md`).
-11. `doc/PROJECT_LOG.md` -- architectural rationale history.
-12. `doc/NORTH_STAR.md` -- long-horizon vision.
-13. `doc/FUTURE.md` -- explicitly parked ideas.
-14. `doc/PROMPT_BOOTSTRAP.md` -- non-repo chat bootstrap seed.
-15. `doc/archive/README.md` -- archived-file index.
+10. `doc/demo/PREVIEW_DEMO.md` -- preview demo operator guide and scenario branch map.
+11. `doc/bear-package/` -- distributed workflow source texts (`AGENTS.md`, `BEAR_AGENT.md`, `WORKFLOW.md`, `BEAR_PRIMER.md`).
+12. `doc/PROJECT_LOG.md` -- architectural rationale history.
+13. `doc/NORTH_STAR.md` -- long-horizon vision.
+14. `doc/FUTURE.md` -- explicitly parked ideas.
+15. `doc/PROMPT_BOOTSTRAP.md` -- non-repo chat bootstrap seed.
+16. `doc/archive/README.md` -- archived-file index.
 
 ## Source Ownership
 

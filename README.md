@@ -78,6 +78,7 @@ Docs:
 - `doc/PROGRAM_BOARD.md` (live milestone feature status + ordered feature queue)
 - `doc/STATE.md` (short current-session handoff)
 - `doc/USER_GUIDE.md` (user-facing command usage + failure envelope quick reference)
+- `doc/demo/PREVIEW_DEMO.md` (preview demo operator guide and scenario map)
 - `doc/NORTH_STAR.md` (broader motivation + long-horizon success criteria)
 - `doc/ARCHITECTURE.md` (what BEAR is + active scope)
 - `doc/GOVERNANCE.md` (normative IR diff classification and boundary-expansion policy)
@@ -109,10 +110,7 @@ apply from: "$rootDir/build/generated/bear/gradle/bear-containment.gradle"
 
 `bear check` does not invoke Gradle. If marker is missing/stale, run Gradle once, then rerun `bear check`.
 
-M1 evaluator docs (this repo):
-- `doc/m1-eval/RUN_MILESTONE.md`
-- `doc/m1-eval/SCENARIOS.md`
-- `doc/m1-eval/greenfield-build.md`
-- `doc/m1-eval/feature-extension.md`
+Legacy evaluator docs (historical reference):
+- `doc/m1-eval/*`
 
 

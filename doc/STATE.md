@@ -13,12 +13,14 @@ P2 feature delivery:
 - active milestone is `P2`
 - `bear fix` remains implemented and green
 - active implementation is `Declared allowed deps containment` (`v1` IR, Gradle containment artifacts, check/pr-check wiring)
+- preview demo reset documentation alignment (`doc/demo/PREVIEW_DEMO.md`, navigation links, stale demo-reference cleanup)
 
 ## Next Concrete Task
 
 Complete P2 declared allowed deps containment finish pass:
 1. clean temporary golden-refresh directories after Windows file-lock issue
 2. commit/review split for containment wiring + docs/spec updates
+3. complete isolated-session scenario generation in `bear-account-demo` (`01/02/03/04`) and collect branch evidence
 
 ## Session Notes
 
@@ -42,4 +44,6 @@ Complete P2 declared allowed deps containment finish pass:
 - Added follow-up backlog item for optional non-Gradle parity: `doc/backlog/P3_MAVEN_ALLOWED_DEPS_CONTAINMENT.md`.
 - Synced agent-package and user guide docs for allowed-deps containment workflow (`doc/bear-package/*`, `doc/USER_GUIDE.md`).
 - Renamed terminology across implementation/contracts/docs from `pureDeps` to `allowedDeps` (including manifests and `pr-check` category `ALLOWED_DEPS`).
+- Added preview demo operator guide `doc/demo/PREVIEW_DEMO.md` and wired README/START_HERE navigation to it.
+- Updated stale demo references in `doc/ARCHITECTURE.md` and `doc/ROADMAP.md` to the new scenario naming/model.
 

@@ -37,7 +37,7 @@ Goal:
 Deliver:
 - demo-local BEAR workflow assets (`BEAR_PRIMER.md`, `AGENTS.md`, `BEAR_AGENT.md`, `WORKFLOW.md`)
 - canonical gate scripts and wrapper scripts
-- realistic scenario branches (`scenario/greenfield-build`, `scenario/feature-extension`)
+- realistic scenario branches (`scenario/01-agent-greenfield-implementation`, `scenario/02-feature-extension-scheduled-transfers`)
 - no demo answer-key hints
 
 Done criteria:
