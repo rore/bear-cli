@@ -29,6 +29,8 @@ Purpose:
 13. If you add new production architecture (platform/adapters/executors/etc.), include a brief necessity rationale tied to requirements and boundary ownership.
 14. If BEAR tooling fails with IO/lock/environment defects, stop and report the tooling failure; do not mutate unrelated IR to fit stale generated outputs.
 15. Never add workaround type stubs/classes under `src/main/java/com/bear/generated/**` (for example fake `BigDecimal`); only generated files and user-owned `*Impl.java` are allowed there.
+16. If implementation needs a new library, declare it in `block.impl.allowedDeps` (IR-first); do not silently add impl classpath reach.
+17. For IR with `impl.allowedDeps` on Java+Gradle projects, ensure the project applies generated containment entrypoint and run Gradle once before relying on `bear check`.
 
 ## Session Baseline Check
 
@@ -48,6 +50,7 @@ Before planning or editing:
 - `1` IR file: single-block mode
 - `>=2` IR files: multi-block mode, index required
 4. Decide whether boundaries change (contract/effects/idempotency/invariants).
+   - include allowed-deps allowlist changes (`block.impl.allowedDeps`) as boundary-surface changes
 5. Apply IR-first updates before implementation edits when boundaries change.
 6. Decide block strategy:
 - update an existing block when responsibility boundary is unchanged
@@ -57,6 +60,9 @@ Before planning or editing:
 - run `--all` command variants as canonical gates
   - if index validation fails, fix `name`/`ir`/`projectRoot` entries and rerun `check --all`
 8. Compile/generate after IR changes.
+   - when IR contains `impl.allowedDeps`:
+     - confirm project applies `build/generated/bear/gradle/bear-containment.gradle`
+     - run Gradle build/test once to refresh containment marker
 9. If generated artifacts are stale/drifted, run `bear fix` (or `fix --all` when indexed).
 10. In greenfield bootstrap (`0` IR at start), no feature implementation edits are allowed until at least one `validate` and `compile` succeeds.
 11. Implement only after generated contracts exist.
@@ -109,6 +115,7 @@ Direct CLI equivalents:
 - multi-block: `bear check --all --project <repoRoot>`
 - PR/base: `bear pr-check ...`
 - repair generated artifacts: `bear fix <ir-file> --project <repoRoot>` / `bear fix --all --project <repoRoot>`
+- allowed-deps enforcement prereq (Java+Gradle): apply generated containment script and run Gradle once so `build/bear/containment/applied.marker` is fresh
 
 ## Completion Report Template
 
@@ -119,3 +126,4 @@ Report completion in this format:
 - `Implementation delta: <files>`
 - `Tests delta: <files>`
 - `Gate result: <command> => <exit>`
+

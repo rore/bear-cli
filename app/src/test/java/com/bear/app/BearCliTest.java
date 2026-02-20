@@ -687,9 +687,9 @@ class BearCliTest {
     }
 
     @Test
-    void checkPureDepsWithoutWrapperFailsUnsupportedTarget(@TempDir Path tempDir) throws Exception {
-        Path ir = tempDir.resolve("withdraw-puredeps.bear.yaml");
-        Files.writeString(ir, fixtureIrWithPureDep("com.fasterxml.jackson.core:jackson-databind", "2.17.2"));
+    void checkAllowedDepsWithoutWrapperFailsUnsupportedTarget(@TempDir Path tempDir) throws Exception {
+        Path ir = tempDir.resolve("withdraw-allowedDeps.bear.yaml");
+        Files.writeString(ir, fixtureIrWithAllowedDep("com.fasterxml.jackson.core:jackson-databind", "2.17.2"));
 
         CliRunResult compile = runCli(new String[] { "compile", ir.toString(), "--project", tempDir.toString() });
         assertEquals(0, compile.exitCode);
@@ -701,14 +701,14 @@ class BearCliTest {
             check.stderr,
             "CONTAINMENT_UNSUPPORTED_TARGET",
             "project.root",
-            "Pure dependency containment in P2 requires Java+Gradle with wrapper at project root; remove `impl.pureDeps` or use supported target, then rerun `bear check`."
+            "Allowed dependency containment in P2 requires Java+Gradle with wrapper at project root; remove `impl.allowedDeps` or use supported target, then rerun `bear check`."
         );
     }
 
     @Test
-    void checkPureDepsMissingMarkerFailsDeterministically(@TempDir Path tempDir) throws Exception {
-        Path ir = tempDir.resolve("withdraw-puredeps.bear.yaml");
-        Files.writeString(ir, fixtureIrWithPureDep("com.fasterxml.jackson.core:jackson-databind", "2.17.2"));
+    void checkAllowedDepsMissingMarkerFailsDeterministically(@TempDir Path tempDir) throws Exception {
+        Path ir = tempDir.resolve("withdraw-allowedDeps.bear.yaml");
+        Files.writeString(ir, fixtureIrWithAllowedDep("com.fasterxml.jackson.core:jackson-databind", "2.17.2"));
 
         CliRunResult compile = runCli(new String[] { "compile", ir.toString(), "--project", tempDir.toString() });
         assertEquals(0, compile.exitCode);
@@ -731,9 +731,9 @@ class BearCliTest {
     }
 
     @Test
-    void checkPureDepsStaleMarkerFailsDeterministically(@TempDir Path tempDir) throws Exception {
-        Path ir = tempDir.resolve("withdraw-puredeps.bear.yaml");
-        Files.writeString(ir, fixtureIrWithPureDep("com.fasterxml.jackson.core:jackson-databind", "2.17.2"));
+    void checkAllowedDepsStaleMarkerFailsDeterministically(@TempDir Path tempDir) throws Exception {
+        Path ir = tempDir.resolve("withdraw-allowedDeps.bear.yaml");
+        Files.writeString(ir, fixtureIrWithAllowedDep("com.fasterxml.jackson.core:jackson-databind", "2.17.2"));
 
         CliRunResult compile = runCli(new String[] { "compile", ir.toString(), "--project", tempDir.toString() });
         assertEquals(0, compile.exitCode);
@@ -759,9 +759,9 @@ class BearCliTest {
     }
 
     @Test
-    void checkPureDepsWithFreshMarkerPasses(@TempDir Path tempDir) throws Exception {
-        Path ir = tempDir.resolve("withdraw-puredeps.bear.yaml");
-        Files.writeString(ir, fixtureIrWithPureDep("com.fasterxml.jackson.core:jackson-databind", "2.17.2"));
+    void checkAllowedDepsWithFreshMarkerPasses(@TempDir Path tempDir) throws Exception {
+        Path ir = tempDir.resolve("withdraw-allowedDeps.bear.yaml");
+        Files.writeString(ir, fixtureIrWithAllowedDep("com.fasterxml.jackson.core:jackson-databind", "2.17.2"));
 
         CliRunResult compile = runCli(new String[] { "compile", ir.toString(), "--project", tempDir.toString() });
         assertEquals(0, compile.exitCode);
@@ -1984,7 +1984,7 @@ class BearCliTest {
     }
 
     @Test
-    void prCheckPureDepDeltaClassification(@TempDir Path tempDir) throws Exception {
+    void prCheckAllowedDepDeltaClassification(@TempDir Path tempDir) throws Exception {
         Path repo = initGitRepo(tempDir.resolve("repo"));
         Path ir = repo.resolve("spec/withdraw.bear.yaml");
         String base = fixtureIrContent();
@@ -1992,39 +1992,39 @@ class BearCliTest {
         Files.writeString(ir, base, StandardCharsets.UTF_8);
         gitCommitAll(repo, "base ir");
 
-        String head = fixtureIrWithPureDep("com.fasterxml.jackson.core:jackson-databind", "2.17.2");
+        String head = fixtureIrWithAllowedDep("com.fasterxml.jackson.core:jackson-databind", "2.17.2");
         Files.writeString(ir, head, StandardCharsets.UTF_8);
-        gitCommitAll(repo, "add pure dep");
+        gitCommitAll(repo, "add allowed dep");
 
         CliRunResult added = runCli(new String[] {
             "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
         });
         assertEquals(5, added.exitCode);
         assertTrue(normalizeLf(added.stderr).contains(
-            "pr-delta: BOUNDARY_EXPANDING: PURE_DEPS: ADDED: com.fasterxml.jackson.core:jackson-databind@2.17.2"
+            "pr-delta: BOUNDARY_EXPANDING: ALLOWED_DEPS: ADDED: com.fasterxml.jackson.core:jackson-databind@2.17.2"
         ));
 
-        String changed = fixtureIrWithPureDep("com.fasterxml.jackson.core:jackson-databind", "2.18.0");
+        String changed = fixtureIrWithAllowedDep("com.fasterxml.jackson.core:jackson-databind", "2.18.0");
         Files.writeString(ir, changed, StandardCharsets.UTF_8);
-        gitCommitAll(repo, "change pure dep version");
+        gitCommitAll(repo, "change allowed dep version");
 
         CliRunResult versionChanged = runCli(new String[] {
             "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
         });
         assertEquals(5, versionChanged.exitCode);
         assertTrue(normalizeLf(versionChanged.stderr).contains(
-            "pr-delta: BOUNDARY_EXPANDING: PURE_DEPS: CHANGED: com.fasterxml.jackson.core:jackson-databind@2.17.2->2.18.0"
+            "pr-delta: BOUNDARY_EXPANDING: ALLOWED_DEPS: CHANGED: com.fasterxml.jackson.core:jackson-databind@2.17.2->2.18.0"
         ));
 
         Files.writeString(ir, base, StandardCharsets.UTF_8);
-        gitCommitAll(repo, "remove pure dep");
+        gitCommitAll(repo, "remove allowed dep");
 
         CliRunResult removed = runCli(new String[] {
             "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
         });
         assertEquals(0, removed.exitCode);
         assertTrue(normalizeLf(removed.stderr).contains(
-            "pr-delta: ORDINARY: PURE_DEPS: REMOVED: com.fasterxml.jackson.core:jackson-databind@2.18.0"
+            "pr-delta: ORDINARY: ALLOWED_DEPS: REMOVED: com.fasterxml.jackson.core:jackson-databind@2.18.0"
         ));
     }
 
@@ -2032,10 +2032,10 @@ class BearCliTest {
         return fixtureIrContent().replaceFirst("(?im)^\\s*name:\\s*withdraw\\s*$", "  name: " + blockName);
     }
 
-    private static String fixtureIrWithPureDep(String maven, String version) throws Exception {
+    private static String fixtureIrWithAllowedDep(String maven, String version) throws Exception {
         return fixtureIrContent()
             + "  impl:\n"
-            + "    pureDeps:\n"
+            + "    allowedDeps:\n"
             + "      - maven: " + maven + "\n"
             + "        version: " + version + "\n";
     }
@@ -2088,4 +2088,6 @@ class BearCliTest {
     private record MultiBlockFixture(Path repoRoot, List<Path> projectRoots) {
     }
 }
+
+
 

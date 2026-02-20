@@ -62,11 +62,12 @@ public final class BearIrNormalizer {
     }
 
     private BearIr.Impl sortImpl(BearIr.Impl impl) {
-        if (impl == null || impl.pureDeps() == null || impl.pureDeps().isEmpty()) {
+        if (impl == null || impl.allowedDeps() == null || impl.allowedDeps().isEmpty()) {
             return new BearIr.Impl(List.of());
         }
-        List<BearIr.PureDep> sorted = new ArrayList<>(impl.pureDeps());
-        sorted.sort(Comparator.comparing(BearIr.PureDep::maven));
+        List<BearIr.AllowedDep> sorted = new ArrayList<>(impl.allowedDeps());
+        sorted.sort(Comparator.comparing(BearIr.AllowedDep::maven));
         return new BearIr.Impl(sorted);
     }
 }
+

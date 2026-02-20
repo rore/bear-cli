@@ -51,9 +51,10 @@ public record BearIr(String version, BearIr.Block block) {
     public record Invariant(InvariantKind kind, String field) {
     }
 
-    public record Impl(List<PureDep> pureDeps) {
+    public record Impl(List<AllowedDep> allowedDeps) {
     }
 
-    public record PureDep(String maven, String version) {
+    public record AllowedDep(String maven, String version) {
     }
 }
+

@@ -11,6 +11,11 @@ Canonical command surface expected by the package:
 - `bear check`
 - `bear pr-check`
 
+Containment note (v1 preview):
+- if IR declares `block.impl.allowedDeps`, Java+Gradle projects must apply generated containment entrypoint:
+  - `build/generated/bear/gradle/bear-containment.gradle`
+- `bear check` verifies containment marker/hash and does not invoke Gradle automatically.
+
 ## Package Contract
 
 1. BEAR package is a copyable bundle dropped into any backend project.
@@ -58,3 +63,4 @@ When `AGENTS.md` already exists:
 1. Do not replace project-owned `AGENTS.md`.
 2. Append the one-line pointer from `AGENTS_SHIM.md`.
 3. Add BEAR package files (`BEAR_AGENT.md`, `WORKFLOW.md`, and `doc/*` package docs).
+

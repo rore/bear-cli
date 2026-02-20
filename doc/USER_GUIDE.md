@@ -120,6 +120,7 @@ Behavior:
 - fails with drift exit code when generated baseline is stale/missing
 - fails with undeclared-reach exit code when covered direct HTTP client usage bypasses declared ports
 - runs project tests only after no-drift result
+- when IR declares `block.impl.allowedDeps`, also enforces containment handshake (script/index/marker hash) before tests
 
 ### 4b. Repo gate (multi-block)
 
@@ -231,6 +232,35 @@ Planned after preview:
 - dependency-direction and cross-domain leakage hardening
 - additional structural invariants listed in `doc/INVARIANT_CHARTER.md`
 
+## allowed deps (v1 preview)
+
+Use `block.impl.allowedDeps` when implementation logic needs a non-JDK pure library.
+
+Example:
+```yaml
+impl:
+  allowedDeps:
+    - maven: com.fasterxml.jackson.core:jackson-databind
+      version: 2.17.2
+```
+
+Governance:
+- `bear pr-check` classifies allowed-deps add/version-change as `BOUNDARY_EXPANDING`
+- allowed-deps removal is `ORDINARY`
+
+Enforcement (`bear check`):
+- supported target: Java+Gradle with wrapper
+- requires generated containment artifacts:
+  - `build/generated/bear/gradle/bear-containment.gradle`
+  - `build/generated/bear/config/containment-required.json`
+  - `build/bear/containment/applied.marker`
+- marker hash must match containment index hash
+- `bear check` does not invoke Gradle; run Gradle build/test once after compile to refresh marker
+
+Non-Gradle projects:
+- `pr-check` governance still works
+- `check` fails deterministically when `impl.allowedDeps` is present because enforcement cannot be guaranteed in current preview scope
+
 All non-zero command exits include deterministic footer lines:
 - `CODE=...`
 - `PATH=...`
@@ -242,7 +272,9 @@ All non-zero command exits include deterministic footer lines:
 2. Agent updates IR if boundary/contract/effect changes are needed.
 3. Agent runs `bear validate <ir-file>`.
 4. Agent runs `bear compile <ir-file> --project <path>`.
-5. If generated artifacts need deterministic repair, run `bear fix <ir-file> --project <path>` (or `fix --all`).
-6. Agent implements user-owned logic/tests.
-7. Agent runs `bear check <ir-file> --project <path>`.
-8. For PR governance, run `bear pr-check <ir-file> --project <path> --base <ref>`.
+5. If IR declares `impl.allowedDeps` on Java+Gradle, ensure project applies generated containment entrypoint and run Gradle build/test once.
+6. If generated artifacts need deterministic repair, run `bear fix <ir-file> --project <path>` (or `fix --all`).
+7. Agent implements user-owned logic/tests.
+8. Agent runs `bear check <ir-file> --project <path>`.
+9. For PR governance, run `bear pr-check <ir-file> --project <path> --base <ref>`.
+

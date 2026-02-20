@@ -1,4 +1,4 @@
-﻿# BEAR Session State
+# BEAR Session State
 
 This file is the short operational handoff for the current work window.
 For milestone status and backlog ordering, use `doc/PROGRAM_BOARD.md`.
@@ -12,11 +12,11 @@ For milestone status and backlog ordering, use `doc/PROGRAM_BOARD.md`.
 P2 feature delivery:
 - active milestone is `P2`
 - `bear fix` remains implemented and green
-- active implementation is `Declared pure deps containment` (`v1` IR, Gradle containment artifacts, check/pr-check wiring)
+- active implementation is `Declared allowed deps containment` (`v1` IR, Gradle containment artifacts, check/pr-check wiring)
 
 ## Next Concrete Task
 
-Complete P2 declared pure deps containment finish pass:
+Complete P2 declared allowed deps containment finish pass:
 1. clean temporary golden-refresh directories after Windows file-lock issue
 2. commit/review split for containment wiring + docs/spec updates
 
@@ -33,9 +33,13 @@ Complete P2 declared pure deps containment finish pass:
 - Implemented `bear fix` command (`single` + `--all`) with tests and synchronized agent-package/docs command surface.
 - Migrated core withdraw fixture/golden IR to `v1`.
 - Added `spec/golden/compile/withdraw-v1` generated fixture set (including containment outputs).
-- Restored full green build after pure-deps implementation updates (`./gradlew test` passing).
+- Restored full green build after allowed-deps implementation updates (`./gradlew test` passing).
 - Added CLI containment acceptance tests (unsupported target, missing marker, stale marker, fresh marker pass).
-- Added `pr-check` pure-deps delta classification tests (add/version-change boundary-expanding, removal ordinary).
-- Synced core docs/spec text to v1 + pure-deps containment behavior (`AGENTS.md`, `doc/IR_SPEC.md`, `spec/commands/check.md`, `spec/commands/pr-check.md`, `README.md`).
+- Added `pr-check` allowed-deps delta classification tests (add/version-change boundary-expanding, removal ordinary).
+- Synced core docs/spec text to v1 + allowed-deps containment behavior (`AGENTS.md`, `doc/IR_SPEC.md`, `spec/commands/check.md`, `spec/commands/pr-check.md`, `README.md`).
 - Fixed generated Gradle containment wiring (`SourceSetOutput.dir` argument order) so demo Gradle integration executes successfully.
 - Verified demo end-to-end flow: `compile -> gradle test (containment tasks+marker) -> bear check` returns `check: OK`.
+- Added follow-up backlog item for optional non-Gradle parity: `doc/backlog/P3_MAVEN_ALLOWED_DEPS_CONTAINMENT.md`.
+- Synced agent-package and user guide docs for allowed-deps containment workflow (`doc/bear-package/*`, `doc/USER_GUIDE.md`).
+- Renamed terminology across implementation/contracts/docs from `pureDeps` to `allowedDeps` (including manifests and `pr-check` category `ALLOWED_DEPS`).
+

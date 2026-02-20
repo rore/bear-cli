@@ -1,13 +1,13 @@
-# P2: Declared Pure Dependencies (Boundary + Containment)
+# P2: Declared allowed dependencies (Boundary + Containment)
 
 ## Summary
 
-Allow block impl logic to use explicitly allowlisted pure dependencies while keeping boundary expansion visible and deterministic.
+Allow block impl logic to use explicitly allowlisted allowed dependencies while keeping boundary expansion visible and deterministic.
 
 ## Locked Decisions
 
 1. Block-level declaration in IR:
-   - `block.impl.pureDeps`
+   - `block.impl.allowedDeps`
    - entry: `maven: <groupId>:<artifactId>` + `version: <pinned>`
 2. IR schema bump to `v1`:
    - parser accepts `v1` only
@@ -22,7 +22,7 @@ Allow block impl logic to use explicitly allowlisted pure dependencies while kee
 
 `bear compile` must emit:
 
-1. `build/generated/bear/config/pure-deps/<blockKey>.json`
+1. `build/generated/bear/config/allowed-deps/<blockKey>.json`
 2. `build/generated/bear/config/containment-required.json`
 3. `build/generated/bear/gradle/bear-containment.gradle` (single canonical entrypoint)
 
@@ -50,18 +50,18 @@ Generated entrypoint (`bear-containment.gradle`) must:
 
 Governance-only, marker-agnostic:
 
-1. Pure dep added => `BOUNDARY_EXPANDING` (exit `5`)
-2. Pure dep version changed => `BOUNDARY_EXPANDING` (exit `5`)
-3. Pure dep removed => ordinary/non-expanding
+1. allowed dep added => `BOUNDARY_EXPANDING` (exit `5`)
+2. allowed dep version changed => `BOUNDARY_EXPANDING` (exit `5`)
+3. allowed dep removed => ordinary/non-expanding
 4. Deterministic category + ordering:
-   - include `PURE_DEPS` in frozen ordering
+   - include `ALLOWED_DEPS` in frozen ordering
 
 ### `bear check`
 
 Enforcement gate:
 
-1. If `pureDeps` absent: unchanged behavior.
-2. If `pureDeps` present:
+1. If `allowedDeps` absent: unchanged behavior.
+2. If `allowedDeps` present:
    - supported target required: Java + Gradle wrapper
    - require generated entrypoint/index + marker/hash match
    - do **not** invoke Gradle automatically
@@ -72,12 +72,13 @@ Enforcement gate:
 ### Non-Gradle (P2)
 
 1. `pr-check` governance still works.
-2. `check` fails deterministically when `pureDeps` present because enforcement cannot be guaranteed.
+2. `check` fails deterministically when `allowedDeps` present because enforcement cannot be guaranteed.
 
 ## Acceptance
 
 1. Non-allowlisted import in impl fails due containment/classpath.
-2. Allowlisted pure dep in impl compiles and checks pass with marker handshake satisfied.
+2. Allowlisted allowed dep in impl compiles and checks pass with marker handshake satisfied.
 3. Pure-dep add/version changes surface in `pr-check` as boundary expansion (`exit 5`).
 4. Impl helper classes are supported (not single-file-only impl model).
 5. No duplicate impl compilation by `compileJava`.
+

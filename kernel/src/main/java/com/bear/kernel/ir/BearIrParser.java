@@ -188,12 +188,12 @@ public final class BearIrParser {
     }
 
     private BearIr.Impl parseImpl(Map<?, ?> impl, String path) {
-        requireOnlyKeys(impl, path, Set.of("pureDeps"));
-        List<BearIr.PureDep> pureDeps = new ArrayList<>();
-        if (impl.containsKey("pureDeps")) {
-            List<?> items = requireList(impl, "pureDeps", path + ".pureDeps");
+        requireOnlyKeys(impl, path, Set.of("allowedDeps"));
+        List<BearIr.AllowedDep> allowedDeps = new ArrayList<>();
+        if (impl.containsKey("allowedDeps")) {
+            List<?> items = requireList(impl, "allowedDeps", path + ".allowedDeps");
             for (int i = 0; i < items.size(); i++) {
-                String itemPath = path + ".pureDeps[" + i + "]";
+                String itemPath = path + ".allowedDeps[" + i + "]";
                 Object item = items.get(i);
                 if (!(item instanceof Map<?, ?> dep)) {
                     throw schema(itemPath, BearIrValidationException.Code.INVALID_TYPE, "expected mapping");
@@ -201,10 +201,10 @@ public final class BearIrParser {
                 requireOnlyKeys(dep, itemPath, Set.of("maven", "version"));
                 String maven = requireString(dep, "maven", itemPath + ".maven");
                 String version = requireString(dep, "version", itemPath + ".version");
-                pureDeps.add(new BearIr.PureDep(maven, version));
+                allowedDeps.add(new BearIr.AllowedDep(maven, version));
             }
         }
-        return new BearIr.Impl(pureDeps);
+        return new BearIr.Impl(allowedDeps);
     }
 
     private void requireOnlyKeys(Map<?, ?> map, String path, Set<String> allowed) {
@@ -253,3 +253,4 @@ public final class BearIrParser {
         return new BearIrValidationException(BearIrValidationException.Category.SCHEMA, path, code, message);
     }
 }
+

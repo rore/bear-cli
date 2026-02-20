@@ -54,7 +54,7 @@ Preview standing note:
 
 ## Ready Queue (Ordered, Execution Work Items)
 
-1. `Declared pure deps containment` (active, implementation in progress)
+1. `Declared allowed deps containment` (active, implementation in progress)
 2. Generated structural tests
 
 ## Backlog Buckets (P1/P2/P3)
@@ -63,10 +63,11 @@ Preview standing note:
   - `doc/backlog/P1_PREVIEW_CLOSURE_GAPS.md` (parked; non-blocking for product development)
 - `P2`
   - `doc/backlog/P2_BEAR_FIX_GENERATED_ONLY.md` (`Completed`)
-  - `doc/backlog/P2_DECLARED_PURE_DEPS_CONTAINMENT.md` (`In Progress`)
+  - `doc/backlog/P2_DECLARED_ALLOWED_DEPS_CONTAINMENT.md` (`In Progress`)
 - `P3`
-  - none queued yet
+  - `doc/backlog/P3_MAVEN_ALLOWED_DEPS_CONTAINMENT.md` (`Queued`)
 
 ## Open Risks / Decisions
 
 - Risk: historical references still pointing to `doc/ROADMAP_V0.md` can reintroduce drift if not cleaned.
+

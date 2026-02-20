@@ -29,7 +29,7 @@ def markerTasks = []
 blocks.each { block ->
     def blockKey = String.valueOf(block.blockKey)
     def safeName = blockKey.replaceAll('[^A-Za-z0-9_]', '_')
-    def configName = "bearPureDeps_${safeName}"
+    def configName = "bearAllowedDeps_${safeName}"
     def compileTaskName = "compileBearImpl_${safeName}"
     def markTaskName = "markBearContainment_${safeName}"
     def outputDir = file("$buildDir/bear/impl-classes/${blockKey}")
@@ -47,7 +47,7 @@ blocks.each { block ->
     pureConfig.canBeConsumed = false
     pureConfig.canBeResolved = true
     pureConfig.transitive = false
-    (block.pureDeps ?: []).each { dep ->
+    (block.allowedDeps ?: []).each { dep ->
         dependencies.add(configName, "${dep.ga}:${dep.version}")
     }
 

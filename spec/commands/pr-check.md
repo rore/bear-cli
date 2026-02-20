@@ -92,7 +92,7 @@ Delta lines are emitted to stderr:
 
 Where:
 - `<CLASS>` in `BOUNDARY_EXPANDING`, `ORDINARY`
-- `<CATEGORY>` in `PORTS`, `PURE_DEPS`, `OPS`, `IDEMPOTENCY`, `CONTRACT`, `INVARIANTS`
+- `<CATEGORY>` in `PORTS`, `ALLOWED_DEPS`, `OPS`, `IDEMPOTENCY`, `CONTRACT`, `INVARIANTS`
 - `<CHANGE>` in `CHANGED`, `ADDED`, `REMOVED`
 
 Verdict lines:
@@ -108,7 +108,7 @@ Sort by:
    - `ORDINARY`
 2. category precedence:
    - `PORTS`
-   - `PURE_DEPS`
+   - `ALLOWED_DEPS`
    - `OPS`
    - `IDEMPOTENCY`
    - `CONTRACT`
@@ -133,7 +133,7 @@ Comparison is set-based (order-insensitive).
 
 Comparison is set-based (order-insensitive) within each common port.
 
-### `PURE_DEPS` (from `block.impl.pureDeps`)
+### `ALLOWED_DEPS` (from `block.impl.allowedDeps`)
 - added `ga@version` => `BOUNDARY_EXPANDING`
 - removed `ga@version` => `ORDINARY`
 - version change `ga@old->new` => `BOUNDARY_EXPANDING`
@@ -262,3 +262,4 @@ Summary section:
 - `<S> skipped`
 - `BOUNDARY_EXPANDING: <count>`
 - `EXIT_CODE: <n>`
+

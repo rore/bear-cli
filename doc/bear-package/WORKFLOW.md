@@ -22,11 +22,14 @@ Purpose:
 5. For each touched IR file run:
 - `bear validate <ir-file>`
 - `bear compile <ir-file> --project <repoRoot>`
-6. Run gate:
+6. If IR declares `impl.allowedDeps` and project is Java+Gradle:
+- ensure project applies `build/generated/bear/gradle/bear-containment.gradle`
+- run Gradle build/test once to write containment marker
+7. Run gate:
 - single-block mode: `bear check <ir-file> --project <repoRoot>`
 - multi-block mode: `bear check --all --project <repoRoot>`
-7. Implement in `*Impl.java` and tests only.
-8. Re-run check to `0`.
+8. Implement in `*Impl.java` and tests only.
+9. Re-run check to `0`.
 
 Greenfield hard stop:
 - if no IR exists yet, do not write implementation source code first.
@@ -41,10 +44,13 @@ Greenfield hard stop:
 3. Apply IR changes first when boundaries change.
 4. Compile touched IR files.
 5. If generated artifacts are stale or drifted, run `bear fix` for touched IR (or `fix --all` when indexed).
-6. Run check gate (`check` or `check --all`).
-7. Implement and test.
-8. Re-run check gate to `0`.
-9. For PR/base governance run:
+6. If touched IR declares `impl.allowedDeps` and project is Java+Gradle:
+- ensure project applies `build/generated/bear/gradle/bear-containment.gradle`
+- run Gradle build/test once to write containment marker
+7. Run check gate (`check` or `check --all`).
+8. Implement and test.
+9. Re-run check gate to `0`.
+10. For PR/base governance run:
 - `bear pr-check <ir-file> --project <repoRoot> --base <ref>`
 - or `bear pr-check --all --project <repoRoot> --base <ref>` when indexed
 
@@ -100,6 +106,16 @@ Index troubleshooting:
 8. `70` internal failure:
 - collect output and report as tool defect
 
+9. `74` containment failure (`CONTAINMENT_NOT_VERIFIED` / `CONTAINMENT_UNSUPPORTED_TARGET`):
+- if missing/stale marker or missing generated containment script/index:
+  - rerun `bear compile`
+  - ensure project applies generated containment entrypoint
+  - run Gradle build/test once to refresh marker
+  - rerun `bear check`
+- if unsupported target:
+  - use Java+Gradle enforcement path for allowed deps
+  - or remove `impl.allowedDeps` and keep governance-only behavior in `pr-check`
+
 Lock and environment troubleshooting:
 - If BEAR compile/check fails with file-lock/permission signatures (for example `.zip.lck`, `Access is denied`, generated-file replacement lock), treat it as tooling/environment IO issue first.
 - Do not change unrelated IR to match stale generated outputs.
@@ -129,3 +145,4 @@ Lock and environment troubleshooting:
 
 If new production architecture was added, include:
 - `Architecture rationale: <why required, and which boundary/lifecycle requirement it satisfies>`
+

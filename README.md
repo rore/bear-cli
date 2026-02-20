@@ -91,9 +91,9 @@ Docs:
 Demo repo (sibling):
 - `../bear-account-demo/README.md` (realistic app-facing demo context)
 
-## Pure Deps Containment Integration (Java+Gradle)
+## Allowed Deps Containment Integration (Java+Gradle)
 
-When an IR declares `block.impl.pureDeps`, BEAR generates containment wiring artifacts during `bear compile`:
+When an IR declares `block.impl.allowedDeps`, BEAR generates containment wiring artifacts during `bear compile`:
 - `build/generated/bear/config/containment-required.json`
 - `build/generated/bear/gradle/bear-containment.gradle`
 
@@ -114,3 +114,5 @@ M1 evaluator docs (this repo):
 - `doc/m1-eval/SCENARIOS.md`
 - `doc/m1-eval/greenfield-build.md`
 - `doc/m1-eval/feature-extension.md`
+
+

@@ -127,12 +127,12 @@ public final class BearIrValidator {
 
     private void validateImpl(BearIr.Impl impl) {
         requireNonNull(impl, "block.impl");
-        requireNonNull(impl.pureDeps(), "block.impl.pureDeps");
+        requireNonNull(impl.allowedDeps(), "block.impl.allowedDeps");
 
         Set<String> seenGa = new HashSet<>();
-        for (int i = 0; i < impl.pureDeps().size(); i++) {
-            BearIr.PureDep dep = impl.pureDeps().get(i);
-            String depPath = "block.impl.pureDeps[" + i + "]";
+        for (int i = 0; i < impl.allowedDeps().size(); i++) {
+            BearIr.AllowedDep dep = impl.allowedDeps().get(i);
+            String depPath = "block.impl.allowedDeps[" + i + "]";
             requireNonBlank(dep.maven(), depPath + ".maven");
             requireNonBlank(dep.version(), depPath + ".version");
             if (!MAVEN_COORDINATE.matcher(dep.maven()).matches()) {
@@ -147,7 +147,7 @@ public final class BearIrValidator {
                 throw semantic(depPath + ".version", BearIrValidationException.Code.INVALID_VALUE, "version must be pinned");
             }
             if (!seenGa.add(dep.maven())) {
-                throw semantic(depPath + ".maven", BearIrValidationException.Code.DUPLICATE, "duplicate pure dep: " + dep.maven());
+                throw semantic(depPath + ".maven", BearIrValidationException.Code.DUPLICATE, "duplicate allowed dep: " + dep.maven());
             }
         }
     }
@@ -184,3 +184,4 @@ public final class BearIrValidator {
         return new BearIrValidationException(BearIrValidationException.Category.SEMANTIC, path, code, message);
     }
 }
+

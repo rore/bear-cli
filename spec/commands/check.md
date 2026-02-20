@@ -10,7 +10,7 @@
 2. undeclared-reach enforcement for covered preview JVM direct HTTP surfaces
 3. project test execution after drift and undeclared-reach pass
 4. boundary-expansion signaling derived from BEAR surface manifests
-5. pure-deps containment verification when IR declares `block.impl.pureDeps`
+5. allowed-deps containment verification when IR declares `block.impl.allowedDeps`
 
 For base-branch PR governance classification, use `bear pr-check`.
 
@@ -19,7 +19,7 @@ It performs:
 2. Compile normalized IR into a temporary project root.
 3. Diff temp BEAR-owned tree against project BEAR-owned tree.
 4. If drift passes, run undeclared-reach scan on project source tree.
-5. If IR declares pure deps, verify containment script/index/marker hash handshake.
+5. If IR declares allowed deps, verify containment script/index/marker hash handshake.
 6. If containment passes, run undeclared-reach scan on project source tree.
 7. If undeclared-reach passes, execute project tests via Gradle wrapper.
 8. Fail deterministically on mismatch or test failure.
@@ -35,7 +35,7 @@ It is deterministic and uses the block index as inclusion source.
 - Includes:
   - covered undeclared-reach static checks for preview JVM HTTP surfaces
 - Includes:
-  - pure-deps containment handshake gate for supported Java+Gradle targets
+  - allowed-deps containment handshake gate for supported Java+Gradle targets
 - Excludes:
   - full static isolation checks for arbitrary external surfaces beyond preview coverage
 
@@ -108,8 +108,8 @@ Scope in v1 preview:
 - `CAPABILITY_ADDED`: capability appears in candidate but not baseline
 - `CAPABILITY_OP_ADDED`: op appears in candidate capability but not baseline capability
 - `INVARIANT_RELAXED`: baseline `non_negative:<field>` missing in candidate
-- `PURE_DEP_ADDED`: pure dep appears in candidate surface but not baseline
-- `PURE_DEP_VERSION_CHANGED`: same pure dep GA with version change between baseline/candidate
+- `PURE_DEP_ADDED`: allowed dep appears in candidate surface but not baseline
+- `PURE_DEP_VERSION_CHANGED`: same allowed dep GA with version change between baseline/candidate
 
 Ordering (deterministic):
 - sort by `(typePrecedence, key)`
@@ -138,8 +138,8 @@ Relationship to drift:
 ## Undeclared Reach Enforcement (v1.5 preview)
 Detection runs only after drift pass and before project tests.
 
-## Pure Deps Containment (v1.6 preview)
-Containment gate runs only when IR declares `block.impl.pureDeps` and drift has passed.
+## Allowed Deps Containment (v1.6 preview)
+Containment gate runs only when IR declares `block.impl.allowedDeps` and drift has passed.
 
 Supported target:
 - Java+Gradle project root with `gradlew` or `gradlew.bat`
@@ -298,3 +298,5 @@ Summary section:
 - `ROOT_TEST_FAILED: <n>`
 - `ROOT_TEST_SKIPPED_DUE_TO_REACH: <n>`
 - `EXIT_CODE: <n>`
+
+

@@ -49,7 +49,7 @@ class JvmTargetTest {
         assertTrue(manifest.contains("\"surfaceVersion\":3"));
         assertTrue(manifest.contains("\"target\":\"jvm\""));
         assertTrue(manifest.contains("\"capabilities\":[{\"name\":\"idempotency\",\"ops\":[\"get\",\"put\"]},{\"name\":\"ledger\",\"ops\":[\"getBalance\",\"setBalance\"]}]"));
-        assertTrue(manifest.contains("\"pureDeps\":[]"));
+        assertTrue(manifest.contains("\"allowedDeps\":[]"));
         assertTrue(manifest.contains("\"invariants\":[{\"kind\":\"non_negative\",\"field\":\"balance\"}]"));
         assertTrue(manifest.contains("\"irHash\":\"e760299bd88662c50dd411c90612a0d1007a434920a7644144abc7611da2720f\""));
     }
@@ -225,4 +225,5 @@ class JvmTargetTest {
         return text.replace("\r\n", "\n");
     }
 }
+
 

@@ -63,9 +63,9 @@ Invariant shape:
 - `field` (string, required, must reference an output field name)
 
 `impl` fields:
-- `pureDeps` (array, optional; may be empty)
+- `allowedDeps` (array, optional; may be empty)
 
-`impl.pureDeps` entry shape:
+`impl.allowedDeps` entry shape:
 - `maven` (string, required, exact `groupId:artifactId`)
 - `version` (string, required, pinned exact version)
 
@@ -83,9 +83,9 @@ Invariant shape:
 - `idempotency.store.port` must reference a declared port
 - `idempotency.store.getOp` and `idempotency.store.putOp` must reference declared ops under that port
 - invariant `field` must reference an output field
-- `impl.pureDeps[*].maven` must be explicit `groupId:artifactId` (no wildcards)
-- `impl.pureDeps[*].version` must be pinned (no ranges/wildcards)
-- duplicate `groupId:artifactId` entries in `impl.pureDeps` are invalid
+- `impl.allowedDeps[*].maven` must be explicit `groupId:artifactId` (no wildcards)
+- `impl.allowedDeps[*].version` must be pinned (no ranges/wildcards)
+- duplicate `groupId:artifactId` entries in `impl.allowedDeps` are invalid
 
 ## Deterministic Normalization
 Canonical form must:
@@ -97,7 +97,7 @@ Canonical form must:
 - sort ports by `port`
 - sort ops within each port
 - sort invariants deterministically by `kind` then `field`
-- sort `impl.pureDeps` deterministically by `maven`
+- sort `impl.allowedDeps` deterministically by `maven`
 - omit `invariants` if it is absent or empty (`[]`)
 
 ## Canonical Demo IR (v1)
@@ -150,5 +150,6 @@ block:
 - v1 idempotency guarantees deterministic replay behavior in the test harness, not concurrency correctness.
 - In generated JVM artifacts, idempotency replay metadata key `hit` is compiler-generated protocol state, not an IR field.
 - Current v1 replay-hit behavior is: return the stored result payload (no exception-on-replay policy).
-- `impl.pureDeps` is governance + containment policy surface; add/version-change is boundary-expanding in `pr-check`.
+- `impl.allowedDeps` is governance + containment policy surface; add/version-change is boundary-expanding in `pr-check`.
 - Do not expand IR expressiveness beyond the active milestone contract.
+

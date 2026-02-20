@@ -2450,13 +2450,13 @@ public final class BearCli {
                 signals.add(new BoundarySignal(BoundaryType.CAPABILITY_ADDED, capability));
             }
         }
-        for (Map.Entry<String, String> dep : candidate.pureDeps().entrySet()) {
+        for (Map.Entry<String, String> dep : candidate.allowedDeps().entrySet()) {
             String ga = dep.getKey();
-            if (!baseline.pureDeps().containsKey(ga)) {
+            if (!baseline.allowedDeps().containsKey(ga)) {
                 signals.add(new BoundarySignal(BoundaryType.PURE_DEP_ADDED, ga + "@" + dep.getValue()));
                 continue;
             }
-            String oldVersion = baseline.pureDeps().get(ga);
+            String oldVersion = baseline.allowedDeps().get(ga);
             if (!oldVersion.equals(dep.getValue())) {
                 signals.add(new BoundarySignal(BoundaryType.PURE_DEP_VERSION_CHANGED, ga + "@" + oldVersion + "->" + dep.getValue()));
             }
@@ -2525,7 +2525,7 @@ public final class BearCli {
         }
 
         addIdempotencyDeltas(deltas, base.idempotency(), head.idempotency());
-        addPureDepDeltas(deltas, base.pureDeps(), head.pureDeps());
+        addAllowedDepDeltas(deltas, base.allowedDeps(), head.allowedDeps());
         addContractDeltas(deltas, base.inputs(), head.inputs(), true);
         addContractDeltas(deltas, base.outputs(), head.outputs(), false);
 
@@ -2548,7 +2548,7 @@ public final class BearCli {
         return deltas;
     }
 
-    private static void addPureDepDeltas(List<PrDelta> deltas, Map<String, String> base, Map<String, String> head) {
+    private static void addAllowedDepDeltas(List<PrDelta> deltas, Map<String, String> base, Map<String, String> head) {
         TreeSet<String> names = new TreeSet<>();
         names.addAll(base.keySet());
         names.addAll(head.keySet());
@@ -2556,17 +2556,17 @@ public final class BearCli {
             boolean inBase = base.containsKey(ga);
             boolean inHead = head.containsKey(ga);
             if (!inBase) {
-                deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.PURE_DEPS, PrChange.ADDED, ga + "@" + head.get(ga)));
+                deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.ALLOWED_DEPS, PrChange.ADDED, ga + "@" + head.get(ga)));
                 continue;
             }
             if (!inHead) {
-                deltas.add(new PrDelta(PrClass.ORDINARY, PrCategory.PURE_DEPS, PrChange.REMOVED, ga + "@" + base.get(ga)));
+                deltas.add(new PrDelta(PrClass.ORDINARY, PrCategory.ALLOWED_DEPS, PrChange.REMOVED, ga + "@" + base.get(ga)));
                 continue;
             }
             if (!base.get(ga).equals(head.get(ga))) {
                 deltas.add(new PrDelta(
                     PrClass.BOUNDARY_EXPANDING,
-                    PrCategory.PURE_DEPS,
+                    PrCategory.ALLOWED_DEPS,
                     PrChange.CHANGED,
                     ga + "@" + base.get(ga) + "->" + head.get(ga)
                 ));
@@ -2660,10 +2660,10 @@ public final class BearCli {
             ports.add(port.port());
             opsByPort.put(port.port(), new TreeSet<>(port.ops()));
         }
-        Map<String, String> pureDeps = new TreeMap<>();
-        if (ir.block().impl() != null && ir.block().impl().pureDeps() != null) {
-            for (BearIr.PureDep dep : ir.block().impl().pureDeps()) {
-                pureDeps.put(dep.maven(), dep.version());
+        Map<String, String> allowedDeps = new TreeMap<>();
+        if (ir.block().impl() != null && ir.block().impl().allowedDeps() != null) {
+            for (BearIr.AllowedDep dep : ir.block().impl().allowedDeps()) {
+                allowedDeps.put(dep.maven(), dep.version());
             }
         }
 
@@ -2682,7 +2682,7 @@ public final class BearCli {
                 invariants.add(invariant.kind().name().toLowerCase() + ":" + invariant.field());
             }
         }
-        return new PrSurface(ports, opsByPort, pureDeps, inputs, outputs, ir.block().idempotency(), invariants);
+        return new PrSurface(ports, opsByPort, allowedDeps, inputs, outputs, ir.block().idempotency(), invariants);
     }
 
     private static PrSurface emptyPrSurface() {
@@ -2751,12 +2751,12 @@ public final class BearCli {
         String generatorVersion = extractRequiredString(json, "generatorVersion");
 
         String capabilitiesPayload = extractRequiredArrayPayload(json, "capabilities");
-        String pureDepsPayload = extractOptionalArrayPayload(json, "pureDeps");
+        String allowedDepsPayload = extractOptionalArrayPayload(json, "allowedDeps");
         String invariantsPayload = extractRequiredArrayPayload(json, "invariants");
         Map<String, TreeSet<String>> capabilities = parseCapabilities(capabilitiesPayload);
-        Map<String, String> pureDeps = parsePureDeps(pureDepsPayload);
+        Map<String, String> allowedDeps = parseAllowedDeps(allowedDepsPayload);
         TreeSet<String> invariants = parseInvariants(invariantsPayload);
-        return new BoundaryManifest(schemaVersion, target, block, irHash, generatorVersion, capabilities, pureDeps, invariants);
+        return new BoundaryManifest(schemaVersion, target, block, irHash, generatorVersion, capabilities, allowedDeps, invariants);
     }
 
     private static String extractRequiredString(String json, String key) throws ManifestParseException {
@@ -2867,10 +2867,10 @@ public final class BearCli {
         return invariants;
     }
 
-    private static Map<String, String> parsePureDeps(String payload) throws ManifestParseException {
-        Map<String, String> pureDeps = new TreeMap<>();
+    private static Map<String, String> parseAllowedDeps(String payload) throws ManifestParseException {
+        Map<String, String> allowedDeps = new TreeMap<>();
         if (payload == null || payload.isBlank()) {
-            return pureDeps;
+            return allowedDeps;
         }
 
         Matcher m = Pattern.compile("\\{\\\"ga\\\":\\\"((?:\\\\.|[^\\\\\\\"])*)\\\",\\\"version\\\":\\\"((?:\\\\.|[^\\\\\\\"])*)\\\"\\}")
@@ -2878,12 +2878,12 @@ public final class BearCli {
         int count = 0;
         while (m.find()) {
             count++;
-            pureDeps.put(jsonUnescape(m.group(1)), jsonUnescape(m.group(2)));
+            allowedDeps.put(jsonUnescape(m.group(1)), jsonUnescape(m.group(2)));
         }
         if (count == 0) {
-            throw new ManifestParseException("INVALID_PURE_DEPS");
+            throw new ManifestParseException("INVALID_ALLOWED_DEPS");
         }
-        return pureDeps;
+        return allowedDeps;
     }
 
     private static String jsonUnescape(String value) {
@@ -2923,7 +2923,7 @@ public final class BearCli {
     }
 
     private static CheckResult verifyContainmentIfRequired(BearIr ir, Path projectRoot, List<String> diagnostics) throws IOException {
-        if (!hasPureDeps(ir)) {
+        if (!hasAllowedDeps(ir)) {
             return null;
         }
         Path gradlew = projectRoot.resolve("gradlew");
@@ -2938,7 +2938,7 @@ public final class BearCli {
                 "CONTAINMENT",
                 FailureCode.CONTAINMENT_UNSUPPORTED_TARGET,
                 "project.root",
-                "Pure dependency containment in P2 requires Java+Gradle with wrapper at project root; remove `impl.pureDeps` or use supported target, then rerun `bear check`.",
+                "Allowed dependency containment in P2 requires Java+Gradle with wrapper at project root; remove `impl.allowedDeps` or use supported target, then rerun `bear check`.",
                 line
             );
         }
@@ -3007,10 +3007,10 @@ public final class BearCli {
         return null;
     }
 
-    private static boolean hasPureDeps(BearIr ir) {
+    private static boolean hasAllowedDeps(BearIr ir) {
         return ir.block().impl() != null
-            && ir.block().impl().pureDeps() != null
-            && !ir.block().impl().pureDeps().isEmpty();
+            && ir.block().impl().allowedDeps() != null
+            && !ir.block().impl().allowedDeps().isEmpty();
     }
 
     private static String readMarkerHash(Path markerFile) throws IOException {
@@ -3495,7 +3495,7 @@ public final class BearCli {
 
     private enum PrCategory {
         PORTS("PORTS", 0),
-        PURE_DEPS("PURE_DEPS", 1),
+        ALLOWED_DEPS("ALLOWED_DEPS", 1),
         OPS("OPS", 2),
         IDEMPOTENCY("IDEMPOTENCY", 3),
         CONTRACT("CONTRACT", 4),
@@ -3530,7 +3530,7 @@ public final class BearCli {
     private record PrSurface(
         TreeSet<String> ports,
         Map<String, TreeSet<String>> opsByPort,
-        Map<String, String> pureDeps,
+        Map<String, String> allowedDeps,
         Map<String, BearIr.FieldType> inputs,
         Map<String, BearIr.FieldType> outputs,
         BearIr.Idempotency idempotency,
@@ -3567,7 +3567,7 @@ public final class BearCli {
         String irHash,
         String generatorVersion,
         Map<String, TreeSet<String>> capabilities,
-        Map<String, String> pureDeps,
+        Map<String, String> allowedDeps,
         TreeSet<String> invariants
     ) {
     }
@@ -3595,3 +3595,5 @@ public final class BearCli {
     private record ProjectTestResult(ProjectTestStatus status, String output) {
     }
 }
+
+

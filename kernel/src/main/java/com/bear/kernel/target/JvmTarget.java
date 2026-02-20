@@ -53,7 +53,7 @@ public final class JvmTarget implements Target {
         Path userMain = projectRoot.resolve("src").resolve("main").resolve("java").resolve("blocks").resolve(blockKey).resolve("impl");
         Path userMainLegacy = projectRoot.resolve("src").resolve("main").resolve("java").resolve(packagePath);
         Path generatedConfig = generatedRoot.resolve("config");
-        Path generatedPureDeps = generatedConfig.resolve("pure-deps");
+        Path generatedAllowedDeps = generatedConfig.resolve("allowed-deps");
         Path generatedGradle = generatedRoot.resolve("gradle");
         Path stagingRoot = generatedRoot.resolve(".staging").resolve(blockKey + "-" + System.nanoTime());
         Path stagingMain = stagingRoot.resolve("src").resolve("main").resolve("java").resolve(packagePath);
@@ -95,7 +95,7 @@ public final class JvmTarget implements Target {
             syncDirectory(stagingMain, generatedMain);
             syncDirectory(stagingTest, generatedTest);
             syncFile(stagingSurfaceMarker, surfaceMarker);
-            writeContainmentArtifacts(projectRoot, generatedPureDeps, generatedGradle, blockKey, packageSegment, ir.block().impl());
+            writeContainmentArtifacts(projectRoot, generatedAllowedDeps, generatedGradle, blockKey, packageSegment, ir.block().impl());
         } finally {
             try {
                 deleteDirectoryIfExists(stagingRoot);
@@ -399,11 +399,11 @@ public final class JvmTarget implements Target {
             invariants.addAll(ir.block().invariants());
         }
         invariants.sort(Comparator.comparing(BearIr.Invariant::kind).thenComparing(BearIr.Invariant::field));
-        List<BearIr.PureDep> pureDeps = new ArrayList<>();
-        if (ir.block().impl() != null && ir.block().impl().pureDeps() != null) {
-            pureDeps.addAll(ir.block().impl().pureDeps());
+        List<BearIr.AllowedDep> allowedDeps = new ArrayList<>();
+        if (ir.block().impl() != null && ir.block().impl().allowedDeps() != null) {
+            allowedDeps.addAll(ir.block().impl().allowedDeps());
         }
-        pureDeps.sort(Comparator.comparing(BearIr.PureDep::maven));
+        allowedDeps.sort(Comparator.comparing(BearIr.AllowedDep::maven));
 
         StringBuilder out = new StringBuilder();
         out.append("{");
@@ -431,12 +431,12 @@ public final class JvmTarget implements Target {
             out.append("]}");
         }
         out.append("],");
-        out.append("\"pureDeps\":[");
-        for (int i = 0; i < pureDeps.size(); i++) {
+        out.append("\"allowedDeps\":[");
+        for (int i = 0; i < allowedDeps.size(); i++) {
             if (i > 0) {
                 out.append(",");
             }
-            BearIr.PureDep dep = pureDeps.get(i);
+            BearIr.AllowedDep dep = allowedDeps.get(i);
             out.append("{\"ga\":\"").append(jsonEscape(dep.maven())).append("\",\"version\":\"")
                 .append(jsonEscape(dep.version())).append("\"}");
         }
@@ -462,22 +462,22 @@ public final class JvmTarget implements Target {
 
     private void writeContainmentArtifacts(
         Path projectRoot,
-        Path pureDepsDir,
+        Path allowedDepsDir,
         Path generatedGradleDir,
         String blockKey,
         String packageSegment,
         BearIr.Impl impl
     ) throws IOException {
-        Files.createDirectories(pureDepsDir);
+        Files.createDirectories(allowedDepsDir);
         Files.createDirectories(generatedGradleDir);
 
-        Path indexFile = pureDepsDir.getParent().resolve("containment-required.json");
-        Path blockConfig = pureDepsDir.resolve(blockKey + ".json");
+        Path indexFile = allowedDepsDir.getParent().resolve("containment-required.json");
+        Path blockConfig = allowedDepsDir.resolve(blockKey + ".json");
         Map<String, ContainmentBlockSpec> index = readContainmentIndex(indexFile);
 
         List<ContainmentDep> deps = new ArrayList<>();
-        if (impl != null && impl.pureDeps() != null) {
-            for (BearIr.PureDep dep : impl.pureDeps()) {
+        if (impl != null && impl.allowedDeps() != null) {
+            for (BearIr.AllowedDep dep : impl.allowedDeps()) {
                 deps.add(new ContainmentDep(dep.maven(), dep.version()));
             }
         }
@@ -490,7 +490,7 @@ public final class JvmTarget implements Target {
             String legacyImplDir = "src/main/java/com/bear/generated/" + packageSegment.replace('.', '/');
             ContainmentBlockSpec spec = new ContainmentBlockSpec(blockKey, legacyImplDir, deps);
             index.put(blockKey, spec);
-            write(blockConfig, renderPureDepsConfig(spec));
+            write(blockConfig, renderAllowedDepsConfig(spec));
         }
 
         write(indexFile, renderContainmentRequired(index));
@@ -515,7 +515,7 @@ public final class JvmTarget implements Target {
 
         Matcher blockMatcher = Pattern
             .compile(
-                "\\{\\\"blockKey\\\":\\\"((?:\\\\.|[^\\\\\\\"])*)\\\",\\\"legacyImplDir\\\":\\\"((?:\\\\.|[^\\\\\\\"])*)\\\",\\\"pureDeps\\\":\\[(.*?)\\]\\}",
+                "\\{\\\"blockKey\\\":\\\"((?:\\\\.|[^\\\\\\\"])*)\\\",\\\"legacyImplDir\\\":\\\"((?:\\\\.|[^\\\\\\\"])*)\\\",\\\"allowedDeps\\\":\\[(.*?)\\]\\}",
                 Pattern.DOTALL
             )
             .matcher(blocksPayload);
@@ -550,12 +550,12 @@ public final class JvmTarget implements Target {
             firstBlock = false;
             out.append("{\"blockKey\":\"").append(jsonEscape(block.blockKey())).append("\",");
             out.append("\"legacyImplDir\":\"").append(jsonEscape(block.legacyImplDir())).append("\",");
-            out.append("\"pureDeps\":[");
-            for (int i = 0; i < block.pureDeps().size(); i++) {
+            out.append("\"allowedDeps\":[");
+            for (int i = 0; i < block.allowedDeps().size(); i++) {
                 if (i > 0) {
                     out.append(",");
                 }
-                ContainmentDep dep = block.pureDeps().get(i);
+                ContainmentDep dep = block.allowedDeps().get(i);
                 out.append("{\"ga\":\"").append(jsonEscape(dep.ga())).append("\",\"version\":\"")
                     .append(jsonEscape(dep.version())).append("\"}");
             }
@@ -566,17 +566,17 @@ public final class JvmTarget implements Target {
         return out.toString();
     }
 
-    private String renderPureDepsConfig(ContainmentBlockSpec block) {
+    private String renderAllowedDepsConfig(ContainmentBlockSpec block) {
         StringBuilder out = new StringBuilder();
         out.append("{");
         out.append("\"blockKey\":\"").append(jsonEscape(block.blockKey())).append("\",");
         out.append("\"legacyImplDir\":\"").append(jsonEscape(block.legacyImplDir())).append("\",");
-        out.append("\"pureDeps\":[");
-        for (int i = 0; i < block.pureDeps().size(); i++) {
+        out.append("\"allowedDeps\":[");
+        for (int i = 0; i < block.allowedDeps().size(); i++) {
             if (i > 0) {
                 out.append(",");
             }
-            ContainmentDep dep = block.pureDeps().get(i);
+            ContainmentDep dep = block.allowedDeps().get(i);
             out.append("{\"ga\":\"").append(jsonEscape(dep.ga())).append("\",\"version\":\"")
                 .append(jsonEscape(dep.version())).append("\"}");
         }
@@ -611,7 +611,7 @@ public final class JvmTarget implements Target {
             + "blocks.each { block ->\n"
             + "    def blockKey = String.valueOf(block.blockKey)\n"
             + "    def safeName = blockKey.replaceAll('[^A-Za-z0-9_]', '_')\n"
-            + "    def configName = \"bearPureDeps_${safeName}\"\n"
+            + "    def configName = \"bearAllowedDeps_${safeName}\"\n"
             + "    def compileTaskName = \"compileBearImpl_${safeName}\"\n"
             + "    def markTaskName = \"markBearContainment_${safeName}\"\n"
             + "    def outputDir = file(\"$buildDir/bear/impl-classes/${blockKey}\")\n\n"
@@ -626,7 +626,7 @@ public final class JvmTarget implements Target {
             + "    pureConfig.canBeConsumed = false\n"
             + "    pureConfig.canBeResolved = true\n"
             + "    pureConfig.transitive = false\n"
-            + "    (block.pureDeps ?: []).each { dep ->\n"
+            + "    (block.allowedDeps ?: []).each { dep ->\n"
             + "        dependencies.add(configName, \"${dep.ga}:${dep.version}\")\n"
             + "    }\n\n"
             + "    tasks.register(compileTaskName, JavaCompile) {\n"
@@ -1065,7 +1065,7 @@ public final class JvmTarget implements Target {
     private record ContainmentDep(String ga, String version) {
     }
 
-    private record ContainmentBlockSpec(String blockKey, String legacyImplDir, List<ContainmentDep> pureDeps) {
+    private record ContainmentBlockSpec(String blockKey, String legacyImplDir, List<ContainmentDep> allowedDeps) {
     }
 
     @FunctionalInterface
@@ -1073,3 +1073,5 @@ public final class JvmTarget implements Target {
         void run() throws IOException;
     }
 }
+
+
