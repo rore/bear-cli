@@ -51,3 +51,23 @@ Non-interactive mode (for automation/agents):
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\safe-clean-bear-generated.ps1 -Yes
 ```
+
+## Safe Demo Sync
+
+Build latest CLI + sync vendored demo CLI and `.bear/agent` package files:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\sync-bear-demo.ps1
+```
+
+Dry run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\sync-bear-demo.ps1 -WhatIf
+```
+
+Skip build (use already built installDist output):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\sync-bear-demo.ps1 -SkipBuild
+```
