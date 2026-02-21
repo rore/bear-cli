@@ -25,8 +25,17 @@ Current preview guarantees:
 Current preview non-guarantees:
 - Business correctness beyond declared invariants
 - Real DB/concurrency/transaction semantics
-- Runtime enforcement beyond test harness
+- Runtime guarantees outside governed generated wrappers
 - Concurrency-safe duplicate handling (idempotency is deterministic replay in the test harness)
+
+Semantics direction (v1.2):
+- BEAR enforces semantics by construction only when they are deterministically enforceable from declared IR boundary data (inputs/outputs/ports).
+- Idempotency is included because wrapper code can enforce it completely from declared key material, store port, and outputs.
+- Invariants are intentionally limited to structural output checks.
+- Semantics requiring hidden context or policy inference remain out of scope.
+
+Canonical rule and rationale:
+- `doc/IR_SPEC.md` -> `Semantics Decision Rule (Canonical)`
 
 Start here: `doc/START_HERE.md`
 

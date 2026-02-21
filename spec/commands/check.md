@@ -5,7 +5,7 @@
 
 `bear check --all --project <repoRoot> [--blocks <path>] [--only <csv>] [--fail-fast] [--strict-orphans]`
 
-`bear check` v1.7 is a deterministic gate for:
+`bear check` v1.9 is a deterministic gate for:
 1. drift regeneration enforcement on BEAR-owned artifacts
 2. undeclared-reach enforcement for covered preview JVM direct HTTP surfaces
 3. boundary-bypass enforcement on BEAR seams (`DIRECT_IMPL_USAGE`, `NULL_PORT_WIRING`, `EFFECTS_BYPASS`)
@@ -13,6 +13,11 @@
 5. boundary-expansion signaling derived from BEAR surface manifests
 6. allowed-deps containment verification when IR declares `block.impl.allowedDeps`
 7. wrapper-owned semantic enforcement validation (wiring manifest consistency + marker-first invariant classification)
+
+Semantic scope statement:
+- `check` verifies only semantics that BEAR can enforce deterministically from declared IR boundary data.
+- It does not imply general business-rule correctness or cross-port transaction guarantees.
+- Canonical selection rule: `doc/IR_SPEC.md` -> `Semantics Decision Rule (Canonical)`.
 
 For base-branch PR governance classification, use `bear pr-check`.
 
@@ -143,7 +148,7 @@ Missing baseline:
 Boundary classification uses manifest data only (no Java source parsing).
 
 Wiring semantic consistency gate:
-- if `wrapperOwnedSemanticPorts ∩ logicRequiredPorts != ∅`, `check` fails deterministically:
+- if `wrapperOwnedSemanticPorts` intersects `logicRequiredPorts`, `check` fails deterministically:
   - category: `VALIDATION`
   - `CODE=MANIFEST_INVALID`
   - `PATH=build/generated/bear/wiring/<blockKey>.wiring.json`

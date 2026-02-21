@@ -1,8 +1,21 @@
 # BEAR Agent Package (Portable v0.2)
 
-`doc/bear-package/` is the source of truth for BEAR-distributed agent package files copied into adopter repos.
+This directory is the source of truth for BEAR-distributed agent package files copied into adopter repos.
 
 This package is generic and domain-neutral. It provides BEAR operating rules, IR guidance, and deterministic gate usage. It must not include app-specific solution hints.
+
+Self-contained reference rule:
+- package files must reference only paths that exist inside the distributed package (`.bear/agent/**`) plus project-local BEAR artifacts/IR files.
+- do not point agents to repo docs that are not shipped in the package.
+
+Minimum agent context carried by the package:
+- startup contract (`.bear/agent/BEAR_AGENT.md`)
+- deterministic operating loop (`.bear/agent/WORKFLOW.md`)
+- IR schema/rules (`.bear/agent/doc/IR_QUICKREF.md`)
+- IR minimal patterns (`.bear/agent/doc/IR_EXAMPLES.md`)
+- index rules (`.bear/agent/doc/BLOCK_INDEX_QUICKREF.md`)
+- conceptual framing (`.bear/agent/doc/BEAR_PRIMER.md`)
+- required project-local inspection targets (`spec/*.bear.yaml`, `bear.blocks.yaml`, `build/generated/bear/**` when present)
 
 Canonical command surface expected by the package:
 - `bear validate`
@@ -15,6 +28,11 @@ Containment note (v1 preview):
 - if IR declares `block.impl.allowedDeps`, Java+Gradle projects must apply generated containment entrypoint:
   - `build/generated/bear/gradle/bear-containment.gradle`
 - `bear check` verifies containment marker/hash and does not invoke Gradle automatically.
+
+Semantic context included in package docs:
+- enforcement-by-construction (wrapper-owned idempotency + invariants)
+- explicit selection rule (enforceability + determinism)
+- explicit non-goals (no business-rule inference, no transaction framework semantics)
 
 ## Package Contract
 

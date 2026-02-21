@@ -3,6 +3,21 @@
 ## Command
 `bear compile <ir-file> --project <path>`
 
+## Semantic Enforcement Intent (v1.2)
+`compile` generates wrapper-owned semantic enforcement only for semantics that are deterministically enforceable from declared IR boundary data.
+
+In scope:
+- idempotency wrapper flow (`get`/replay/`put`)
+- output-level invariant checks
+
+Out of scope:
+- business policy inference
+- semantics requiring undeclared context
+- cross-port transaction guarantees
+
+Canonical selection rule:
+- `doc/IR_SPEC.md` -> `Semantics Decision Rule (Canonical)`
+
 ## Block Identity Resolution (v1.2 Lock+)
 `compile` resolves the per-block identity (`blockKey`) deterministically before generation.
 
@@ -112,7 +127,7 @@ Generated metadata:
     - `irHash` (SHA-256 of canonical normalized IR YAML bytes)
     - `generatorVersion` (`jvm-v1`)
     - `capabilities` (`name` from IR `effects.allow[*].port`, sorted `ops`)
-    - `invariants` (v0: `kind=non_negative`, `field`)
+    - `invariants` (v1.2: declared invariant rules as emitted from IR canonical form)
 - `<blockKey>.wiring.json` at `<project>/build/generated/bear/wiring/<blockKey>.wiring.json`
   - deterministic wiring manifest used by `bear check` boundary-bypass enforcement
   - minified canonical JSON, UTF-8, LF, trailing newline
@@ -134,7 +149,7 @@ Generated metadata:
 - One interface per declared port.
 - One method per declared op.
 - Methods sorted alphabetically by normalized op name.
-- Method signature is fixed in v0:
+- Method signature is fixed in v1.2:
   - `BearValue <op>(BearValue input);`
 - No generics in port method signatures.
 

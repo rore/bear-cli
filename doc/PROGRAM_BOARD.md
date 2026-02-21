@@ -71,4 +71,5 @@ Preview standing note:
 ## Open Risks / Decisions
 
 - Risk: historical references still pointing to `doc/ROADMAP_V0.md` can reintroduce drift if not cleaned.
+- Direction lock: BEAR semantic scope follows enforceability + determinism (wrapper-owned where possible), not domain-specific rule coverage.
 

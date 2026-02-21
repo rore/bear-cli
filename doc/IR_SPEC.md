@@ -19,6 +19,15 @@ v1 does not support:
 - transaction semantics / cross-port atomicity
 - undeclared dynamic semantics outside declared IR fields
 
+## Semantics Decision Rule (Canonical)
+BEAR enforces a semantic only if all are true:
+- it can be implemented as wrapper-owned behavior/checks using declared inputs/outputs and declared ports
+- it requires no hidden context unless that context is explicitly declared as an input or port
+- it is deterministic and implementable by the active target
+- it has a frozen, testable contract (for example key format, marker format, and error envelope)
+
+If any condition fails, the semantic is out of scope for BEAR.
+
 ## Model
 Root object:
 - `version` (required, must be `v1`)
@@ -132,6 +141,33 @@ Generated wrappers own semantic enforcement:
   - replay-decoded result
 
 Logic implementations are not the semantic authority for these checks.
+
+## Why Idempotency Is Included
+Idempotency is included because it satisfies the decision rule without extra domain context:
+- key material comes from declared request inputs
+- side-effect boundaries come from declared ports/ops
+- replay payload shape comes from declared outputs
+- storage boundary is explicit (`idempotency.store`)
+
+This allows one deterministic guarantee:
+- same computed key -> no duplicate side effects -> deterministic replay result
+
+BEAR uses a frozen idempotency contract for enforceability and reproducibility. Contract variation belongs in explicit future IR semantics, not ad hoc logic conventions.
+
+## Why Invariants Are Limited
+`invariants` in v1.2 are intentionally output-level structural checks:
+- `non_negative`
+- `non_empty`
+- `equals`
+- `one_of`
+
+They are boundary-checkable and deterministic. They do not encode business policy inference.
+
+## Explicit Non-Goals
+- BEAR is not an application runtime framework.
+- BEAR is not a business rules engine.
+- BEAR does not infer or guess undeclared semantics.
+- BEAR does not guarantee cross-port transaction atomicity.
 
 ## Canonical Example (excerpt)
 ```yaml

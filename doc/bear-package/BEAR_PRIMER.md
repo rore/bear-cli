@@ -19,15 +19,35 @@ You declare structure in IR, generate deterministic artifacts, implement only us
 - Effects:
   - declared capability ports and allowed ops.
 - Idempotency:
-  - replay-safe behavior keyed by an input field.
+  - replay-safe wrapper behavior keyed by declared input material (`key` or `keyFromInputs`).
 - Invariant:
-  - structural output rule (v1 supports `non_negative`).
+  - structural output rule (`non_negative`, `non_empty`, `equals`, `one_of`).
+  - v1 supports `non_negative` (and v1.2 extends this structural set with `non_empty`, `equals`, `one_of`).
 
 ## Source of Truth for IR
 
-- Use `doc/IR_QUICKREF.md` for schema/capability rules.
-- Use `doc/IR_EXAMPLES.md` for minimal valid examples.
+- Use `.bear/agent/doc/IR_QUICKREF.md` for schema/capability rules.
+- Use `.bear/agent/doc/IR_EXAMPLES.md` for minimal valid examples.
 - Do not infer IR by reverse engineering CLI binaries.
+
+## Semantics Decision Rule (v1.2)
+
+BEAR enforces a semantic only when it is:
+- wrapper-enforceable from declared inputs/outputs/ports
+- free of hidden context unless explicitly declared
+- deterministic and target-implementable
+- defined by a frozen, testable contract
+
+Why idempotency is included:
+- key material, store port, side-effect boundary, and replay payload are declared in IR.
+
+Why invariants are limited:
+- they are output-level structural checks that are deterministic and boundary-checkable.
+
+Out of scope:
+- business-policy inference
+- undeclared context semantics
+- cross-port transaction atomicity
 
 ## IR-First Rule
 

@@ -15,7 +15,7 @@ Purpose:
 ## Hard Rules
 
 1. Do not reverse engineer BEAR binaries (`jar tf`, `javap`, decompiler tools) to infer IR shape.
-2. Treat `doc/IR_QUICKREF.md` and `doc/IR_EXAMPLES.md` as the IR source of truth.
+2. Treat `.bear/agent/doc/IR_QUICKREF.md` and `.bear/agent/doc/IR_EXAMPLES.md` as the IR source of truth.
 3. Do not edit generated files under `build/generated/bear/**`.
 4. Use deterministic BEAR gates; no ad-hoc substitute scripts.
 5. If multiple governed blocks or multiple IR files exist, `bear.blocks.yaml` is mandatory.
@@ -39,8 +39,9 @@ Purpose:
 23. `bear fix` is drift-repair only; do not run `bear fix` for `TEST_FAILURE` or `IO_ERROR`.
 24. In `src/main/**`, do not import or instantiate governed `*Impl` classes directly; wire through generated entrypoints under `com.bear.generated.*`.
 25. Do not wire governed entrypoints with top-level `null` port arguments in production code.
-26. For each effect port declared in IR, impl code must use the corresponding port parameter directly, pass it through to a helper call, or explicitly suppress with exact same-file line `// BEAR:PORT_USED <portParamName>`.
+26. For each logic-required effect port, impl code must use the corresponding port parameter directly, pass it through to a helper call, or explicitly suppress with exact same-file line `// BEAR:PORT_USED <portParamName>`; wrapper-owned semantic ports must not be used/suppressed from impl code.
 27. If `check` writes `build/bear/check.blocked.marker` (`PROJECT_TEST_LOCK`/`PROJECT_TEST_BOOTSTRAP`), stop feature edits and clear with `bear unblock --project <path>` after fixing environment.
+28. Agent guidance must remain package-local: rely on `.bear/agent/**` plus project-local BEAR artifacts (`spec/*.bear.yaml`, `bear.blocks.yaml`, `build/generated/bear/**`), not non-shipped repo docs.
 
 ## Session Baseline Check
 

@@ -50,6 +50,32 @@ For full normative command contracts, see:
 For full invariant intent and enforcement status (`ENFORCED`/`PARTIAL`/`PLANNED`), see:
 - `doc/INVARIANT_CHARTER.md`
 
+## Semantics Scope (v1.2)
+
+BEAR uses enforcement-by-construction for a narrow semantic slice.
+
+Meaning:
+- if a semantic can be enforced entirely in generated wrapper code from declared IR boundary data, BEAR enforces it there
+- BEAR does not rely on impl conventions or comment discipline for those semantics
+
+Why idempotency is included:
+- request key material is declared
+- side-effect boundaries are declared ports/ops
+- replay payload shape is declared outputs
+- idempotency store boundary is explicitly declared
+
+Why only these invariants:
+- v1.2 invariants are structural output checks that are deterministic and boundary-checkable
+- they run on fresh and replay paths so replay is not a bypass
+
+Out of scope:
+- business policy inference
+- auth/time-window/distributed transaction semantics not declared in IR
+- cross-port atomicity guarantees
+
+Canonical decision rule:
+- `doc/IR_SPEC.md` -> `Semantics Decision Rule (Canonical)`
+
 ## Core commands
 
 ### 1. Validate IR

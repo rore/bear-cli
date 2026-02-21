@@ -37,7 +37,9 @@ block:
       putOp: put
   invariants:
     - kind: non_negative
+      scope: result
       field: remainingQuota
+      params: {}
 ```
 
 ## Example B: Minimal Multi-Block (Indexed)
@@ -90,7 +92,9 @@ block:
       putOp: put
   invariants:
     - kind: non_negative
+      scope: result
       field: remainingQuota
+      params: {}
 ```
 
 `spec/activity-log.bear.yaml`

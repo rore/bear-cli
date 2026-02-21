@@ -135,6 +135,19 @@ Rules:
 - Idempotent logic signatures exclude idempotency port.
 - IR-declared semantics must be enforceable by target; otherwise `check` fails.
 
+Selection rule (why these semantics):
+- BEAR enforces semantics only when they are deterministic and wrapper-enforceable from declared inputs/outputs/ports.
+- Idempotency qualifies because key material, effect boundary, and replay payload are all explicitly declared.
+- Invariants are limited to structural output checks for the same reason.
+- Semantics requiring hidden context are out of scope.
+
+Canonical details:
+- BEAR package canonical rule (self-contained):
+  - enforce only semantics that are wrapper-enforceable from declared inputs/outputs/ports
+  - require no hidden context unless explicitly declared
+  - require deterministic target implementation
+  - require frozen, testable contracts
+
 ## Commands
 For each changed IR:
 1. `bear validate <ir-file>`

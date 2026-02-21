@@ -11,6 +11,9 @@ Purpose:
 4. `.bear/agent/doc/BLOCK_INDEX_QUICKREF.md`
 5. the feature request
 
+Reference boundary:
+- use only `.bear/agent/**` guidance plus project-local BEAR artifacts (`spec/*.bear.yaml`, `bear.blocks.yaml`, `build/generated/bear/**` when present).
+
 ## Canonical Flows
 
 ## Decomposition Protocol (Deterministic)
@@ -92,6 +95,23 @@ Default to direct CLI commands.
 
 If wrappers are shipped and explicitly documented by the project, use them.
 Do not assume `bin/bear-all.*` or `bin/pr-gate.*` exists.
+
+## Semantics Policy (v1.2)
+
+Use enforcement-by-construction:
+- when semantics are wrapper-enforceable from declared IR boundary data, BEAR enforces them in generated wrappers
+- do not push those semantics into impl conventions or suppression comments
+
+Why this matters:
+- idempotency is wrapper-enforceable from declared key fields, declared store port, declared outputs
+- invariants are wrapper-enforced structural output checks (fresh and replay)
+
+Do not extend BEAR semantics by inference:
+- if enforcement requires hidden domain context/policy, it is out of scope
+- BEAR is not a business rules engine or transaction framework
+
+Canonical rule:
+- Enforce only semantics that are wrapper-checkable from declared inputs/outputs/ports, require no hidden context, are deterministic, and have frozen contracts.
 
 ## Failure Triage (Deterministic)
 

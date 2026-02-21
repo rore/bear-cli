@@ -13,6 +13,7 @@ P2 feature delivery:
 - active milestone is `P2`
 - v1.2 Final Lock++ semantic hardening (wrapper-owned idempotency + invariants)
 - deterministic marker-first invariant classification and manifest semantic validation
+- documentation alignment for enforcement-by-construction philosophy and semantic scope boundaries
 - preserve strict command contract compatibility (stdout/stderr ordering, exit buckets, failure envelope)
 
 ## Next Concrete Task
@@ -25,6 +26,10 @@ Post-Lock++ follow-through:
 
 ## Session Notes
 
+- Synced philosophy docs to v1.2 direction:
+  - explicit enforcement-by-construction principle
+  - explicit “why idempotency / why limited invariants / what is out of scope”
+  - canonical selection rule centralized in `doc/IR_SPEC.md` and referenced from user/workflow/spec docs
 - Implemented BEAR v1.2 Final Lock++ core:
   - IR: `idempotency.keyFromInputs`, expanded invariant schema (`kind/scope/params`)
   - validator: strict exactly-one-of idempotency key mode + invariant kind/type/params checks
