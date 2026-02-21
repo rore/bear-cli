@@ -34,6 +34,8 @@ Generated BEAR artifacts only:
 powershell -ExecutionPolicy Bypass -File .\scripts\safe-clean-bear-generated.ps1
 ```
 
+This removes BEAR-related generated/runtime outputs, including `build/` artifacts.
+
 Dry run:
 
 ```powershell
