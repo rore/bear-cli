@@ -111,8 +111,9 @@ Fix:
 
 ## Related
 
-- `exit-codes.md`
-- `output-format.md`
-- `commands-check.md`
-- `commands-pr-check.md`
-- `commands-validate.md`
+- [exit-codes.md](exit-codes.md)
+- [output-format.md](output-format.md)
+- [commands-check.md](commands-check.md)
+- [commands-pr-check.md](commands-pr-check.md)
+- [commands-validate.md](commands-validate.md)
+

@@ -37,17 +37,18 @@ Non-zero exits append:
 - `PATH=<locator>`
 - `REMEDIATION=<step>`
 
-See `output-format.md`.
+See [output-format.md](output-format.md).
 
 ## Remediation pointers
 
-- `troubleshooting.md#ir_validation`
-- `troubleshooting.md#usage_invalid_args`
-- `troubleshooting.md#io_error`
+- [troubleshooting.md#ir_validation](troubleshooting.md#ir_validation)
+- [troubleshooting.md#usage_invalid_args](troubleshooting.md#usage_invalid_args)
+- [troubleshooting.md#io_error](troubleshooting.md#io_error)
 
 ## Related
 
-- `commands-compile.md`
-- `exit-codes.md`
-- `output-format.md`
-- `troubleshooting.md`
+- [commands-compile.md](commands-compile.md)
+- [exit-codes.md](exit-codes.md)
+- [output-format.md](output-format.md)
+- [troubleshooting.md](troubleshooting.md)
+

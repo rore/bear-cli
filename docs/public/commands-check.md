@@ -65,15 +65,16 @@ For aggregated `--all` non-zero failures, footer code is `REPO_MULTI_BLOCK_FAILE
 
 ## Remediation pointers
 
-- `troubleshooting.md#drift_detected-or-drift_missing_baseline`
-- `troubleshooting.md#undeclared_reach`
-- `troubleshooting.md#boundary_bypass`
-- `troubleshooting.md#test_failure-test_timeout-or-invariant_violation`
+- [troubleshooting.md#drift_detected-or-drift_missing_baseline](troubleshooting.md#drift_detected-or-drift_missing_baseline)
+- [troubleshooting.md#undeclared_reach](troubleshooting.md#undeclared_reach)
+- [troubleshooting.md#boundary_bypass](troubleshooting.md#boundary_bypass)
+- [troubleshooting.md#test_failure-test_timeout-or-invariant_violation](troubleshooting.md#test_failure-test_timeout-or-invariant_violation)
 
 ## Related
 
-- `commands-compile.md`
-- `commands-pr-check.md`
-- `exit-codes.md`
-- `output-format.md`
-- `troubleshooting.md`
+- [commands-compile.md](commands-compile.md)
+- [commands-pr-check.md](commands-pr-check.md)
+- [exit-codes.md](exit-codes.md)
+- [output-format.md](output-format.md)
+- [troubleshooting.md](troubleshooting.md)
+

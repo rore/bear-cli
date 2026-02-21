@@ -43,14 +43,15 @@ For aggregated `--all` non-zero failures, footer code is `REPO_MULTI_BLOCK_FAILE
 
 ## Remediation pointers
 
-- `troubleshooting.md#ir_validation`
-- `troubleshooting.md#usage_invalid_args`
-- `troubleshooting.md#io_error`
+- [troubleshooting.md#ir_validation](troubleshooting.md#ir_validation)
+- [troubleshooting.md#usage_invalid_args](troubleshooting.md#usage_invalid_args)
+- [troubleshooting.md#io_error](troubleshooting.md#io_error)
 
 ## Related
 
-- `commands-compile.md`
-- `commands-check.md`
-- `exit-codes.md`
-- `output-format.md`
-- `troubleshooting.md`
+- [commands-compile.md](commands-compile.md)
+- [commands-check.md](commands-check.md)
+- [exit-codes.md](exit-codes.md)
+- [output-format.md](output-format.md)
+- [troubleshooting.md](troubleshooting.md)
+

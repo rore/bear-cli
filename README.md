@@ -48,12 +48,12 @@ Pipeline: `IR -> compile -> check`, and `pr-check` for PR boundary governance.
 
 ## Links
 
-- `docs/public/INDEX.md`
-- `docs/public/QUICKSTART.md`
-- `docs/public/exit-codes.md`
-- `docs/public/output-format.md`
-- `docs/public/troubleshooting.md`
-- Optional project context: `docs/context/state.md`
+- [docs/public/INDEX.md](docs/public/INDEX.md)
+- [docs/public/QUICKSTART.md](docs/public/QUICKSTART.md)
+- [docs/public/exit-codes.md](docs/public/exit-codes.md)
+- [docs/public/output-format.md](docs/public/output-format.md)
+- [docs/public/troubleshooting.md](docs/public/troubleshooting.md)
+- Optional project context: [docs/context/state.md](docs/context/state.md)
 
 ## Preview scope and supported targets
 
@@ -67,4 +67,5 @@ Supported targets:
 
 - JVM/Java target in Preview.
 - Primary containment enforcement path is Java plus Gradle wrapper when `impl.allowedDeps` is declared.
+
 

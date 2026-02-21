@@ -9,7 +9,7 @@ Preview freezes the public command contract for automation reliability:
 - exit-code meanings
 - non-zero failure footer contract
 
-These are documented in `CONTRACTS.md`, command pages, `exit-codes.md`, and `output-format.md`.
+These are documented in [CONTRACTS.md](CONTRACTS.md), command pages, [exit-codes.md](exit-codes.md), and [output-format.md](output-format.md).
 
 ## What may still change in Preview
 
@@ -24,8 +24,9 @@ Breaking changes to frozen public contracts are deferred to post-Preview version
 
 ## Related
 
-- `CONTRACTS.md`
-- `INDEX.md`
-- `exit-codes.md`
-- `output-format.md`
-- `commands-check.md`
+- [CONTRACTS.md](CONTRACTS.md)
+- [INDEX.md](INDEX.md)
+- [exit-codes.md](exit-codes.md)
+- [output-format.md](output-format.md)
+- [commands-check.md](commands-check.md)
+

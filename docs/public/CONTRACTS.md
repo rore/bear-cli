@@ -13,19 +13,20 @@ Frozen means these interfaces are stable:
 
 Public contract pages:
 
-- `commands-validate.md`
-- `commands-compile.md`
-- `commands-check.md`
-- `commands-pr-check.md`
-- `commands-fix.md`
-- `exit-codes.md`
-- `output-format.md`
-- `VERSIONING.md`
+- [commands-validate.md](commands-validate.md)
+- [commands-compile.md](commands-compile.md)
+- [commands-check.md](commands-check.md)
+- [commands-pr-check.md](commands-pr-check.md)
+- [commands-fix.md](commands-fix.md)
+- [exit-codes.md](exit-codes.md)
+- [output-format.md](output-format.md)
+- [VERSIONING.md](VERSIONING.md)
 
 ## Related
 
-- `INDEX.md`
-- `VERSIONING.md`
-- `exit-codes.md`
-- `output-format.md`
-- `troubleshooting.md`
+- [INDEX.md](INDEX.md)
+- [VERSIONING.md](VERSIONING.md)
+- [exit-codes.md](exit-codes.md)
+- [output-format.md](output-format.md)
+- [troubleshooting.md](troubleshooting.md)
+

@@ -41,8 +41,9 @@ bear check --all --project .
 
 ## Related
 
-- `INDEX.md`
-- `MODEL.md`
-- `commands-check.md`
-- `troubleshooting.md`
-- `exit-codes.md`
+- [INDEX.md](INDEX.md)
+- [MODEL.md](MODEL.md)
+- [commands-check.md](commands-check.md)
+- [troubleshooting.md](troubleshooting.md)
+- [exit-codes.md](exit-codes.md)
+

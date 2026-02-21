@@ -57,8 +57,9 @@ Common `check` policy lines:
 
 ## Related
 
-- `exit-codes.md`
-- `commands-check.md`
-- `commands-pr-check.md`
-- `commands-validate.md`
-- `troubleshooting.md`
+- [exit-codes.md](exit-codes.md)
+- [commands-check.md](commands-check.md)
+- [commands-pr-check.md](commands-pr-check.md)
+- [commands-validate.md](commands-validate.md)
+- [troubleshooting.md](troubleshooting.md)
+

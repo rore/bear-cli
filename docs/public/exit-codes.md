@@ -34,8 +34,9 @@ Global non-zero footer in aggregated failures uses:
 
 ## Related
 
-- `output-format.md`
-- `commands-check.md`
-- `commands-pr-check.md`
-- `troubleshooting.md`
-- `CONTRACTS.md`
+- [output-format.md](output-format.md)
+- [commands-check.md](commands-check.md)
+- [commands-pr-check.md](commands-pr-check.md)
+- [troubleshooting.md](troubleshooting.md)
+- [CONTRACTS.md](CONTRACTS.md)
+

@@ -26,8 +26,9 @@ Governance flow:
 
 ## Related
 
-- `QUICKSTART.md`
-- `CONTRACTS.md`
-- `commands-compile.md`
-- `commands-check.md`
-- `commands-pr-check.md`
+- [QUICKSTART.md](QUICKSTART.md)
+- [CONTRACTS.md](CONTRACTS.md)
+- [commands-compile.md](commands-compile.md)
+- [commands-check.md](commands-check.md)
+- [commands-pr-check.md](commands-pr-check.md)
+

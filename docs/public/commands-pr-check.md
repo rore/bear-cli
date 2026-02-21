@@ -48,14 +48,15 @@ For aggregated `--all` non-zero failures, footer code is `REPO_MULTI_BLOCK_FAILE
 
 ## Remediation pointers
 
-- `troubleshooting.md#boundary_expansion`
-- `troubleshooting.md#io_git`
-- `troubleshooting.md#ir_validation`
+- [troubleshooting.md#boundary_expansion](troubleshooting.md#boundary_expansion)
+- [troubleshooting.md#io_git](troubleshooting.md#io_git)
+- [troubleshooting.md#ir_validation](troubleshooting.md#ir_validation)
 
 ## Related
 
-- `MODEL.md`
-- `commands-check.md`
-- `exit-codes.md`
-- `output-format.md`
-- `troubleshooting.md`
+- [MODEL.md](MODEL.md)
+- [commands-check.md](commands-check.md)
+- [exit-codes.md](exit-codes.md)
+- [output-format.md](output-format.md)
+- [troubleshooting.md](troubleshooting.md)
+
