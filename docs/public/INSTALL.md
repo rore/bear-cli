@@ -6,8 +6,6 @@ This guide is for installing BEAR into a non-demo project.
 
 Install BEAR by copying one package bundle: [`docs/bear-package/.bear/`](../bear-package/.bear/) into your project as `.bear/`.
 
-Do not copy agent docs and CLI runtime as separate installs.
-
 Target repo expected layout:
 
 ```text

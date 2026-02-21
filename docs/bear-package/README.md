@@ -4,6 +4,10 @@ This directory is the source of truth for BEAR-distributed package files copied 
 
 This package is generic and domain-neutral. It provides BEAR operating rules, IR guidance, and deterministic gate usage. It must not include app-specific solution hints.
 
+Canonical source rule:
+- `docs/bear-package/.bear/` is the only canonical distributable bundle.
+- root-level files in `docs/bear-package/` are packaging helpers (`README.md`, `AGENTS.md`, `AGENTS_SHIM.md`), not duplicate bundle content.
+
 Self-contained reference rule:
 - package files must reference only paths that exist inside the distributed package (`.bear/agent/**`) plus project-local BEAR artifacts/IR files.
 - do not point agents to repo docs that are not shipped in the package.

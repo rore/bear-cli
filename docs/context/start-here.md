@@ -14,7 +14,7 @@ This is the navigation map for active work.
 8. `spec/repo/block-index.md` -- canonical `bear.blocks.yaml` contract for `--all` enforcement.
 9. `docs/context/user-guide.md` -- operator-facing command and failure-envelope guide.
 10. `docs/context/archive/demo-preview-demo.md` -- preview demo operator guide and scenario branch map.
-11. `docs/bear-package/` -- distributed workflow source texts (`AGENTS.md`, `BEAR_AGENT.md`, `WORKFLOW.md`, `BEAR_PRIMER.md`).
+11. `docs/bear-package/.bear/agent/` -- distributed workflow source texts (`BEAR_AGENT.md`, `WORKFLOW.md`, `doc/BEAR_PRIMER.md`).
 12. `docs/context/project-log.md` -- architectural rationale history.
 13. `docs/context/north-star.md` -- long-horizon vision.
 14. `docs/context/future.md` -- explicitly parked ideas.

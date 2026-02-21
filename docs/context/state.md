@@ -26,6 +26,11 @@ Post-Lock++ follow-through:
 
 ## Session Notes
 
+- Clarified BEAR package structure and removed legacy duplication:
+  - deleted root-level duplicate package docs from `docs/bear-package/` (`BEAR_AGENT.md`, `WORKFLOW.md`, `BEAR_PRIMER.md`, `IR_*`, `BLOCK_INDEX_QUICKREF.md`).
+  - `.bear/agent/*` is now the only canonical location for distributed agent docs.
+  - updated `BearPackageDocsConsistencyTest` to validate files under `docs/bear-package/.bear/agent/doc/*`.
+  - updated `docs/context/start-here.md` package navigation to `docs/bear-package/.bear/agent/`.
 - Refined README opening definition of BEAR to emphasize agent-first execution and PR/CI governance visibility in one concrete sentence.
 - Normalized package installation to single-bundle copy semantics:
   - `docs/public/INSTALL.md` now installs by copying `docs/bear-package/.bear/*` into target `.bear/` (no separate doc/runtime copy flow).
