@@ -1,7 +1,7 @@
-# BEAR v0 Governance Policy
+﻿# BEAR v0 Governance Policy
 
 This document is normative for BEAR v0 governance.
-For the full invariant catalog and enforcement status, see `doc/INVARIANT_CHARTER.md`.
+For the full invariant catalog and enforcement status, see `docs/context/invariant-charter.md`.
 
 ## Purpose
 
@@ -68,3 +68,4 @@ Developers stay domain-focused; agents handle BEAR mechanics:
 
 This governance policy does not expand v0 IR expressiveness and does not add a BEAR runtime.
 It defines review and signaling requirements for the existing v0 model.
+

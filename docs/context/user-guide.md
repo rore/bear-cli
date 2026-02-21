@@ -1,4 +1,4 @@
-# BEAR CLI User Guide (Preview)
+﻿# BEAR CLI User Guide (Preview)
 
 This guide is for day-to-day usage of `bear` in a project.
 
@@ -40,15 +40,15 @@ Intent:
 - provide stable, automatable signals rather than subjective prompts/process
 
 For full normative command contracts, see:
-- `spec/commands/validate.md`
-- `spec/commands/compile.md`
-- `spec/commands/fix.md`
-- `spec/commands/check.md`
-- `spec/commands/pr-check.md`
-- `spec/commands/exit-codes.md`
+- `docs/public/commands-validate.md`
+- `docs/public/commands-compile.md`
+- `docs/public/commands-fix.md`
+- `docs/public/commands-check.md`
+- `docs/public/commands-pr-check.md`
+- `docs/public/exit-codes.md`
 
 For full invariant intent and enforcement status (`ENFORCED`/`PARTIAL`/`PLANNED`), see:
-- `doc/INVARIANT_CHARTER.md`
+- `docs/context/invariant-charter.md`
 
 ## Semantics Scope (v1.2)
 
@@ -74,7 +74,7 @@ Out of scope:
 - cross-port atomicity guarantees
 
 Canonical decision rule:
-- `doc/IR_SPEC.md` -> `Semantics Decision Rule (Canonical)`
+- `docs/context/ir-spec.md` -> `Semantics Decision Rule (Canonical)`
 
 ## Core commands
 
@@ -259,7 +259,7 @@ Disallowed:
 - `70` internal/unexpected failure
 - `74` IO/git failure
 
-For `check --all` and `pr-check --all`, final exit code is aggregated via explicit severity ranking (not numeric max), defined in `spec/commands/exit-codes.md`.
+For `check --all` and `pr-check --all`, final exit code is aggregated via explicit severity ranking (not numeric max), defined in `docs/public/exit-codes.md`.
 
 ## Lock troubleshooting (Windows/Gradle)
 
@@ -292,7 +292,7 @@ Expected classification:
 Planned after preview:
 - broader undeclared-reach coverage classes
 - dependency-direction and cross-domain leakage hardening
-- additional structural invariants listed in `doc/INVARIANT_CHARTER.md`
+- additional structural invariants listed in `docs/context/invariant-charter.md`
 
 ## allowed deps (v1 preview)
 
@@ -339,4 +339,5 @@ All non-zero command exits include deterministic footer lines:
 7. Agent implements user-owned logic/tests.
 8. Agent runs `bear check <ir-file> --project <path>`.
 9. For PR governance, run `bear pr-check <ir-file> --project <path> --base <ref>`.
+
 

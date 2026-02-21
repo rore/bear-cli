@@ -1,4 +1,4 @@
-# BEAR North Star
+﻿# BEAR North Star
 
 ## BEAR: Making AI-Written Software Safer and More Predictable
 
@@ -97,7 +97,8 @@ The intent is to prevent silent interaction-semantics drift while preserving imp
 
 This doc is the long-horizon target model, not a claim that all properties exist in v0 today.
 
-- `doc/ARCHITECTURE.md`: what BEAR guarantees now (v0 contract).
-- `doc/GOVERNANCE.md`: normative classification and review policy.
-- `doc/ROADMAP.md`: milestone definitions and phased path to stronger enforcement.
-- `doc/PROGRAM_BOARD.md`: live milestone execution status and evidence (operational view).
+- `docs/context/architecture.md`: what BEAR guarantees now (v0 contract).
+- `docs/context/governance.md`: normative classification and review policy.
+- `docs/context/roadmap.md`: milestone definitions and phased path to stronger enforcement.
+- `docs/context/program-board.md`: live milestone execution status and evidence (operational view).
+

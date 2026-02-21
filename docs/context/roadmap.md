@@ -1,30 +1,30 @@
-# BEAR Roadmap
+﻿# BEAR Roadmap
 
 This file is the single canonical roadmap.
 It defines milestone contracts, done criteria, and post-preview priorities.
 
-Live execution status is tracked in `doc/PROGRAM_BOARD.md`.
-Session handoff status is tracked in `doc/STATE.md`.
+Live execution status is tracked in `docs/context/program-board.md`.
+Session handoff status is tracked in `docs/context/state.md`.
 
 ## How To Read Planning Docs
 
 Use these files by intent, not interchangeably:
-- `doc/ROADMAP.md`: milestone feature contracts and done criteria (what BEAR must do).
-- `doc/PROGRAM_BOARD.md`: milestone feature status and execution queue (what to build next).
-- `doc/STATE.md`: short session handoff (what to do next in this work window).
+- `docs/context/roadmap.md`: milestone feature contracts and done criteria (what BEAR must do).
+- `docs/context/program-board.md`: milestone feature status and execution queue (what to build next).
+- `docs/context/state.md`: short session handoff (what to do next in this work window).
 
 Important:
-- The active queue in `doc/PROGRAM_BOARD.md` is product-development first.
+- The active queue in `docs/context/program-board.md` is product-development first.
 - Do not treat queue order as the canonical feature list for a milestone.
 - For "what are preview features?", use `Preview Release -> Preview contract (must ship)` in this file.
-- For "where do we stand on Preview features right now?", use `doc/PROGRAM_BOARD.md` -> `Preview Feature Status (Roadmap Contract)`.
+- For "where do we stand on Preview features right now?", use `docs/context/program-board.md` -> `Preview Feature Status (Roadmap Contract)`.
 
 ## Milestone Pipeline
 
 `v0 complete -> M1 workflow proof -> M1.1 governance hardening -> Preview Release -> P2 -> P3`
 
 Milestone status ownership:
-- Active/completed state lives only in `doc/PROGRAM_BOARD.md`.
+- Active/completed state lives only in `docs/context/program-board.md`.
 - This file stays stable and milestone-definition focused.
 
 ## Milestone Definitions
@@ -104,7 +104,7 @@ Preview definition of done:
 
 ## Post-Preview Priorities
 
-Priority ordering is strict and maps to `doc/INVARIANT_CHARTER.md`.
+Priority ordering is strict and maps to `docs/context/invariant-charter.md`.
 
 ### Priority 2 (next after preview)
 
@@ -152,3 +152,4 @@ Priority ordering is strict and maps to `doc/INVARIANT_CHARTER.md`.
 - full formal behavioral verification
 - workflow orchestration platforms
 - business-logic DSL expansion
+

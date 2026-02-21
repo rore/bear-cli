@@ -1,4 +1,4 @@
-# BEAR Project Bootstrap (For Non-Codex Sessions)
+﻿# BEAR Project Bootstrap (For Non-Codex Sessions)
 
 Use this when starting a chat session that does not have repo file access (for example ChatGPT).
 Paste the SHORT block first. Paste LONG only if needed.
@@ -65,15 +65,15 @@ Constraints for this session:
 - Do not add features beyond v0 scope.
 - Do not expand IR expressiveness.
 - Keep behavior deterministic.
-- Preserve governance semantics from `doc/GOVERNANCE.md`.
+- Preserve governance semantics from `docs/context/governance.md`.
 
 Continue from here.
 
 Reference split:
-- `doc/NORTH_STAR.md`: broad motivation and long-horizon success criteria.
-- `doc/ARCHITECTURE.md`: current v0 guarantees/non-guarantees.
-- `doc/ROADMAP.md`: roadmap definitions, milestones, and post-preview priorities.
-- `doc/PROGRAM_BOARD.md`: live milestone status, evidence, and queue (repo sessions only).
+- `docs/context/north-star.md`: broad motivation and long-horizon success criteria.
+- `docs/context/architecture.md`: current v0 guarantees/non-guarantees.
+- `docs/context/roadmap.md`: roadmap definitions, milestones, and post-preview priorities.
+- `docs/context/program-board.md`: live milestone status, evidence, and queue (repo sessions only).
 
 ---
 
@@ -122,3 +122,4 @@ Demo IR shape (canonical intent):
   - `idempotency`: `get`, `put`
 - idempotency key: `txId`
 - invariant: non-negative `balance`
+

@@ -1,7 +1,7 @@
-# BEAR v0 Architecture
+﻿# BEAR v0 Architecture
 
 This document defines v0 contract-level guarantees and constraints.
-For long-horizon motivation and success criteria, see `doc/NORTH_STAR.md`.
+For long-horizon motivation and success criteria, see `docs/context/north-star.md`.
 
 ## Core Purpose
 BEAR is a boundary-governance enforcement layer for agentic development.
@@ -40,7 +40,7 @@ Core litmus:
 - If an agent can add new external interaction capability without a small, obvious, deterministic signal, BEAR is not doing its job.
 
 Invariant source of truth:
-- `doc/INVARIANT_CHARTER.md` is normative for invariant definitions and current enforcement status (`ENFORCED`/`PARTIAL`/`PLANNED`).
+- `docs/context/invariant-charter.md` is normative for invariant definitions and current enforcement status (`ENFORCED`/`PARTIAL`/`PLANNED`).
 
 ## Core Principles
 1. Deterministic core
@@ -56,7 +56,7 @@ Invariant source of truth:
 5. Boundary visibility over silent expansion
    - Ordinary IR evolution is expected.
    - Boundary-expanding changes must be explicit and reviewable.
-   - Governance classification is defined in `doc/GOVERNANCE.md`.
+   - Governance classification is defined in `docs/context/governance.md`.
 
 ## Agentic Process Contract (v0)
 BEAR is expected to be default-on in agent sessions.
@@ -136,7 +136,7 @@ IR must be:
 - rejected on unknown keys or invalid references
 - intentionally limited in expressive power
 
-Reference: `doc/IR_SPEC.md`.
+Reference: `docs/context/ir-spec.md`.
 
 ## v0 Scope Lock
 In scope:
@@ -193,7 +193,8 @@ v0 is done when:
 5. Demo proves spec-only baseline -> greenfield implementation -> governed extension progression with deterministic gates.
 
 ## Future Ideas
-Keep future ideas in `doc/FUTURE.md`. Do not implement them in v0.
+Keep future ideas in `docs/context/future.md`. Do not implement them in v0.
 
 ## Governance Reference
-`doc/GOVERNANCE.md` is the normative source for IR diff classification and boundary-expansion review semantics in v0.
+`docs/context/governance.md` is the normative source for IR diff classification and boundary-expansion review semantics in v0.
+

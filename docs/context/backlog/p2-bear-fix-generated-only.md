@@ -1,4 +1,4 @@
-# P2 Backlog Item: `bear fix` (generated artifacts only)
+﻿# P2 Backlog Item: `bear fix` (generated artifacts only)
 
 ## Status
 
@@ -44,5 +44,6 @@ or (repo mode, later):
 ## Implementation Notes
 
 - Implemented `bear fix` single-block and `--all` modes in CLI.
-- Added deterministic command spec at `spec/commands/fix.md`.
+- Added deterministic command spec at `docs/public/commands-fix.md`.
 - Updated CLI and agent-package docs to include `fix` in canonical workflows.
+

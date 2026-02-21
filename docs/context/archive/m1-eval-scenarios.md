@@ -1,13 +1,13 @@
-# M1 Evaluation Scenarios
+﻿# M1 Evaluation Scenarios
 
 Evaluator-facing docs only.
 Do not copy these runbooks into `bear-account-demo`.
 
 Primary operator guide:
-- `doc/m1-eval/RUN_MILESTONE.md`
+- `docs/context/archive/m1-eval-run-milestone.md`
 
 Shared-root multi-block operator guide:
-- `doc/m1-eval/RUN_MULTI_BLOCK.md`
+- `docs/context/archive/m1-eval-run-multi-block.md`
 
 ## Current Active Eval Track
 
@@ -58,3 +58,4 @@ For current multi-block enforcement validation, use:
 - `scenario/corrected-pass-withdraw`
 
 These remain historical proof branches and are not the active M1 realism model.
+

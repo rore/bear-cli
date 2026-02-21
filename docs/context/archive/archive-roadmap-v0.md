@@ -1,4 +1,4 @@
-# BEAR Execution Roadmap (Post-v0)
+﻿# BEAR Execution Roadmap (Post-v0)
 
 Historical note:
 - File name remains `ROADMAP_V0.md` for continuity.
@@ -10,7 +10,7 @@ Use this file for:
 - done criteria for near-term execution
 - prioritized backlog after preview
 
-Use `doc/ROADMAP.md` for:
+Use `docs/context/roadmap.md` for:
 - long-horizon strategy and phase intent
 
 ## Status Snapshot
@@ -67,7 +67,7 @@ Preview philosophy and constraints (frozen):
   - impl code is user/agent-owned and never overwritten
 - `bear check` is the canonical CI gate.
 - all commands must emit stable exit codes and greppable output lines.
-- preview invariant contract is defined in `doc/INVARIANT_CHARTER.md`.
+- preview invariant contract is defined in `docs/context/invariant-charter.md`.
 - preview "must enforce" invariants are charter preview items 1-7 (with explicit preview scope caveat on undeclared-reach coverage).
 
 Preview feature contract (must all ship with acceptance criteria):
@@ -169,7 +169,7 @@ Registry:
 - `74` IO/git failure
 
 Contract:
-- command docs (`spec/commands/*.md`) must map to this registry or explicitly declare scoped exceptions
+- command docs (`docs/public/commands-*.md`) must map to this registry or explicitly declare scoped exceptions
 - CI examples must key off these numeric codes only
 
 3.10 Failure-envelope compliance test (preview hardening)
@@ -283,6 +283,7 @@ v0 delivered:
 - initial demo proof loop
 
 Reference docs for v0 contract semantics:
-- `doc/ARCHITECTURE.md`
-- `doc/GOVERNANCE.md`
-- `doc/IR_SPEC.md`
+- `docs/context/architecture.md`
+- `docs/context/governance.md`
+- `docs/context/ir-spec.md`
+

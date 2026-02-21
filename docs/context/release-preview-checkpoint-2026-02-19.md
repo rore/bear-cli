@@ -1,4 +1,4 @@
-# Preview Checkpoint - 2026-02-19
+﻿# Preview Checkpoint - 2026-02-19
 
 ## Scope
 
@@ -20,7 +20,7 @@ This checkpoint consolidates post-Scenario-2 stabilization work needed for previ
   - explicit stop-and-report behavior on tooling/IO defects
   - explicit prohibition of workaround non-`*Impl.java` classes under `com.bear.generated.*`
 - User/operator guidance:
-  - lock troubleshooting added to `doc/USER_GUIDE.md`
+  - lock troubleshooting added to `docs/context/user-guide.md`
 
 ## Validation
 
@@ -31,10 +31,11 @@ This checkpoint consolidates post-Scenario-2 stabilization work needed for previ
 
 The following command contracts are the preview checkpoint baseline:
 
-- `spec/commands/check.md`
-- `spec/commands/pr-check.md`
-- `spec/commands/exit-codes.md`
+- `docs/public/commands-check.md`
+- `docs/public/commands-pr-check.md`
+- `docs/public/exit-codes.md`
 
 ## Next
 
 - Open P2 starter item: `bear fix` for generated artifacts only (no impl-file edits).
+

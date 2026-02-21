@@ -1,4 +1,4 @@
-# BEAR Program Board
+﻿# BEAR Program Board
 
 ## Last Updated
 
@@ -16,7 +16,7 @@
 
 - This file tracks milestone feature status and queue order.
 - This file is not the canonical milestone feature-definition document.
-- For "what features are in Preview?", use `doc/ROADMAP.md` -> `Preview Release` -> `Preview contract (must ship)`.
+- For "what features are in Preview?", use `docs/context/roadmap.md` -> `Preview Release` -> `Preview contract (must ship)`.
 
 ## Preview Feature Status (Roadmap Contract)
 
@@ -61,15 +61,17 @@ Preview standing note:
 ## Backlog Buckets (P1/P2/P3)
 
 - `P1`
-  - `doc/backlog/P1_PREVIEW_CLOSURE_GAPS.md` (parked; non-blocking for product development)
+  - `docs/context/backlog/p1-preview-closure-gaps.md` (parked; non-blocking for product development)
 - `P2`
-  - `doc/backlog/P2_BEAR_FIX_GENERATED_ONLY.md` (`Completed`)
-  - `doc/backlog/P2_DECLARED_ALLOWED_DEPS_CONTAINMENT.md` (`In Progress`)
+  - `docs/context/backlog/p2-bear-fix-generated-only.md` (`Completed`)
+  - `docs/context/backlog/p2-declared-allowed-deps-containment.md` (`In Progress`)
 - `P3`
-  - `doc/backlog/P3_MAVEN_ALLOWED_DEPS_CONTAINMENT.md` (`Queued`)
+  - `docs/context/backlog/p3-maven-allowed-deps-containment.md` (`Queued`)
 
 ## Open Risks / Decisions
 
-- Risk: historical references still pointing to `doc/ROADMAP_V0.md` can reintroduce drift if not cleaned.
+- Risk: historical references still pointing to `docs/context/roadmap-v0.md` can reintroduce drift if not cleaned.
 - Direction lock: BEAR semantic scope follows enforceability + determinism (wrapper-owned where possible), not domain-specific rule coverage.
+
+
 
