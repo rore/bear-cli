@@ -38,7 +38,8 @@ final class CheckCommandService {
         Path irFile,
         Path projectRoot,
         boolean runReachAndTests,
-        String expectedBlockKey
+        String expectedBlockKey,
+        String expectedBlockLocator
     ) {
         Path baselineRoot = projectRoot.resolve("build").resolve("generated").resolve("bear");
         Path tempRoot = null;
@@ -52,19 +53,16 @@ final class CheckCommandService {
             BearIr ir = parser.parse(irFile);
             validator.validate(ir);
             BearIr normalized = normalizer.normalize(ir);
-            String blockKey = toBlockKey(normalized.block().name());
-            if (expectedBlockKey != null && !expectedBlockKey.equals(blockKey)) {
-                String line = "schema at block.name: INVALID_VALUE: block name must match index name: " + expectedBlockKey;
-                return checkFailure(
-                    CliCodes.EXIT_VALIDATION,
-                    List.of(line),
-                    "VALIDATION",
-                    CliCodes.IR_VALIDATION,
-                    "block.name",
-                    "Set `block.name` to match index `name` and rerun `bear check --all`.",
-                    line
+            BlockIdentityResolution identity = expectedBlockKey == null
+                ? BlockIdentityResolver.resolveSingleCommandIdentity(irFile, projectRoot, normalized.block().name())
+                : BlockIdentityResolver.resolveIndexIdentity(
+                    expectedBlockKey,
+                    expectedBlockLocator == null || expectedBlockLocator.isBlank()
+                        ? "bear.blocks.yaml:name=" + expectedBlockKey
+                        : expectedBlockLocator,
+                    normalized.block().name()
                 );
-            }
+            String blockKey = identity.blockKey();
             String packageSegment = toGeneratedPackageSegment(normalized.block().name());
             Set<String> ownedPrefixes = Set.of(
                 "src/main/java/com/bear/generated/" + packageSegment.replace('.', '/') + "/",
@@ -100,7 +98,7 @@ final class CheckCommandService {
             }
 
             tempRoot = Files.createTempDirectory("bear-check-");
-            target.compile(normalized, tempRoot);
+            target.compile(normalized, tempRoot, blockKey);
             Path candidateRoot = tempRoot.resolve("build").resolve("generated").resolve("bear");
             Path baselineManifestPath = baselineRoot.resolve(markerRelPath);
             Path candidateManifestPath = candidateRoot.resolve(markerRelPath);
@@ -384,6 +382,27 @@ final class CheckCommandService {
                 "Fix the IR issue at the reported path and rerun `bear check <ir-file> --project <path>`.",
                 e.formatLine()
             );
+        } catch (BlockIndexValidationException e) {
+            String line = "index: VALIDATION_ERROR: " + e.getMessage();
+            return checkFailure(
+                CliCodes.EXIT_VALIDATION,
+                List.of(line),
+                "VALIDATION",
+                CliCodes.IR_VALIDATION,
+                e.path(),
+                "Fix `bear.blocks.yaml` and rerun `bear check`.",
+                line
+            );
+        } catch (BlockIdentityResolutionException e) {
+            return checkFailure(
+                CliCodes.EXIT_VALIDATION,
+                List.of(e.line()),
+                "VALIDATION",
+                CliCodes.IR_VALIDATION,
+                e.path(),
+                e.remediation(),
+                e.line()
+            );
         } catch (IOException e) {
             return checkFailure(
                 CliCodes.EXIT_IO,
@@ -552,14 +571,6 @@ final class CheckCommandService {
         Files.deleteIfExists(marker);
     }
 
-    private static String toBlockKey(String raw) {
-        List<String> tokens = splitTokens(raw);
-        if (tokens.isEmpty()) {
-            return "block";
-        }
-        return String.join("-", tokens);
-    }
-
     private static String toGeneratedPackageSegment(String raw) {
         String normalized = raw.toLowerCase().replaceAll("[^a-z0-9]+", " ").trim();
         if (normalized.isEmpty()) {
@@ -581,19 +592,6 @@ final class CheckCommandService {
             out.append(segment);
         }
         return out.toString();
-    }
-
-    private static List<String> splitTokens(String raw) {
-        String adjusted = raw.replaceAll("([a-z0-9])([A-Z])", "$1 $2").replaceAll("[^A-Za-z0-9]+", " ").trim();
-        if (adjusted.isEmpty()) {
-            return List.of();
-        }
-        String[] parts = adjusted.split("\\s+");
-        List<String> tokens = new ArrayList<>();
-        for (String part : parts) {
-            tokens.add(part.toLowerCase());
-        }
-        return tokens;
     }
 
     private static void maybeFailInternalForTest() {

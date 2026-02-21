@@ -133,6 +133,11 @@ Index troubleshooting:
 - `projectRoot` must be a repo-relative directory path.
 - repo root is valid and represented as `.`.
 - if index fails validation, fix `name`/`ir`/`projectRoot` and rerun `check --all`.
+- single-command (`compile`/`check`/`fix`/`pr-check`) identity resolution uses `(ir, projectRoot)` tuple matching when an index is discoverable:
+  - `0` matches => single-IR fallback identity mode
+  - `1` match => index identity mode (index name authoritative)
+  - `>1` matches => deterministic ambiguous-index validation failure
+- canonical identity mismatch is validated using frozen normalization (camel split, non-alnum collapse, lowercase token join with `-`).
 
 8. `70` internal failure:
 - collect output and report as tool defect

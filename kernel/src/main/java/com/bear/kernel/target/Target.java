@@ -6,5 +6,5 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 public interface Target {
-    void compile(BearIr ir, Path projectRoot) throws IOException;
+    void compile(BearIr ir, Path projectRoot, String blockKey) throws IOException;
 }

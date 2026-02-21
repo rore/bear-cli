@@ -49,8 +49,16 @@ final class ManifestParsers {
         String implSourcePath = extractRequiredString(json, "implSourcePath");
         String requiredEffectPortsPayload = extractRequiredArrayPayload(json, "requiredEffectPorts");
         String constructorPortParamsPayload = extractRequiredArrayPayload(json, "constructorPortParams");
+        String logicRequiredPortsPayload = extractOptionalArrayPayload(json, "logicRequiredPorts");
+        String wrapperOwnedSemanticPortsPayload = extractOptionalArrayPayload(json, "wrapperOwnedSemanticPorts");
         List<String> requiredEffectPorts = parseStringArray(requiredEffectPortsPayload);
         List<String> constructorPortParams = parseStringArray(constructorPortParamsPayload);
+        List<String> logicRequiredPorts = logicRequiredPortsPayload == null
+            ? requiredEffectPorts
+            : parseStringArray(logicRequiredPortsPayload);
+        List<String> wrapperOwnedSemanticPorts = wrapperOwnedSemanticPortsPayload == null
+            ? List.of()
+            : parseStringArray(wrapperOwnedSemanticPortsPayload);
         return new WiringManifest(
             schemaVersion,
             blockKey,
@@ -59,7 +67,9 @@ final class ManifestParsers {
             implFqcn,
             implSourcePath,
             requiredEffectPorts,
-            constructorPortParams
+            constructorPortParams,
+            logicRequiredPorts,
+            wrapperOwnedSemanticPorts
         );
     }
 

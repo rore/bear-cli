@@ -25,7 +25,7 @@ final class CheckAllCommandService {
 
         BlockIndex index;
         try {
-            index = new BlockIndexParser().parse(options.repoRoot(), options.blocksPath());
+            index = new BlockIndexParser().parse(options.repoRoot(), options.blocksPath(), true);
         } catch (BlockIndexValidationException e) {
             return BearCli.failWithLegacy(
                 err,
@@ -142,7 +142,8 @@ final class CheckAllCommandService {
                 options.repoRoot().resolve(block.ir()).normalize(),
                 options.repoRoot().resolve(block.projectRoot()).normalize(),
                 false,
-                block.name()
+                block.name(),
+                BearCli.indexLocator(block)
             );
             BlockExecutionResult blockResult = BearCli.toCheckBlockResult(block, checkResult);
             blockResults.add(blockResult);

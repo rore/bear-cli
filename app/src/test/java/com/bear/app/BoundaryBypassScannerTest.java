@@ -53,7 +53,9 @@ class BoundaryBypassScannerTest {
             "blocks.withdraw.impl.WithdrawImpl",
             "src/main/java/blocks/withdraw/impl/WithdrawImpl.java",
             List.of("ledgerPort"),
-            List.of("logic", "ledgerPort")
+            List.of("logic", "ledgerPort"),
+            List.of("ledgerPort"),
+            List.of()
         );
 
         List<BoundaryBypassFinding> findings = BoundaryBypassScanner.scanBoundaryBypass(tempDir, List.of(manifest));

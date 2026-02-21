@@ -35,14 +35,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class BearCli {
-    private static final Set<String> JAVA_KEYWORDS = Set.of(
-        "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char", "class", "const",
-        "continue", "default", "do", "double", "else", "enum", "extends", "final", "finally", "float",
-        "for", "goto", "if", "implements", "import", "instanceof", "int", "interface", "long", "native",
-        "new", "package", "private", "protected", "public", "return", "short", "static", "strictfp",
-        "super", "switch", "synchronized", "this", "throw", "throws", "transient", "try", "void",
-        "volatile", "while", "record", "sealed", "permits", "var", "yield", "non-sealed"
-    );
     private static final String CHECK_BLOCKED_MARKER_RELATIVE = "build/bear/check.blocked.marker";
     private static final String CHECK_BLOCKED_REASON_LOCK = "LOCK";
     private static final String CHECK_BLOCKED_REASON_BOOTSTRAP = "BOOTSTRAP_IO";
@@ -189,7 +181,12 @@ public final class BearCli {
             BearIr ir = parser.parse(irFile);
             validator.validate(ir);
             BearIr normalized = normalizer.normalize(ir);
-            target.compile(normalized, projectRoot);
+            BlockIdentityResolution identity = BlockIdentityResolver.resolveSingleCommandIdentity(
+                irFile,
+                projectRoot,
+                normalized.block().name()
+            );
+            target.compile(normalized, projectRoot, identity.blockKey());
 
             out.println("compiled: OK");
             return ExitCode.OK;
@@ -201,6 +198,24 @@ public final class BearCli {
                 FailureCode.IR_VALIDATION,
                 e.path(),
                 "Fix the IR issue at the reported path and rerun `bear compile <ir-file> --project <path>`."
+            );
+        } catch (BlockIndexValidationException e) {
+            return failWithLegacy(
+                err,
+                ExitCode.VALIDATION,
+                "index: VALIDATION_ERROR: " + e.getMessage(),
+                FailureCode.IR_VALIDATION,
+                e.path(),
+                "Fix `bear.blocks.yaml` and rerun `bear compile <ir-file> --project <path>`."
+            );
+        } catch (BlockIdentityResolutionException e) {
+            return failWithLegacy(
+                err,
+                ExitCode.VALIDATION,
+                e.line(),
+                FailureCode.IR_VALIDATION,
+                e.path(),
+                e.remediation()
             );
         } catch (IOException e) {
             return failWithLegacy(
@@ -246,7 +261,7 @@ public final class BearCli {
 
         Path irFile = Path.of(args[1]);
         Path projectRoot = Path.of(args[3]);
-        FixResult result = executeFix(irFile, projectRoot, null);
+        FixResult result = executeFix(irFile, projectRoot, null, null);
         return emitFixResult(result, out, err);
     }
 
@@ -289,7 +304,7 @@ public final class BearCli {
                 "Run `bear unblock --project <path>` after fixing lock/bootstrap IO and rerun `bear check`."
             );
         }
-        CheckResult result = executeCheck(irFile, projectRoot, true, null);
+        CheckResult result = executeCheck(irFile, projectRoot, true, null, null);
         return emitCheckResult(result, out, err);
     }
 
@@ -382,6 +397,51 @@ public final class BearCli {
                 "Pass a repo-relative `ir-file` path for `bear pr-check`."
             );
         }
+        if (Files.isRegularFile(headIrPath)) {
+            try {
+                BearIrParser parser = new BearIrParser();
+                BearIrValidator validator = new BearIrValidator();
+                BearIrNormalizer normalizer = new BearIrNormalizer();
+                BearIr normalized = normalizer.normalize(parseAndValidateIr(parser, validator, headIrPath));
+                BlockIdentityResolver.resolveSingleCommandIdentity(headIrPath, projectRoot, normalized.block().name());
+            } catch (BearIrValidationException e) {
+                return failWithLegacy(
+                    err,
+                    ExitCode.VALIDATION,
+                    e.formatLine(),
+                    FailureCode.IR_VALIDATION,
+                    e.path(),
+                    "Fix the IR issue at the reported path and rerun `bear pr-check <ir-file> --project <path> --base <ref>`."
+                );
+            } catch (BlockIndexValidationException e) {
+                return failWithLegacy(
+                    err,
+                    ExitCode.VALIDATION,
+                    "index: VALIDATION_ERROR: " + e.getMessage(),
+                    FailureCode.IR_VALIDATION,
+                    e.path(),
+                    "Fix `bear.blocks.yaml` and rerun `bear pr-check`."
+                );
+            } catch (BlockIdentityResolutionException e) {
+                return failWithLegacy(
+                    err,
+                    ExitCode.VALIDATION,
+                    e.line(),
+                    FailureCode.IR_VALIDATION,
+                    e.path(),
+                    e.remediation()
+                );
+            } catch (IOException e) {
+                return failWithLegacy(
+                    err,
+                    ExitCode.IO,
+                    "io: IO_ERROR: " + squash(e.getMessage()),
+                    FailureCode.IO_ERROR,
+                    "input.ir",
+                    "Ensure the IR file and block index are readable, then rerun `bear pr-check`."
+                );
+            }
+        }
         PrCheckResult result = executePrCheck(projectRoot, repoRelativePath, baseRef);
         return emitPrCheckResult(result, out, err);
     }
@@ -439,7 +499,7 @@ public final class BearCli {
         );
     }
 
-    static FixResult executeFix(Path irFile, Path projectRoot, String expectedBlockKey) {
+    static FixResult executeFix(Path irFile, Path projectRoot, String expectedBlockKey, String expectedBlockLocator) {
         try {
             maybeFailInternalForTest("fix");
             BearIrParser parser = new BearIrParser();
@@ -450,21 +510,17 @@ public final class BearCli {
             BearIr ir = parser.parse(irFile);
             validator.validate(ir);
             BearIr normalized = normalizer.normalize(ir);
-            String blockKey = toBlockKey(normalized.block().name());
-            if (expectedBlockKey != null && !expectedBlockKey.equals(blockKey)) {
-                String line = "schema at block.name: INVALID_VALUE: block name must match index name: " + expectedBlockKey;
-                return fixFailure(
-                    ExitCode.VALIDATION,
-                    List.of(line),
-                    "VALIDATION",
-                    FailureCode.IR_VALIDATION,
-                    "block.name",
-                    "Set `block.name` to match index `name` and rerun `bear fix --all`.",
-                    line
+            BlockIdentityResolution identity = expectedBlockKey == null
+                ? BlockIdentityResolver.resolveSingleCommandIdentity(irFile, projectRoot, normalized.block().name())
+                : BlockIdentityResolver.resolveIndexIdentity(
+                    expectedBlockKey,
+                    expectedBlockLocator == null || expectedBlockLocator.isBlank()
+                        ? "bear.blocks.yaml:name=" + expectedBlockKey
+                        : expectedBlockLocator,
+                    normalized.block().name()
                 );
-            }
 
-            target.compile(normalized, projectRoot);
+            target.compile(normalized, projectRoot, identity.blockKey());
             return new FixResult(ExitCode.OK, List.of("fix: OK"), List.of(), null, null, null, null, null);
         } catch (BearIrValidationException e) {
             return fixFailure(
@@ -475,6 +531,26 @@ public final class BearCli {
                 e.path(),
                 "Fix the IR issue at the reported path and rerun `bear fix <ir-file> --project <path>`.",
                 e.formatLine()
+            );
+        } catch (BlockIndexValidationException e) {
+            return fixFailure(
+                ExitCode.VALIDATION,
+                List.of("index: VALIDATION_ERROR: " + e.getMessage()),
+                "VALIDATION",
+                FailureCode.IR_VALIDATION,
+                e.path(),
+                "Fix `bear.blocks.yaml` and rerun `bear fix`.",
+                "index: VALIDATION_ERROR: " + e.getMessage()
+            );
+        } catch (BlockIdentityResolutionException e) {
+            return fixFailure(
+                ExitCode.VALIDATION,
+                List.of(e.line()),
+                "VALIDATION",
+                FailureCode.IR_VALIDATION,
+                e.path(),
+                e.remediation(),
+                e.line()
             );
         } catch (IOException e) {
             return fixFailure(
@@ -503,9 +579,16 @@ public final class BearCli {
         Path irFile,
         Path projectRoot,
         boolean runReachAndTests,
-        String expectedBlockKey
+        String expectedBlockKey,
+        String expectedBlockLocator
     ) {
-        return CheckCommandService.executeCheck(irFile, projectRoot, runReachAndTests, expectedBlockKey);
+        return CheckCommandService.executeCheck(
+            irFile,
+            projectRoot,
+            runReachAndTests,
+            expectedBlockKey,
+            expectedBlockLocator
+        );
     }
 
     private static PrCheckResult executePrCheck(Path projectRoot, String repoRelativePath, String baseRef) {
@@ -829,20 +912,29 @@ public final class BearCli {
         );
     }
 
-    static String validateIndexIrNameMatch(Path irFile, String expectedBlockKey) {
+    static String validateIndexIrNameMatch(Path irFile, String expectedBlockKey, String expectedBlockLocator) {
         try {
             BearIrParser parser = new BearIrParser();
             BearIrValidator validator = new BearIrValidator();
             BearIrNormalizer normalizer = new BearIrNormalizer();
             BearIr normalized = normalizer.normalize(parseAndValidateIr(parser, validator, irFile));
-            String actualBlockKey = toBlockKey(normalized.block().name());
-            if (!expectedBlockKey.equals(actualBlockKey)) {
-                return "index name `" + expectedBlockKey + "` does not match IR block.name `" + normalized.block().name() + "`";
-            }
+            BlockIdentityResolver.resolveIndexIdentity(
+                expectedBlockKey,
+                expectedBlockLocator == null || expectedBlockLocator.isBlank()
+                    ? "bear.blocks.yaml:name=" + expectedBlockKey
+                    : expectedBlockLocator,
+                normalized.block().name()
+            );
             return null;
+        } catch (BlockIdentityResolutionException e) {
+            return e.line();
         } catch (Exception e) {
             return "unable to validate block name mapping: " + squash(e.getMessage());
         }
+    }
+
+    static String indexLocator(BlockIndexEntry block) {
+        return BlockIdentityResolver.formatIndexLocator(block);
     }
 
     static BlockExecutionResult toPrBlockResult(BlockIndexEntry block, PrCheckResult result) {
@@ -1256,50 +1348,6 @@ public final class BearCli {
 
     private static boolean startsWithAny(String value, Set<String> prefixes) {
         return DriftAnalyzer.startsWithAny(value, prefixes);
-    }
-
-    private static String toBlockKey(String raw) {
-        List<String> tokens = splitTokens(raw);
-        if (tokens.isEmpty()) {
-            return "block";
-        }
-        return String.join("-", tokens);
-    }
-
-    private static String toGeneratedPackageSegment(String raw) {
-        String normalized = raw.toLowerCase().replaceAll("[^a-z0-9]+", " ").trim();
-        if (normalized.isEmpty()) {
-            return "block";
-        }
-        StringBuilder out = new StringBuilder();
-        String[] parts = normalized.split("\\s+");
-        for (int i = 0; i < parts.length; i++) {
-            if (i > 0) {
-                out.append('.');
-            }
-            String segment = parts[i];
-            if (Character.isDigit(segment.charAt(0))) {
-                segment = "_" + segment;
-            }
-            if (JAVA_KEYWORDS.contains(segment)) {
-                segment = segment + "_";
-            }
-            out.append(segment);
-        }
-        return out.toString();
-    }
-
-    private static List<String> splitTokens(String raw) {
-        String adjusted = raw.replaceAll("([a-z0-9])([A-Z])", "$1 $2").replaceAll("[^A-Za-z0-9]+", " ").trim();
-        if (adjusted.isEmpty()) {
-            return List.of();
-        }
-        String[] parts = adjusted.split("\\s+");
-        List<String> tokens = new ArrayList<>();
-        for (String part : parts) {
-            tokens.add(part.toLowerCase());
-        }
-        return tokens;
     }
 
     private static ProjectTestResult runProjectTests(Path projectRoot) throws IOException, InterruptedException {

@@ -3,6 +3,7 @@ package com.bear.kernel.target;
 import com.bear.kernel.ir.BearIr;
 import com.bear.kernel.ir.BearIrYamlEmitter;
 import com.bear.kernel.ir.BearIr.FieldType;
+import com.bear.kernel.identity.BlockIdentityCanonicalizer;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -37,11 +38,14 @@ public final class JvmTarget implements Target {
     );
 
     @Override
-    public void compile(BearIr ir, Path projectRoot) throws IOException {
+    public void compile(BearIr ir, Path projectRoot, String blockKey) throws IOException {
         Files.createDirectories(projectRoot);
 
         String blockName = toPascalCase(ir.block().name());
-        String blockKey = sanitizeBlockKey(ir.block().name());
+        String effectiveBlockKey = blockKey == null ? "" : blockKey.trim();
+        if (effectiveBlockKey.isEmpty()) {
+            throw new IllegalArgumentException("blockKey must be non-empty");
+        }
         String packageSegment = sanitizePackageSegment(ir.block().name());
         String packageName = "com.bear.generated." + packageSegment;
         String packagePath = packageName.replace('.', '/');
@@ -53,27 +57,27 @@ public final class JvmTarget implements Target {
         Path generatedTest = generatedRoot.resolve("src").resolve("test").resolve("java").resolve(packagePath);
         Path generatedSurfaces = generatedRoot.resolve("surfaces");
         Path generatedWiring = generatedRoot.resolve("wiring");
-        Path surfaceMarker = generatedSurfaces.resolve(blockKey + ".surface.json");
-        Path wiringManifest = generatedWiring.resolve(blockKey + ".wiring.json");
+        Path surfaceMarker = generatedSurfaces.resolve(effectiveBlockKey + ".surface.json");
+        Path wiringManifest = generatedWiring.resolve(effectiveBlockKey + ".wiring.json");
         Path userMain = projectRoot.resolve("src").resolve("main").resolve("java").resolve(implPackagePath);
         Path userMainLegacyByBlockKey = projectRoot
             .resolve("src")
             .resolve("main")
             .resolve("java")
             .resolve("blocks")
-            .resolve(blockKey)
+            .resolve(effectiveBlockKey)
             .resolve("impl");
         Path userMainLegacy = projectRoot.resolve("src").resolve("main").resolve("java").resolve(packagePath);
         Path generatedConfig = generatedRoot.resolve("config");
         Path generatedAllowedDeps = generatedConfig.resolve("allowed-deps");
         Path generatedGradle = generatedRoot.resolve("gradle");
-        Path stagingRoot = generatedRoot.resolve(".staging").resolve(blockKey + "-" + System.nanoTime());
+        Path stagingRoot = generatedRoot.resolve(".staging").resolve(effectiveBlockKey + "-" + System.nanoTime());
         Path stagingMain = stagingRoot.resolve("src").resolve("main").resolve("java").resolve(packagePath);
         Path stagingTest = stagingRoot.resolve("src").resolve("test").resolve("java").resolve(packagePath);
         Path stagingSurfaces = stagingRoot.resolve("surfaces");
         Path stagingWiring = stagingRoot.resolve("wiring");
-        Path stagingSurfaceMarker = stagingSurfaces.resolve(blockKey + ".surface.json");
-        Path stagingWiringManifest = stagingWiring.resolve(blockKey + ".wiring.json");
+        Path stagingSurfaceMarker = stagingSurfaces.resolve(effectiveBlockKey + ".surface.json");
+        Path stagingWiringManifest = stagingWiring.resolve(effectiveBlockKey + ".wiring.json");
 
         deleteDirectoryIfExists(stagingRoot);
         Files.createDirectories(stagingMain);
@@ -105,7 +109,7 @@ public final class JvmTarget implements Target {
         }
 
         write(stagingSurfaceMarker, renderSurfaceManifest(ir));
-        write(stagingWiringManifest, renderWiringManifest(blockKey, packageName, blockName, implPackageName, implPackagePath, ports));
+        write(stagingWiringManifest, renderWiringManifest(effectiveBlockKey, packageName, blockName, implPackageName, implPackagePath, ports));
 
         try {
             syncDirectory(stagingMain, generatedMain);
@@ -115,7 +119,7 @@ public final class JvmTarget implements Target {
             writeContainmentArtifacts(
                 generatedAllowedDeps,
                 generatedGradle,
-                blockKey,
+                effectiveBlockKey,
                 "src/main/java/" + implPackagePath,
                 ir.block().impl()
             );
@@ -522,6 +526,8 @@ public final class JvmTarget implements Target {
             requiredEffectPorts.add(port.variableName);
         }
         requiredEffectPorts.sort(String::compareTo);
+        List<String> logicRequiredPorts = new ArrayList<>(requiredEffectPorts);
+        List<String> wrapperOwnedSemanticPorts = List.of();
 
         List<String> constructorPortParams = new ArrayList<>();
         for (PortModel port : ports) {
@@ -535,7 +541,7 @@ public final class JvmTarget implements Target {
 
         StringBuilder out = new StringBuilder();
         out.append("{");
-        out.append("\"schemaVersion\":\"v1\",");
+        out.append("\"schemaVersion\":\"v2\",");
         out.append("\"blockKey\":\"").append(jsonEscape(blockKey)).append("\",");
         out.append("\"entrypointFqcn\":\"").append(jsonEscape(entrypointFqcn)).append("\",");
         out.append("\"logicInterfaceFqcn\":\"").append(jsonEscape(logicInterfaceFqcn)).append("\",");
@@ -555,6 +561,22 @@ public final class JvmTarget implements Target {
                 out.append(",");
             }
             out.append("\"").append(jsonEscape(constructorPortParams.get(i))).append("\"");
+        }
+        out.append("],");
+        out.append("\"logicRequiredPorts\":[");
+        for (int i = 0; i < logicRequiredPorts.size(); i++) {
+            if (i > 0) {
+                out.append(",");
+            }
+            out.append("\"").append(jsonEscape(logicRequiredPorts.get(i))).append("\"");
+        }
+        out.append("],");
+        out.append("\"wrapperOwnedSemanticPorts\":[");
+        for (int i = 0; i < wrapperOwnedSemanticPorts.size(); i++) {
+            if (i > 0) {
+                out.append(",");
+            }
+            out.append("\"").append(jsonEscape(wrapperOwnedSemanticPorts.get(i))).append("\"");
         }
         out.append("]}");
         out.append("\n");
@@ -956,14 +978,6 @@ public final class JvmTarget implements Target {
         return out.toString();
     }
 
-    private String sanitizeBlockKey(String raw) {
-        List<String> tokens = splitTokens(raw);
-        if (tokens.isEmpty()) {
-            return "block";
-        }
-        return String.join("-", tokens);
-    }
-
     private String toPascalCase(String raw) {
         List<String> tokens = splitTokens(raw);
         if (tokens.isEmpty()) {
@@ -1004,16 +1018,7 @@ public final class JvmTarget implements Target {
     }
 
     private List<String> splitTokens(String raw) {
-        String adjusted = raw.replaceAll("([a-z0-9])([A-Z])", "$1 $2").replaceAll("[^A-Za-z0-9]+", " ").trim();
-        if (adjusted.isEmpty()) {
-            return List.of();
-        }
-        String[] parts = adjusted.split("\\s+");
-        List<String> tokens = new ArrayList<>();
-        for (String part : parts) {
-            tokens.add(part.toLowerCase(Locale.ROOT));
-        }
-        return tokens;
+        return new ArrayList<>(BlockIdentityCanonicalizer.canonicalTokens(raw));
     }
 
     private void deleteDirectoryIfExists(Path directory) throws IOException {

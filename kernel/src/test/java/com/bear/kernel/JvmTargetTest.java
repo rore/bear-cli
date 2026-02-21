@@ -35,9 +35,9 @@ class JvmTargetTest {
         validator.validate(ir);
         BearIr normalized = normalizer.normalize(ir);
 
-        target.compile(normalized, tempDir);
+        target.compile(normalized, tempDir, "withdraw");
         Map<String, String> first = readTree(tempDir.resolve("build/generated/bear"));
-        target.compile(normalized, tempDir);
+        target.compile(normalized, tempDir, "withdraw");
         Map<String, String> second = readTree(tempDir.resolve("build/generated/bear"));
         Map<String, String> expected = readTree(goldenRoot);
 
@@ -54,7 +54,7 @@ class JvmTargetTest {
         assertTrue(manifest.contains("\"invariants\":[{\"kind\":\"non_negative\",\"field\":\"balance\"}]"));
         assertTrue(manifest.contains("\"irHash\":\"e760299bd88662c50dd411c90612a0d1007a434920a7644144abc7611da2720f\""));
         String wiring = first.get("wiring/withdraw.wiring.json");
-        assertTrue(wiring.contains("\"schemaVersion\":\"v1\""));
+        assertTrue(wiring.contains("\"schemaVersion\":\"v2\""));
         assertTrue(wiring.contains("\"blockKey\":\"withdraw\""));
         assertTrue(wiring.contains("\"entrypointFqcn\":\"com.bear.generated.withdraw.Withdraw\""));
         assertTrue(wiring.contains("\"logicInterfaceFqcn\":\"com.bear.generated.withdraw.WithdrawLogic\""));
@@ -62,6 +62,8 @@ class JvmTargetTest {
         assertTrue(wiring.contains("\"implSourcePath\":\"src/main/java/blocks/withdraw/impl/WithdrawImpl.java\""));
         assertTrue(wiring.contains("\"requiredEffectPorts\":[\"idempotencyPort\",\"ledgerPort\"]"));
         assertTrue(wiring.contains("\"constructorPortParams\":[\"idempotencyPort\",\"ledgerPort\"]"));
+        assertTrue(wiring.contains("\"logicRequiredPorts\":[\"idempotencyPort\",\"ledgerPort\"]"));
+        assertTrue(wiring.contains("\"wrapperOwnedSemanticPorts\":[]"));
         String containmentGradle = first.get("gradle/bear-containment.gradle");
         assertFalse(containmentGradle.contains("exclude('blocks/**/impl/**')"));
     }
@@ -84,7 +86,7 @@ class JvmTargetTest {
         Files.createDirectories(impl.getParent());
         Files.writeString(impl, "package blocks.withdraw.impl;\nclass KeepMe {}\n");
 
-        target.compile(normalized, tempDir);
+        target.compile(normalized, tempDir, "withdraw");
         assertEquals("package blocks.withdraw.impl;\nclass KeepMe {}\n", Files.readString(impl));
     }
 
@@ -116,7 +118,7 @@ class JvmTargetTest {
         BearIr ir = parser.parse(irFile);
         validator.validate(ir);
         BearIr normalized = normalizer.normalize(ir);
-        target.compile(normalized, tempDir);
+        target.compile(normalized, tempDir, "create-wallet");
 
         Path impl = tempDir.resolve("src/main/java/blocks/create/wallet/impl/CreateWalletImpl.java");
         assertTrue(Files.exists(impl));
@@ -165,7 +167,7 @@ class JvmTargetTest {
         BearIr ir = parser.parse(irFile);
         validator.validate(ir);
         BearIr normalized = normalizer.normalize(ir);
-        target.compile(normalized, tempDir);
+        target.compile(normalized, tempDir, "status");
 
         Path entrypoint = tempDir.resolve("build/generated/bear/src/main/java/com/bear/generated/status/Status.java");
         String entry = Files.readString(entrypoint);
@@ -201,7 +203,7 @@ class JvmTargetTest {
         BearIr ir = parser.parse(irFile);
         validator.validate(ir);
         BearIr normalized = normalizer.normalize(ir);
-        target.compile(normalized, tempDir);
+        target.compile(normalized, tempDir, "notify");
 
         Path generatedMain = tempDir.resolve("build/generated/bear/src/main/java/com/bear/generated/notify");
         assertTrue(Files.exists(generatedMain.resolve("NotificationPort.java")));
@@ -221,7 +223,7 @@ class JvmTargetTest {
         BearIr ir = parser.parse(fixture);
         validator.validate(ir);
         BearIr normalized = normalizer.normalize(ir);
-        target.compile(normalized, tempDir);
+        target.compile(normalized, tempDir, "withdraw");
 
         Path generatedMain = tempDir.resolve("build/generated/bear/src/main/java/com/bear/generated/withdraw");
         Path stale = generatedMain.resolve("LOCKED.tmp");
@@ -232,7 +234,7 @@ class JvmTargetTest {
             System.setProperty("bear.compile.test.lockPathContains", "LOCKED.tmp");
             boolean threw = false;
             try {
-                target.compile(normalized, tempDir);
+                target.compile(normalized, tempDir, "withdraw");
             } catch (IOException e) {
                 threw = true;
                 assertTrue(e.getMessage().startsWith("WINDOWS_FILE_LOCK: delete blocked at "));
@@ -264,7 +266,7 @@ class JvmTargetTest {
         BearIr ir = parser.parse(fixture);
         validator.validate(ir);
         BearIr normalized = normalizer.normalize(ir);
-        target.compile(normalized, tempDir);
+        target.compile(normalized, tempDir, "withdraw");
 
         String previousNeedle = System.getProperty("bear.compile.test.lockPathContains");
         String previousAction = System.getProperty("bear.compile.test.lockAction");
@@ -272,7 +274,7 @@ class JvmTargetTest {
             System.setProperty("bear.compile.test.lockPathContains", "BearInvariantViolationException.java");
             System.setProperty("bear.compile.test.lockAction", "replace");
 
-            target.compile(normalized, tempDir);
+            target.compile(normalized, tempDir, "withdraw");
         } finally {
             if (previousNeedle == null) {
                 System.clearProperty("bear.compile.test.lockPathContains");

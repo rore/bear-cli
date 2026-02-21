@@ -15,6 +15,32 @@
 
 For base-branch PR governance classification, use `bear pr-check`.
 
+## Block Identity Resolution (v1.2 Lock+)
+`check` uses the same frozen `blockKey` canonicalizer and tuple-matching algorithm as `compile`.
+
+Single-command mode (`bear check <ir-file> --project <path>`):
+- if index tuple resolves exactly once, index `name` is authoritative for `blockKey`
+- if no tuple match exists, fallback mode derives `blockKey` from IR `block.name`
+- if multiple tuple matches exist, fail deterministically with ambiguous index config error
+
+`--all` mode:
+- index entry identity is authoritative
+- each block validates canonical(index `name`) vs canonical(IR `block.name`) before compile/check execution
+
+Canonicalizer (frozen):
+1. `([a-z0-9])([A-Z]) -> $1 $2`
+2. `[^A-Za-z0-9]+ -> " "`
+3. trim
+4. split on whitespace
+5. lowercase tokens
+6. join with `-`
+7. empty => `block`
+
+Deterministic mismatch failure:
+- path: `block.name`
+- detail includes index locator (`bear.blocks.yaml:name=<...>,ir=<...>,projectRoot=<...>`)
+- remediation: align IR block identity with index identity intent
+
 It performs:
 1. Parse + validate + normalize IR.
 2. Compile normalized IR into a temporary project root.
@@ -108,6 +134,8 @@ Missing baseline:
   - `implSourcePath`
   - `requiredEffectPorts`
   - `constructorPortParams`
+  - `logicRequiredPorts`
+  - `wrapperOwnedSemanticPorts`
 
 Boundary classification uses manifest data only (no Java source parsing).
 

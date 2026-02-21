@@ -78,6 +78,10 @@ Use when:
 Behavior:
 - regenerates BEAR-owned artifacts under `<project>/build/generated/bear`
 - does not overwrite user-owned impl files under `<project>/src/main/java`
+- resolves block identity (`blockKey`) deterministically:
+  - index-authoritative when exactly one `(ir, projectRoot)` tuple matches in `bear.blocks.yaml`
+  - IR fallback when no tuple match exists
+  - deterministic validation failure on canonical identity mismatch or ambiguous tuple matches
 
 ### 3. Repair generated artifacts
 
@@ -125,6 +129,7 @@ Behavior:
   - governed impl missing required effect-port usage (unless exact suppression comment is present)
 - runs project tests only after no-drift result
 - when IR declares `block.impl.allowedDeps`, also enforces containment handshake (script/index/marker hash) before tests
+- uses the same frozen block-key canonicalizer as `compile` for single-command index matching and identity checks
 
 ### 4b. Repo gate (multi-block)
 

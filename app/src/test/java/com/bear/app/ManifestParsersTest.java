@@ -49,5 +49,8 @@ class ManifestParsersTest {
         assertEquals("withdraw", parsed.blockKey());
         assertEquals(1, parsed.requiredEffectPorts().size());
         assertEquals("ledgerPort", parsed.requiredEffectPorts().get(0));
+        assertEquals(1, parsed.logicRequiredPorts().size());
+        assertEquals("ledgerPort", parsed.logicRequiredPorts().get(0));
+        assertEquals(0, parsed.wrapperOwnedSemanticPorts().size());
     }
 }

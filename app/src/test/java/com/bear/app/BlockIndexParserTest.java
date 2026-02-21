@@ -93,4 +93,24 @@ class BlockIndexParserTest {
         assertTrue(error.path().endsWith(".ir"));
         assertTrue(error.getMessage().contains("path must be repo-relative"));
     }
+
+    @Test
+    void rejectsDuplicateTupleWhenStrictGuardEnabled(@TempDir Path tempDir) throws Exception {
+        Path index = tempDir.resolve("bear.blocks.yaml");
+        Files.writeString(index, ""
+            + "version: v0\n"
+            + "blocks:\n"
+            + "  - name: alpha\n"
+            + "    ir: spec/a.bear.yaml\n"
+            + "    projectRoot: services/a\n"
+            + "  - name: beta\n"
+            + "    ir: spec/a.bear.yaml\n"
+            + "    projectRoot: services/a\n", StandardCharsets.UTF_8);
+
+        BlockIndexValidationException error = assertThrows(
+            BlockIndexValidationException.class,
+            () -> new BlockIndexParser().parse(tempDir, index, true)
+        );
+        assertTrue(error.getMessage().contains("duplicate (ir,projectRoot) tuple"));
+    }
 }

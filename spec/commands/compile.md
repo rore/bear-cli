@@ -3,6 +3,37 @@
 ## Command
 `bear compile <ir-file> --project <path>`
 
+## Block Identity Resolution (v1.2 Lock+)
+`compile` resolves the per-block identity (`blockKey`) deterministically before generation.
+
+Resolution source:
+1. If `bear.blocks.yaml` is discoverable by walking upward from `<project>`, attempt index tuple match.
+2. Tuple match key:
+   - `ir`: normalized repo-relative path string equality
+   - `projectRoot`: normalized absolute path equality (index `projectRoot` resolved from repo root)
+3. Outcomes:
+   - `0` matches: single-IR fallback mode (`blockKey` from IR `block.name` canonicalization)
+   - `1` match: index mode (`blockKey` from index entry `name` canonicalization)
+   - `>1` matches: deterministic validation failure (`AMBIGUOUS_INDEX_ENTRIES`)
+
+Canonical block-key normalization (frozen):
+1. Insert space on camel transition: `([a-z0-9])([A-Z]) -> $1 $2`
+2. Replace non-alphanumeric runs with one space: `[^A-Za-z0-9]+ -> " "`
+3. Trim
+4. Split on whitespace
+5. Lowercase each token
+6. Join with `-`
+7. If no tokens, use `block`
+
+Index/IR mismatch rule:
+- when index mode is selected, compare canonical(index `name`) and canonical(IR `block.name`)
+- mismatch fails deterministically at `block.name` before generation
+- remediation is to align IR `block.name` with index identity intent
+
+Generator contract:
+- `blockKey` is resolved by CLI flow and injected into target compile
+- generator must not re-derive `blockKey` from IR internally
+
 - IR parse + semantic validation must succeed before generation.
 - Exit codes use the central registry in `spec/commands/exit-codes.md`.
   - `0` success
@@ -83,8 +114,9 @@ Generated metadata:
 - `<blockKey>.wiring.json` at `<project>/build/generated/bear/wiring/<blockKey>.wiring.json`
   - deterministic wiring manifest used by `bear check` boundary-bypass enforcement
   - minified canonical JSON, UTF-8, LF, trailing newline
+  - `<blockKey>` is the resolved compile identity (index-authoritative when tuple-resolved; IR fallback otherwise)
   - fields:
-    - `schemaVersion` (`v1`)
+    - `schemaVersion` (`v2`)
     - `blockKey`
     - `entrypointFqcn`
     - `logicInterfaceFqcn`
@@ -92,6 +124,8 @@ Generated metadata:
     - `implSourcePath`
     - `requiredEffectPorts`
     - `constructorPortParams`
+    - `logicRequiredPorts`
+    - `wrapperOwnedSemanticPorts`
 
 ## Port Method Contract
 - One interface per declared port.

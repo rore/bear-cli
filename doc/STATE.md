@@ -11,17 +11,17 @@ For milestone status and backlog ordering, use `doc/PROGRAM_BOARD.md`.
 
 P2 feature delivery:
 - active milestone is `P2`
-- CLI maintainability hardening via modular extraction from `BearCli.java`
+- v1.2 identity/matching hardening for single-command and index-resolved flows
 - preserve strict command contract compatibility (stdout/stderr ordering, exit codes, failure envelope)
-- expand targeted unit coverage around extracted parsing/classification/scanner/test-runner modules
+- keep modularized command-service architecture (`BearCli` delegates) with deterministic resolver behavior
 
 ## Next Concrete Task
 
-Continue CLI modularization follow-through:
-1. reduce `BearCli` helper wrapper surface by removing dead delegates now superseded by extracted services
-2. collapse duplicated `ExitCode`/`FailureCode` usage to `CliCodes` where safe, preserving error text and exit semantics
-3. continue extracting remaining command orchestration (`runCheck`, `runFix`, `runPrCheck`) into focused services
-4. keep full `:app:test` + root `test` green after each extraction slice
+Follow through after v1.2 identity lock implementation:
+1. sync updated CLI behavior to demo and validate single-command tuple matching scenarios end-to-end
+2. decide default posture for duplicate `(ir,projectRoot)` parser guard (`strict` in all-mode, optional in single-mode already implemented)
+3. continue shrinking `BearCli` helper surface where now superseded by resolver/service modules
+4. keep full `:app:test` + root `test` green after each incremental cleanup
 
 ## Session Notes
 
@@ -94,4 +94,12 @@ Continue CLI modularization follow-through:
   - lock/bootstrap diagnostics now include deterministic attempt trails
   - marker write failures preserve root-cause classification and append `markerWrite=failed:...`
   - updated command/spec docs and expanded CLI/runner tests
+- Implemented BEAR v1.2 Final Lock+ identity/matching precision:
+  - compile target contract now receives explicit `blockKey` from CLI resolution (`Target.compile(..., blockKey)`)
+  - added shared canonical block identity resolver/canonicalizer flow (`BlockIdentityResolver` + kernel canonicalizer)
+  - single-command `compile`/`check`/`fix`/`pr-check` now perform optional index tuple matching with deterministic outcomes (`0/1/>1`)
+  - index-resolved canonical mismatch now fails deterministically at `block.name` with index locator detail
+  - all-mode services now pass explicit index locator context and parse index with strict duplicate-tuple guard
+  - expanded tests for canonicalization, tuple matching, ambiguity, mismatch, and strict parser duplicate tuple guard
+  - updated spec/docs: `spec/commands/compile.md`, `spec/commands/check.md`, `doc/USER_GUIDE.md`, `doc/bear-package/WORKFLOW.md`
 

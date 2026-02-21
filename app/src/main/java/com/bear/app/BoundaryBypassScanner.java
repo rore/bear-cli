@@ -103,7 +103,9 @@ final class BoundaryBypassScanner {
             String sanitized = stripJavaCommentsStringsAndChars(source);
             Set<String> suppressions = parsePortSuppressions(source);
 
-            List<String> requiredPorts = new ArrayList<>(manifest.requiredEffectPorts());
+            List<String> requiredPorts = manifest.logicRequiredPorts().isEmpty()
+                ? new ArrayList<>(manifest.requiredEffectPorts())
+                : new ArrayList<>(manifest.logicRequiredPorts());
             requiredPorts.sort(String::compareTo);
             for (String portParam : requiredPorts) {
                 if (suppressions.contains(portParam)) {

@@ -248,7 +248,9 @@ record WiringManifest(
     String implFqcn,
     String implSourcePath,
     List<String> requiredEffectPorts,
-    List<String> constructorPortParams
+    List<String> constructorPortParams,
+    List<String> logicRequiredPorts,
+    List<String> wrapperOwnedSemanticPorts
 ) {
 }
 

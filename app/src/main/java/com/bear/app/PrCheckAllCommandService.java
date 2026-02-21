@@ -17,7 +17,7 @@ final class PrCheckAllCommandService {
 
         BlockIndex index;
         try {
-            index = new BlockIndexParser().parse(options.repoRoot(), options.blocksPath());
+            index = new BlockIndexParser().parse(options.repoRoot(), options.blocksPath(), true);
         } catch (BlockIndexValidationException e) {
             return BearCli.failWithLegacy(
                 err,
@@ -95,7 +95,11 @@ final class PrCheckAllCommandService {
                 blockResults.add(BearCli.skipBlock(block, "DISABLED"));
                 continue;
             }
-            String mappingError = BearCli.validateIndexIrNameMatch(options.repoRoot().resolve(block.ir()).normalize(), block.name());
+            String mappingError = BearCli.validateIndexIrNameMatch(
+                options.repoRoot().resolve(block.ir()).normalize(),
+                block.name(),
+                BearCli.indexLocator(block)
+            );
             if (mappingError != null) {
                 blockResults.add(new BlockExecutionResult(
                     block.name(),

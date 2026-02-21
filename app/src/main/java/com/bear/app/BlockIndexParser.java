@@ -18,6 +18,10 @@ final class BlockIndexParser {
     private static final Pattern NAME_PATTERN = Pattern.compile("^[a-z][a-z0-9-]*$");
 
     BlockIndex parse(Path repoRoot, Path indexPath) throws IOException, BlockIndexValidationException {
+        return parse(repoRoot, indexPath, false);
+    }
+
+    BlockIndex parse(Path repoRoot, Path indexPath, boolean rejectDuplicateTuple) throws IOException, BlockIndexValidationException {
         String yamlText = Files.readString(indexPath, StandardCharsets.UTF_8);
         LoaderOptions options = new LoaderOptions();
         options.setAllowDuplicateKeys(false);
@@ -39,6 +43,7 @@ final class BlockIndexParser {
 
         List<BlockIndexEntry> blocks = new ArrayList<>();
         Set<String> names = new HashSet<>();
+        Set<String> tuples = new HashSet<>();
         for (int i = 0; i < rawBlocks.size(); i++) {
             Object blockObject = rawBlocks.get(i);
             String blockPath = "bear.blocks.yaml#blocks[" + i + "]";
@@ -70,6 +75,15 @@ final class BlockIndexParser {
 
             ensureUnderRepoRoot(repoRoot, ir, blockPath + ".ir");
             ensureUnderRepoRoot(repoRoot, projectRoot, blockPath + ".projectRoot");
+            if (rejectDuplicateTuple) {
+                String tupleKey = ir + "|" + repoRoot.resolve(projectRoot).normalize().toString().replace('\\', '/');
+                if (!tuples.add(tupleKey)) {
+                    throw new BlockIndexValidationException(
+                        "INDEX_INVALID: duplicate (ir,projectRoot) tuple: " + ir + ", " + projectRoot,
+                        blockPath
+                    );
+                }
+            }
             blocks.add(new BlockIndexEntry(name, ir, projectRoot, enabled));
         }
         return new BlockIndex(versionText, blocks);
