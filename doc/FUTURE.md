@@ -121,6 +121,30 @@ Non-goal:
 
 ---
 
+## Operation-Scoped Block Definitions (Future Expansion Candidate)
+
+Problem being tracked:
+- current IR models one contract/idempotency/invariant scope per block
+- this can force operation-per-block decomposition when one domain block has multiple API operations with different policies
+
+Candidate direction:
+- add first-class operation scope under one block (for example `operations[]`)
+- allow per-operation:
+  - contract inputs/outputs
+  - idempotency configuration
+  - invariants
+  - effect declarations (or operation-level effect subset)
+
+Design guardrails:
+- remain deterministic and machine-checkable
+- avoid untyped opcode/action router patterns
+- preserve clear boundary governance and review visibility
+
+Status:
+- tracked as future expansion only; not committed to active milestone scope
+
+---
+
 ## Multi-Target Support
 
 - Kotlin target
