@@ -5,7 +5,7 @@ For milestone status and backlog ordering, use `doc/PROGRAM_BOARD.md`.
 
 ## Last Updated
 
-2026-02-20
+2026-02-21
 
 ## Current Focus
 
@@ -52,4 +52,7 @@ Complete P2 declared allowed deps containment finish pass:
 - Added kernel regression test `compileReplaceLockFallsBackToInPlaceRewrite` and retained deterministic lock-failure behavior for unrecoverable cases.
 - Tightened BEAR package lock policy (`doc/bear-package/BEAR_AGENT.md`) and user/demo docs to forbid IR/ACL workaround mutations after lock failures.
 - Tightened BEAR package decomposition policy to reduce single-vs-many block variability: explicit split reasons, mandatory spec-citation evidence for multi-block decomposition, anti-router rule, and workflow/reporting updates.
+- Improved `bear check` project-test classification so Gradle wrapper bootstrap/unzip failures map to `IO_ERROR` (including `check --all` root-level detail enrichment with first failing line and short tail context).
+- Updated BEAR package docs for v1 IR clarity (`doc/bear-package/IR_EXAMPLES.md`, `doc/bear-package/BEAR_PRIMER.md`) and added doc consistency test coverage (`BearPackageDocsConsistencyTest`).
+- Added safe cleanup utility `scripts/safe-clean-bear-generated.ps1` with dry-run mode and optional greenfield reset scope.
 

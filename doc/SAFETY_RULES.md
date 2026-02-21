@@ -25,3 +25,29 @@ powershell -ExecutionPolicy Bypass -File .\scripts\safe-clean-temp.ps1 -WhatIf
 ```
 
 This script only allows deleting known temp/staging paths under the current repository root.
+
+## Safe BEAR Artifact Cleanup
+
+Generated BEAR artifacts only:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\safe-clean-bear-generated.ps1
+```
+
+Dry run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\safe-clean-bear-generated.ps1 -WhatIf
+```
+
+Fresh greenfield reset (also removes `spec/`, `bear.blocks.yaml`, and `src/main/java/blocks`):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\safe-clean-bear-generated.ps1 -IncludeGreenfieldReset
+```
+
+Non-interactive mode (for automation/agents):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\safe-clean-bear-generated.ps1 -Yes
+```
