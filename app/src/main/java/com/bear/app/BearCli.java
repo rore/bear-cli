@@ -581,7 +581,11 @@ public final class BearCli {
 
                 ProjectTestResult testResult = runProjectTests(root);
                 if (testResult.status == ProjectTestStatus.LOCKED) {
-                    String detail = "root-level project test runner lock in projectRoot " + entry.getKey();
+                    String detail = projectTestDetail(
+                        "root-level project test runner lock in projectRoot " + entry.getKey(),
+                        firstGradleLockLine(testResult.output),
+                        null
+                    );
                     for (int idx : entry.getValue()) {
                         blockResults.set(idx, rootFailure(
                             blockResults.get(idx),
@@ -593,8 +597,30 @@ public final class BearCli {
                             "Release Gradle wrapper lock or set isolated GRADLE_USER_HOME, then rerun `bear check --all`."
                         ));
                     }
+                } else if (testResult.status == ProjectTestStatus.BOOTSTRAP_IO) {
+                    String detail = projectTestDetail(
+                        "root-level project test bootstrap IO failure in projectRoot " + entry.getKey(),
+                        firstGradleBootstrapIoLine(testResult.output),
+                        shortTailSummary(testResult.output, 3)
+                    );
+                    for (int idx : entry.getValue()) {
+                        blockResults.set(idx, rootFailure(
+                            blockResults.get(idx),
+                            ExitCode.IO,
+                            "IO_ERROR",
+                            FailureCode.IO_ERROR,
+                            "project.tests",
+                            detail,
+                            "Fix Gradle wrapper bootstrap/cache (distribution zip/unzip) and rerun `bear check --all`."
+                        ));
+                    }
                 } else if (testResult.status == ProjectTestStatus.FAILED) {
                     rootTestFailed++;
+                    String detail = projectTestDetail(
+                        "root-level project tests failed for projectRoot " + entry.getKey(),
+                        firstRelevantProjectTestFailureLine(testResult.output),
+                        shortTailSummary(testResult.output, 3)
+                    );
                     for (int idx : entry.getValue()) {
                         blockResults.set(idx, rootFailure(
                             blockResults.get(idx),
@@ -602,12 +628,17 @@ public final class BearCli {
                             "TEST_FAILURE",
                             FailureCode.TEST_FAILURE,
                             "project.tests",
-                            "root-level project tests failed for projectRoot " + entry.getKey(),
+                            detail,
                             "Fix project tests and rerun `bear check --all`."
                         ));
                     }
                 } else if (testResult.status == ProjectTestStatus.TIMEOUT) {
                     rootTestFailed++;
+                    String detail = projectTestDetail(
+                        "root-level project tests timed out for projectRoot " + entry.getKey(),
+                        firstRelevantProjectTestFailureLine(testResult.output),
+                        shortTailSummary(testResult.output, 3)
+                    );
                     for (int idx : entry.getValue()) {
                         blockResults.set(idx, rootFailure(
                             blockResults.get(idx),
@@ -615,7 +646,7 @@ public final class BearCli {
                             "TEST_FAILURE",
                             FailureCode.TEST_TIMEOUT,
                             "project.tests",
-                            "root-level project tests timed out for projectRoot " + entry.getKey(),
+                            detail,
                             "Reduce test runtime or increase timeout, then rerun `bear check --all`."
                         ));
                     }
@@ -1080,6 +1111,23 @@ public final class BearCli {
                     FailureCode.IO_ERROR,
                     "project.tests",
                     "Release Gradle wrapper lock or set isolated GRADLE_USER_HOME, then rerun `bear check <ir-file> --project <path>`.",
+                    ioLine
+                );
+            }
+            if (testResult.status == ProjectTestStatus.BOOTSTRAP_IO) {
+                String bootstrapLine = firstGradleBootstrapIoLine(testResult.output);
+                String ioLine = bootstrapLine == null
+                    ? "io: IO_ERROR: PROJECT_TEST_BOOTSTRAP: Gradle wrapper bootstrap/unzip failed"
+                    : "io: IO_ERROR: PROJECT_TEST_BOOTSTRAP: " + bootstrapLine;
+                diagnostics.add(ioLine);
+                diagnostics.addAll(tailLines(testResult.output));
+                return checkFailure(
+                    ExitCode.IO,
+                    diagnostics,
+                    "IO_ERROR",
+                    FailureCode.IO_ERROR,
+                    "project.tests",
+                    "Fix Gradle wrapper bootstrap/cache (distribution zip/unzip) and rerun `bear check <ir-file> --project <path>`.",
                     ioLine
                 );
             }
@@ -3194,6 +3242,9 @@ public final class BearCli {
         if (isGradleWrapperLockOutput(output)) {
             return new ProjectTestResult(ProjectTestStatus.LOCKED, output);
         }
+        if (isGradleWrapperBootstrapIoOutput(output)) {
+            return new ProjectTestResult(ProjectTestStatus.BOOTSTRAP_IO, output);
+        }
         return new ProjectTestResult(ProjectTestStatus.FAILED, output);
     }
 
@@ -3208,6 +3259,30 @@ public final class BearCli {
         return lower.contains("project_test_gradle_lock_simulated");
     }
 
+    private static boolean isGradleWrapperBootstrapIoOutput(String output) {
+        String lower = normalizeLf(output).toLowerCase();
+        if (lower.contains("project_test_gradle_bootstrap_simulated")) {
+            return true;
+        }
+
+        boolean mentionsGradleZip = lower.contains("gradle-") && lower.contains("-bin.zip");
+        if (mentionsGradleZip
+            && (lower.contains("nosuchfileexception")
+                || lower.contains("filenotfoundexception")
+                || lower.contains("zipexception")
+                || lower.contains("error in opening zip file")
+                || lower.contains("end header not found")
+                || lower.contains("cannot unzip")
+                || lower.contains("unable to unzip")
+                || lower.contains("unable to install gradle"))) {
+            return true;
+        }
+
+        return lower.contains("error in opening zip file")
+            || lower.contains("end header not found")
+            || lower.contains("project_test_gradle_bootstrap");
+    }
+
     private static String firstGradleLockLine(String output) {
         for (String line : normalizeLf(output).lines().toList()) {
             String lower = line.toLowerCase();
@@ -3216,6 +3291,85 @@ public final class BearCli {
             }
         }
         return null;
+    }
+
+    private static String firstGradleBootstrapIoLine(String output) {
+        for (String line : normalizeLf(output).lines().toList()) {
+            String trimmed = line.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            String lower = trimmed.toLowerCase();
+            boolean mentionsGradleZip = lower.contains("gradle-") && lower.contains("-bin.zip");
+            if ((mentionsGradleZip
+                && (lower.contains("nosuchfileexception")
+                    || lower.contains("filenotfoundexception")
+                    || lower.contains("zipexception")
+                    || lower.contains("error in opening zip file")
+                    || lower.contains("end header not found")
+                    || lower.contains("cannot unzip")
+                    || lower.contains("unable to unzip")
+                    || lower.contains("unable to install gradle")))
+                || lower.contains("project_test_gradle_bootstrap_simulated")) {
+                return trimmed;
+            }
+        }
+        return null;
+    }
+
+    private static String firstRelevantProjectTestFailureLine(String output) {
+        List<String> lines = normalizeLf(output).lines()
+            .map(String::trim)
+            .filter(line -> !line.isEmpty())
+            .toList();
+        for (String line : lines) {
+            String lower = line.toLowerCase();
+            if (lower.contains("exception")
+                || lower.contains("error")
+                || lower.contains("failed")
+                || lower.contains("failure")
+                || lower.contains("could not")) {
+                return line;
+            }
+        }
+        if (!lines.isEmpty()) {
+            return lines.get(0);
+        }
+        return null;
+    }
+
+    private static String shortTailSummary(String output, int maxLines) {
+        List<String> lines = normalizeLf(output).lines()
+            .map(String::trim)
+            .filter(line -> !line.isEmpty())
+            .toList();
+        if (lines.isEmpty()) {
+            return null;
+        }
+        int start = Math.max(0, lines.size() - Math.max(1, maxLines));
+        List<String> tail = new ArrayList<>();
+        for (int i = start; i < lines.size(); i++) {
+            String line = lines.get(i);
+            if (line.length() > 180) {
+                line = line.substring(0, 177) + "...";
+            }
+            tail.add(line);
+        }
+        return String.join(" | ", tail);
+    }
+
+    private static String projectTestDetail(String base, String firstLine, String tail) {
+        StringBuilder detail = new StringBuilder(base);
+        if (firstLine != null && !firstLine.isBlank()) {
+            detail.append("; line: ").append(firstLine.trim());
+        }
+        if (tail != null && !tail.isBlank()) {
+            String normalizedTail = tail.trim();
+            if (firstLine == null || !normalizedTail.equals(firstLine.trim())) {
+                detail.append("; tail: ").append(normalizedTail);
+            }
+        }
+        return detail.toString();
     }
 
     private static Path resolveWrapper(Path projectRoot) throws IOException {
@@ -3589,7 +3743,8 @@ public final class BearCli {
         PASSED,
         FAILED,
         TIMEOUT,
-        LOCKED
+        LOCKED,
+        BOOTSTRAP_IO
     }
 
     private record ProjectTestResult(ProjectTestStatus status, String output) {

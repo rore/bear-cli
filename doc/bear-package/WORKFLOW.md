@@ -17,6 +17,7 @@ Purpose:
 
 Default:
 - start with exactly one block
+- in greenfield, block #2 is allowed only after recording `Decomposition Evidence` with direct spec quotes
 
 Split only when the spec explicitly supports at least one reason:
 - different lifecycle/trigger model
@@ -102,6 +103,7 @@ Do not assume `bin/bear-all.*` or `bin/pr-gate.*` exists.
 - prefer `bear fix` (or `fix --all`) to deterministically repair generated artifacts
 - alternatively rerun compile for changed IR
 - rerun check
+- do not run `bear fix` for `TEST_FAILURE` or `IO_ERROR`
 
 4. `6` undeclared reach:
 - declare required port/op in IR

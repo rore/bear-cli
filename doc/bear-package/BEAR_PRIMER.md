@@ -21,7 +21,7 @@ You declare structure in IR, generate deterministic artifacts, implement only us
 - Idempotency:
   - replay-safe behavior keyed by an input field.
 - Invariant:
-  - structural output rule (v0 supports `non_negative`).
+  - structural output rule (v1 supports `non_negative`).
 
 ## Source of Truth for IR
 

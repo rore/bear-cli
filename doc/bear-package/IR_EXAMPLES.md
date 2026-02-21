@@ -1,14 +1,14 @@
 # IR_EXAMPLES.md
 
 Purpose:
-- Minimal generic examples for valid BEAR v0 IR and multi-block indexing.
+- Minimal generic examples for valid BEAR v1 IR and multi-block indexing.
 
 ## Example A: Minimal Single Block
 
 `spec/process-task.bear.yaml`
 
 ```yaml
-version: v0
+version: v1
 block:
   name: ProcessTask
   kind: logic
@@ -42,6 +42,9 @@ block:
 
 ## Example B: Minimal Multi-Block (Indexed)
 
+Note:
+- IR files use `version: v1`; `bear.blocks.yaml` currently uses `version: v0`.
+
 `bear.blocks.yaml`
 
 ```yaml
@@ -58,7 +61,7 @@ blocks:
 `spec/execution-core.bear.yaml`
 
 ```yaml
-version: v0
+version: v1
 block:
   name: ExecutionCore
   kind: logic
@@ -93,7 +96,7 @@ block:
 `spec/activity-log.bear.yaml`
 
 ```yaml
-version: v0
+version: v1
 block:
   name: ActivityLog
   kind: logic

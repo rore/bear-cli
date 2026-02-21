@@ -24,7 +24,7 @@ Purpose:
 8. Do not invent replacement contracts/ports to bypass BEAR generation; implement against generated BEAR request/result/port interfaces.
 9. Do not create domain logic classes under `com.bear.generated.*` except user-owned `*Impl.java` files created by BEAR compile.
 10. If expected feature files/paths are missing, treat repository state as greenfield or extension based on actual `spec/*.bear.yaml` presence; do not switch to ad-hoc implementation-first mode.
-11. If `bear validate`/`bear compile`/`bear fix`/`bear check` fails, fix BEAR artifacts and rerun; do not bypass by writing non-BEAR replacement architecture.
+11. If `bear validate`/`bear compile`/`bear check` fails, fix the actual failing cause and rerun; do not bypass by writing non-BEAR replacement architecture.
 12. Prefer the smallest design that satisfies requirements and BEAR constraints.
 13. If you add new production architecture (platform/adapters/executors/etc.), include a brief necessity rationale tied to requirements and boundary ownership.
 14. If BEAR tooling fails with IO/lock/environment defects, stop and report the tooling failure; do not mutate unrelated IR to fit stale generated outputs.
@@ -35,6 +35,8 @@ Purpose:
 19. For IR with `impl.allowedDeps` on Java+Gradle projects, ensure the project applies generated containment entrypoint and run Gradle once before relying on `bear check`.
 20. For generated `*Impl.java`, replace the generated stub method body; do not keep the placeholder return/throw and append logic below it.
 21. Canonical user-owned implementation path is `src/main/java/blocks/<block-key>/impl/<BlockName>Impl.java`; do not relocate `*Impl.java` to `src/main/java/com/bear/generated/**` unless BEAR compile explicitly regenerates there.
+22. In greenfield, default to exactly one block; creating block #2 requires `Decomposition Evidence` with direct spec quotes before generation.
+23. `bear fix` is drift-repair only; do not run `bear fix` for `TEST_FAILURE` or `IO_ERROR`.
 
 ## Session Baseline Check
 

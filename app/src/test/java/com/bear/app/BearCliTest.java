@@ -904,6 +904,29 @@ class BearCliTest {
     }
 
     @Test
+    void checkProjectTestGradleBootstrapFailureReturnsIoError(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho java.nio.file.NoSuchFileException: C:\\\\tmp\\\\gradle-8.12.1-bin.zip\r\necho PROJECT_TEST_GRADLE_BOOTSTRAP_SIMULATED\r\nexit /b 1\r\n",
+            "#!/usr/bin/env sh\necho \"java.nio.file.NoSuchFileException: /tmp/gradle-8.12.1-bin.zip\"\necho \"PROJECT_TEST_GRADLE_BOOTSTRAP_SIMULATED\"\nexit 1\n"
+        );
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(74, check.exitCode);
+        assertTrue(normalizeLf(check.stderr).startsWith("io: IO_ERROR: PROJECT_TEST_BOOTSTRAP:"));
+        assertFailureEnvelope(
+            check.stderr,
+            "IO_ERROR",
+            "project.tests",
+            "Fix Gradle wrapper bootstrap/cache (distribution zip/unzip) and rerun `bear check <ir-file> --project <path>`."
+        );
+    }
+
+    @Test
     void checkProjectTestFailureReturnsExit4AndTail(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
         Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
@@ -1278,6 +1301,60 @@ class BearCliTest {
         });
         assertEquals(74, run.exitCode);
         assertTrue(normalizeLf(run.stderr).contains("CATEGORY: IO_ERROR"));
+        assertTrue(normalizeLf(run.stderr).contains("DETAIL: root-level project test runner lock in projectRoot services/alpha; line:"));
+        assertFailureEnvelope(
+            run.stderr,
+            "REPO_MULTI_BLOCK_FAILED",
+            "bear.blocks.yaml",
+            "Review per-block results above and fix failing blocks, then rerun the command."
+        );
+    }
+
+    @Test
+    void checkAllClassifiesGradleBootstrapAsIoError(@TempDir Path tempDir) throws Exception {
+        MultiBlockFixture fixture = createMultiBlockFixture(tempDir);
+        Path alphaRoot = fixture.projectRoots().get(0);
+        writeProjectWrapper(
+            alphaRoot,
+            "@echo off\r\necho java.nio.file.NoSuchFileException: C:\\\\tmp\\\\gradle-8.12.1-bin.zip\r\necho PROJECT_TEST_GRADLE_BOOTSTRAP_SIMULATED\r\nexit /b 1\r\n",
+            "#!/usr/bin/env sh\necho \"java.nio.file.NoSuchFileException: /tmp/gradle-8.12.1-bin.zip\"\necho \"PROJECT_TEST_GRADLE_BOOTSTRAP_SIMULATED\"\nexit 1\n"
+        );
+
+        CliRunResult run = runCli(new String[] {
+            "check", "--all", "--project", fixture.repoRoot().toString()
+        });
+        assertEquals(74, run.exitCode);
+        String stderr = normalizeLf(run.stderr);
+        assertTrue(stderr.contains("CATEGORY: IO_ERROR"));
+        assertTrue(stderr.contains("DETAIL: root-level project test bootstrap IO failure in projectRoot services/alpha; line:"));
+        assertFailureEnvelope(
+            run.stderr,
+            "REPO_MULTI_BLOCK_FAILED",
+            "bear.blocks.yaml",
+            "Review per-block results above and fix failing blocks, then rerun the command."
+        );
+    }
+
+    @Test
+    void checkAllIncludesRootProjectFailureLineAndTailInDetail(@TempDir Path tempDir) throws Exception {
+        MultiBlockFixture fixture = createMultiBlockFixture(tempDir);
+        Path alphaRoot = fixture.projectRoots().get(0);
+        writeProjectWrapper(
+            alphaRoot,
+            "@echo off\r\necho FAILURE: Build failed with an exception.\r\necho line48\r\necho line49\r\necho line50\r\nexit /b 1\r\n",
+            "#!/usr/bin/env sh\necho \"FAILURE: Build failed with an exception.\"\necho \"line48\"\necho \"line49\"\necho \"line50\"\nexit 1\n"
+        );
+
+        CliRunResult run = runCli(new String[] {
+            "check", "--all", "--project", fixture.repoRoot().toString()
+        });
+        assertEquals(4, run.exitCode);
+        String stderr = normalizeLf(run.stderr);
+        assertTrue(stderr.contains("CATEGORY: TEST_FAILURE"));
+        assertTrue(stderr.contains("DETAIL: root-level project tests failed for projectRoot services/alpha; line: FAILURE: Build failed with an exception.; tail:"));
+        assertTrue(stderr.contains("line48"));
+        assertTrue(stderr.contains("line49"));
+        assertTrue(stderr.contains("line50"));
         assertFailureEnvelope(
             run.stderr,
             "REPO_MULTI_BLOCK_FAILED",
