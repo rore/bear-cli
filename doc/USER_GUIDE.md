@@ -119,6 +119,10 @@ Use when:
 Behavior:
 - fails with drift exit code when generated baseline is stale/missing
 - fails with undeclared-reach exit code when covered direct HTTP client usage bypasses declared ports
+- fails with boundary-bypass exit code when BEAR seam rules are violated:
+  - direct impl usage in `src/main/**`
+  - top-level `null` port args in governed entrypoint constructors
+  - governed impl missing required effect-port usage (unless exact suppression comment is present)
 - runs project tests only after no-drift result
 - when IR declares `block.impl.allowedDeps`, also enforces containment handshake (script/index/marker hash) before tests
 
@@ -138,6 +142,19 @@ Use when:
 - a repo has multiple BEAR-managed blocks declared in `bear.blocks.yaml`
 - CI/local workflow needs one deterministic gate for all managed blocks
 - multiple blocks can share one `projectRoot`; `check --all` runs undeclared-reach/tests once per root
+
+### 4c. Clear check block marker
+
+```text
+bear unblock --project <path>
+```
+
+Use when:
+- `check`/`check --all` reports `CHECK_BLOCKED` after project-test lock/bootstrap IO classification
+
+Behavior:
+- clears `<project>/build/bear/check.blocked.marker` if present
+- idempotent (`unblock: OK` even when marker is absent)
 
 ### 5. PR governance gate (base diff classification)
 
@@ -197,6 +214,7 @@ Disallowed:
 - `4` project test failure (including timeout)
 - `5` boundary expansion detected in `pr-check`
 - `6` undeclared reach detected in `check` (`CODE=UNDECLARED_REACH`)
+- `6` boundary bypass detected in `check` (`CODE=BOUNDARY_BYPASS`)
 - `64` usage/argument failure
 - `70` internal/unexpected failure
 - `74` IO/git failure
@@ -212,6 +230,7 @@ Deterministic remediation order:
 2. Rerun the command and let BEAR use isolated Gradle home (`<project>/.bear-gradle-user-home`) unless you intentionally set `GRADLE_USER_HOME`.
 3. Retry once with the same command after lock cleanup.
 4. If lock persists, stop and report blocker details (path + command + output); do not apply IR renames, ACL edits, or manual generated-file surgery as workarounds.
+5. If check writes `<project>/build/bear/check.blocked.marker`, clear it with `bear unblock --project <path>` after fixing lock/bootstrap cause.
 
 Expected classification:
 - lock/tooling faults -> `IO_ERROR` (`74`)
@@ -222,6 +241,7 @@ Expected classification:
 `bear check` enforces:
 - deterministic generated-artifact drift gate
 - covered undeclared-reach gate for direct HTTP bypass surfaces
+- boundary-bypass seam gate (`DIRECT_IMPL_USAGE`, `NULL_PORT_WIRING`, `EFFECTS_BYPASS`)
 - project tests (only after drift and undeclared-reach pass)
 
 `bear pr-check` enforces:

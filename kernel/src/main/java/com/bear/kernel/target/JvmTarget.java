@@ -52,7 +52,9 @@ public final class JvmTarget implements Target {
         Path generatedMain = generatedRoot.resolve("src").resolve("main").resolve("java").resolve(packagePath);
         Path generatedTest = generatedRoot.resolve("src").resolve("test").resolve("java").resolve(packagePath);
         Path generatedSurfaces = generatedRoot.resolve("surfaces");
+        Path generatedWiring = generatedRoot.resolve("wiring");
         Path surfaceMarker = generatedSurfaces.resolve(blockKey + ".surface.json");
+        Path wiringManifest = generatedWiring.resolve(blockKey + ".wiring.json");
         Path userMain = projectRoot.resolve("src").resolve("main").resolve("java").resolve(implPackagePath);
         Path userMainLegacyByBlockKey = projectRoot
             .resolve("src")
@@ -69,12 +71,15 @@ public final class JvmTarget implements Target {
         Path stagingMain = stagingRoot.resolve("src").resolve("main").resolve("java").resolve(packagePath);
         Path stagingTest = stagingRoot.resolve("src").resolve("test").resolve("java").resolve(packagePath);
         Path stagingSurfaces = stagingRoot.resolve("surfaces");
+        Path stagingWiring = stagingRoot.resolve("wiring");
         Path stagingSurfaceMarker = stagingSurfaces.resolve(blockKey + ".surface.json");
+        Path stagingWiringManifest = stagingWiring.resolve(blockKey + ".wiring.json");
 
         deleteDirectoryIfExists(stagingRoot);
         Files.createDirectories(stagingMain);
         Files.createDirectories(stagingTest);
         Files.createDirectories(stagingSurfaces);
+        Files.createDirectories(stagingWiring);
         Files.createDirectories(userMain);
 
         List<PortModel> ports = mapPorts(ir.block().effects().allow());
@@ -100,11 +105,13 @@ public final class JvmTarget implements Target {
         }
 
         write(stagingSurfaceMarker, renderSurfaceManifest(ir));
+        write(stagingWiringManifest, renderWiringManifest(blockKey, packageName, blockName, implPackageName, implPackagePath, ports));
 
         try {
             syncDirectory(stagingMain, generatedMain);
             syncDirectory(stagingTest, generatedTest);
             syncFile(stagingSurfaceMarker, surfaceMarker);
+            syncFile(stagingWiringManifest, wiringManifest);
             writeContainmentArtifacts(
                 generatedAllowedDeps,
                 generatedGradle,
@@ -381,6 +388,9 @@ public final class JvmTarget implements Target {
         s.append(") {\n");
         s.append("        // TODO: replace this entire method body with business logic.\n");
         s.append("        // Do not append logic below this placeholder return.\n");
+        for (PortModel port : ports) {
+            s.append("        // BEAR:PORT_USED ").append(port.variableName).append("\n");
+        }
         s.append("        return new ").append(blockName).append("Result(");
         for (int i = 0; i < outputs.size(); i++) {
             if (i > 0) {
@@ -493,6 +503,58 @@ public final class JvmTarget implements Target {
             out.append("{\"kind\":\"non_negative\",\"field\":\"")
                 .append(jsonEscape(invariant.field()))
                 .append("\"}");
+        }
+        out.append("]}");
+        out.append("\n");
+        return out.toString();
+    }
+
+    private String renderWiringManifest(
+        String blockKey,
+        String generatedPackageName,
+        String blockName,
+        String implPackageName,
+        String implPackagePath,
+        List<PortModel> ports
+    ) {
+        List<String> requiredEffectPorts = new ArrayList<>();
+        for (PortModel port : ports) {
+            requiredEffectPorts.add(port.variableName);
+        }
+        requiredEffectPorts.sort(String::compareTo);
+
+        List<String> constructorPortParams = new ArrayList<>();
+        for (PortModel port : ports) {
+            constructorPortParams.add(port.variableName);
+        }
+
+        String entrypointFqcn = generatedPackageName + "." + blockName;
+        String logicInterfaceFqcn = generatedPackageName + "." + blockName + "Logic";
+        String implFqcn = implPackageName + "." + blockName + "Impl";
+        String implSourcePath = "src/main/java/" + implPackagePath + "/" + blockName + "Impl.java";
+
+        StringBuilder out = new StringBuilder();
+        out.append("{");
+        out.append("\"schemaVersion\":\"v1\",");
+        out.append("\"blockKey\":\"").append(jsonEscape(blockKey)).append("\",");
+        out.append("\"entrypointFqcn\":\"").append(jsonEscape(entrypointFqcn)).append("\",");
+        out.append("\"logicInterfaceFqcn\":\"").append(jsonEscape(logicInterfaceFqcn)).append("\",");
+        out.append("\"implFqcn\":\"").append(jsonEscape(implFqcn)).append("\",");
+        out.append("\"implSourcePath\":\"").append(jsonEscape(implSourcePath)).append("\",");
+        out.append("\"requiredEffectPorts\":[");
+        for (int i = 0; i < requiredEffectPorts.size(); i++) {
+            if (i > 0) {
+                out.append(",");
+            }
+            out.append("\"").append(jsonEscape(requiredEffectPorts.get(i))).append("\"");
+        }
+        out.append("],");
+        out.append("\"constructorPortParams\":[");
+        for (int i = 0; i < constructorPortParams.size(); i++) {
+            if (i > 0) {
+                out.append(",");
+            }
+            out.append("\"").append(jsonEscape(constructorPortParams.get(i))).append("\"");
         }
         out.append("]}");
         out.append("\n");

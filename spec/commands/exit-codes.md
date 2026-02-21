@@ -13,7 +13,7 @@ This file is the single source of truth for:
 - `3`: drift failure
 - `4`: project test failure (including timeout)
 - `5`: boundary expansion detected (`pr-check`)
-- `6`: undeclared reach detected (`check`)
+- `6`: boundary-policy failure bucket in `check` (`UNDECLARED_REACH` or `BOUNDARY_BYPASS`)
 - `64`: usage/argument failure
 - `70`: internal/unexpected failure
 - `74`: IO/git failure
@@ -56,6 +56,7 @@ Disallowed:
 - `TEST_TIMEOUT`
 - `BOUNDARY_EXPANSION`
 - `UNDECLARED_REACH`
+- `BOUNDARY_BYPASS`
 - `REPO_MULTI_BLOCK_FAILED`
 - `INTERNAL_ERROR`
 

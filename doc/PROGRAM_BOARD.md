@@ -2,7 +2,7 @@
 
 ## Last Updated
 
-2026-02-20
+2026-02-21
 
 ## Current Milestone
 
@@ -54,8 +54,9 @@ Preview standing note:
 
 ## Ready Queue (Ordered, Execution Work Items)
 
-1. `Declared allowed deps containment` (active, implementation in progress)
-2. Generated structural tests
+1. `Boundary hardening v1.1` (active rollout, implementation complete; demo validation pending)
+2. `Declared allowed deps containment` (stabilization/operational hardening)
+3. Generated structural tests
 
 ## Backlog Buckets (P1/P2/P3)
 

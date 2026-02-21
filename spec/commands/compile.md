@@ -80,6 +80,18 @@ Generated metadata:
     - `generatorVersion` (`jvm-v0`)
     - `capabilities` (`name` from IR `effects.allow[*].port`, sorted `ops`)
     - `invariants` (v0: `kind=non_negative`, `field`)
+- `<blockKey>.wiring.json` at `<project>/build/generated/bear/wiring/<blockKey>.wiring.json`
+  - deterministic wiring manifest used by `bear check` boundary-bypass enforcement
+  - minified canonical JSON, UTF-8, LF, trailing newline
+  - fields:
+    - `schemaVersion` (`v1`)
+    - `blockKey`
+    - `entrypointFqcn`
+    - `logicInterfaceFqcn`
+    - `implFqcn`
+    - `implSourcePath`
+    - `requiredEffectPorts`
+    - `constructorPortParams`
 
 ## Port Method Contract
 - One interface per declared port.

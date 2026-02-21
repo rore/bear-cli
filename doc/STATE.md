@@ -11,18 +11,17 @@ For milestone status and backlog ordering, use `doc/PROGRAM_BOARD.md`.
 
 P2 feature delivery:
 - active milestone is `P2`
-- `bear fix` remains implemented and green
-- active implementation is `Declared allowed deps containment` (`v1` IR, Gradle containment artifacts, check/pr-check wiring)
-- preview demo reset documentation alignment (`doc/demo/PREVIEW_DEMO.md`, navigation links, stale demo-reference cleanup)
-- compile lock hardening for preview demo reliability (Windows replace fallback + stricter agent lock policy)
+- boundary hardening v1.1 implementation is complete in CLI/kernel/docs/tests
+- active validation focus is demo sync and post-hardening greenfield behavior
+- compile/check reliability remains focused on deterministic lock/bootstrap triage behavior
 
 ## Next Concrete Task
 
-Complete P2 declared allowed deps containment finish pass:
-1. clean temporary golden-refresh directories after Windows file-lock issue
-2. commit/review split for containment wiring + docs/spec updates
-3. complete isolated-session scenario generation in `bear-account-demo` (`01/02/03/04`) and collect branch evidence
-4. validate compile lock hardening against isolated demo runs and capture any residual lock signatures
+Close boundary-hardening rollout in demo and operator flow:
+1. sync updated CLI + BEAR package docs into demo
+2. run greenfield demo gate and verify `BOUNDARY_BYPASS`/blocked-marker behavior end-to-end
+3. capture any false-positive patterns and tune deterministic scanner rules only if needed
+4. prepare commit/review split (kernel/app/spec/docs)
 
 ## Session Notes
 
@@ -59,4 +58,9 @@ Complete P2 declared allowed deps containment finish pass:
 - Extended `scripts/safe-clean-bear-generated.ps1` to remove full `build/` outputs so BEAR-generated classfiles under `build/classes/**/com/bear/generated` are fully cleaned in demo resets.
 - Tracked future expansion idea in `doc/FUTURE.md`: operation-scoped definitions inside one block to support multi-operation domain aggregation without opcode-router patterns.
 - Updated JVM compile generation so user-owned `*Impl.java` stubs are emitted under package-aligned paths (`src/main/java/blocks/<pkg-segment>/impl`, package `blocks.<pkg-segment>.impl`), switched containment metadata to `implDir` (with tolerant legacy parse), and refreshed tests/docs/golden accordingly.
+- Implemented BEAR Boundary Hardening v1.1:
+  - compile emits deterministic wiring manifest per block (`build/generated/bear/wiring/<blockKey>.wiring.json`)
+  - `check`/`check --all` enforce `BOUNDARY_BYPASS` rules (`DIRECT_IMPL_USAGE`, `NULL_PORT_WIRING`, `EFFECTS_BYPASS`)
+  - project-test lock/bootstrap now write check-only marker (`build/bear/check.blocked.marker`) and `bear unblock --project <path>` clears it
+  - updated CLI/kernel tests and docs/spec (`spec/commands/check.md`, `doc/bear-package/*`, `doc/USER_GUIDE.md`)
 

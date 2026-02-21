@@ -53,6 +53,15 @@ class JvmTargetTest {
         assertTrue(manifest.contains("\"allowedDeps\":[]"));
         assertTrue(manifest.contains("\"invariants\":[{\"kind\":\"non_negative\",\"field\":\"balance\"}]"));
         assertTrue(manifest.contains("\"irHash\":\"e760299bd88662c50dd411c90612a0d1007a434920a7644144abc7611da2720f\""));
+        String wiring = first.get("wiring/withdraw.wiring.json");
+        assertTrue(wiring.contains("\"schemaVersion\":\"v1\""));
+        assertTrue(wiring.contains("\"blockKey\":\"withdraw\""));
+        assertTrue(wiring.contains("\"entrypointFqcn\":\"com.bear.generated.withdraw.Withdraw\""));
+        assertTrue(wiring.contains("\"logicInterfaceFqcn\":\"com.bear.generated.withdraw.WithdrawLogic\""));
+        assertTrue(wiring.contains("\"implFqcn\":\"blocks.withdraw.impl.WithdrawImpl\""));
+        assertTrue(wiring.contains("\"implSourcePath\":\"src/main/java/blocks/withdraw/impl/WithdrawImpl.java\""));
+        assertTrue(wiring.contains("\"requiredEffectPorts\":[\"idempotencyPort\",\"ledgerPort\"]"));
+        assertTrue(wiring.contains("\"constructorPortParams\":[\"idempotencyPort\",\"ledgerPort\"]"));
         String containmentGradle = first.get("gradle/bear-containment.gradle");
         assertFalse(containmentGradle.contains("exclude('blocks/**/impl/**')"));
     }
@@ -114,6 +123,12 @@ class JvmTargetTest {
         String content = Files.readString(impl);
         assertTrue(content.contains("package blocks.create.wallet.impl;"));
         assertFalse(Files.exists(tempDir.resolve("src/main/java/blocks/create-wallet/impl/CreateWalletImpl.java")));
+        Path wiring = tempDir.resolve("build/generated/bear/wiring/create-wallet.wiring.json");
+        assertTrue(Files.exists(wiring));
+        String wiringContent = Files.readString(wiring);
+        assertTrue(wiringContent.contains("\"implFqcn\":\"blocks.create.wallet.impl.CreateWalletImpl\""));
+        assertTrue(wiringContent.contains("\"implSourcePath\":\"src/main/java/blocks/create/wallet/impl/CreateWalletImpl.java\""));
+        assertTrue(wiringContent.contains("\"constructorPortParams\":[\"walletStorePort\"]"));
     }
 
     @Test

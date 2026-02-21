@@ -96,6 +96,7 @@ class BearCliTest {
         String stdout = normalizeLf(run.stdout);
         assertTrue(stdout.contains("bear fix <ir-file> --project <path>"));
         assertTrue(stdout.contains("bear fix --all --project <repoRoot> [--blocks <path>] [--only <csv>] [--fail-fast] [--strict-orphans]"));
+        assertTrue(stdout.contains("bear unblock --project <path>"));
     }
 
     @Test
@@ -789,7 +790,7 @@ class BearCliTest {
         Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
 
-        Path usesImpl = tempDir.resolve("src/main/java/com/example/UsesWithdrawImpl.java");
+        Path usesImpl = tempDir.resolve("src/test/java/com/example/UsesWithdrawImpl.java");
         Files.createDirectories(usesImpl.getParent());
         Files.writeString(usesImpl, ""
             + "package com.example;\n"
@@ -811,10 +812,10 @@ class BearCliTest {
                 + "  echo GLOBAL_EXCLUDE_PRESENT\r\n"
                 + "  exit /b 1\r\n"
                 + ")\r\n"
-                + "if not exist src\\main\\java\\com\\example\\UsesWithdrawImpl.java exit /b 1\r\n"
+                + "if not exist src\\test\\java\\com\\example\\UsesWithdrawImpl.java exit /b 1\r\n"
                 + "if not exist src\\main\\java\\blocks\\withdraw\\impl\\WithdrawImpl.java exit /b 1\r\n"
                 + "if not exist build\\project-test-classes mkdir build\\project-test-classes\r\n"
-                + "javac -d build\\project-test-classes build\\generated\\bear\\src\\main\\java\\com\\bear\\generated\\withdraw\\*.java src\\main\\java\\blocks\\withdraw\\impl\\WithdrawImpl.java src\\main\\java\\com\\example\\UsesWithdrawImpl.java\r\n"
+                + "javac -d build\\project-test-classes build\\generated\\bear\\src\\main\\java\\com\\bear\\generated\\withdraw\\*.java src\\main\\java\\blocks\\withdraw\\impl\\WithdrawImpl.java src\\test\\java\\com\\example\\UsesWithdrawImpl.java\r\n"
                 + "if errorlevel 1 exit /b 1\r\n"
                 + "echo TEST_OK\r\n"
                 + "exit /b 0\r\n",
@@ -824,10 +825,10 @@ class BearCliTest {
                 + "  echo GLOBAL_EXCLUDE_PRESENT\n"
                 + "  exit 1\n"
                 + "fi\n"
-                + "test -f src/main/java/com/example/UsesWithdrawImpl.java\n"
+                + "test -f src/test/java/com/example/UsesWithdrawImpl.java\n"
                 + "test -f src/main/java/blocks/withdraw/impl/WithdrawImpl.java\n"
                 + "mkdir -p build/project-test-classes\n"
-                + "javac -d build/project-test-classes build/generated/bear/src/main/java/com/bear/generated/withdraw/*.java src/main/java/blocks/withdraw/impl/WithdrawImpl.java src/main/java/com/example/UsesWithdrawImpl.java\n"
+                + "javac -d build/project-test-classes build/generated/bear/src/main/java/com/bear/generated/withdraw/*.java src/main/java/blocks/withdraw/impl/WithdrawImpl.java src/test/java/com/example/UsesWithdrawImpl.java\n"
                 + "echo TEST_OK\n"
                 + "exit 0\n"
         );
@@ -1149,6 +1150,281 @@ class BearCliTest {
             "DRIFT_DETECTED",
             "build/generated/bear",
             "Run `bear compile <ir-file> --project <path>`, then rerun `bear check <ir-file> --project <path>`."
+        );
+    }
+
+    @Test
+    void checkBoundaryBypassDirectImplUsageFails(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        Path bypass = tempDir.resolve("src/main/java/com/example/Bypass.java");
+        Files.createDirectories(bypass.getParent());
+        Files.writeString(bypass, ""
+            + "package com.example;\n"
+            + "import blocks.withdraw.impl.WithdrawImpl;\n"
+            + "public final class Bypass {\n"
+            + "  WithdrawImpl impl = new WithdrawImpl();\n"
+            + "}\n",
+            StandardCharsets.UTF_8
+        );
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(6, check.exitCode);
+        String stderr = normalizeLf(check.stderr);
+        assertTrue(stderr.contains("check: BOUNDARY_BYPASS: RULE=DIRECT_IMPL_USAGE: src/main/java/com/example/Bypass.java:"));
+        assertFailureEnvelope(
+            check.stderr,
+            "BOUNDARY_BYPASS",
+            "src/main/java/com/example/Bypass.java",
+            "Wire via generated entrypoints and declared effect ports; remove impl seam bypasses."
+        );
+    }
+
+    @Test
+    void checkBoundaryBypassIgnoresImplTextInCommentsAndStrings(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        Path sample = tempDir.resolve("src/main/java/com/example/Sample.java");
+        Files.createDirectories(sample.getParent());
+        Files.writeString(sample, ""
+            + "package com.example;\n"
+            + "public final class Sample {\n"
+            + "  // import blocks.withdraw.impl.WithdrawImpl;\n"
+            + "  String s = \"new WithdrawImpl()\";\n"
+            + "}\n",
+            StandardCharsets.UTF_8
+        );
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(0, check.exitCode);
+        assertEquals("", check.stderr);
+        assertTrue(check.stdout.startsWith("check: OK"));
+    }
+
+    @Test
+    void checkBoundaryBypassNullPortWiringTopLevelFails(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        Path wiring = tempDir.resolve("src/main/java/com/example/Wiring.java");
+        Files.createDirectories(wiring.getParent());
+        Files.writeString(wiring, ""
+            + "package com.example;\n"
+            + "public final class Wiring {\n"
+            + "  void wire() {\n"
+            + "    new com.bear.generated.withdraw.Withdraw(null, ledgerPort, logic);\n"
+            + "  }\n"
+            + "}\n",
+            StandardCharsets.UTF_8
+        );
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(6, check.exitCode);
+        String stderr = normalizeLf(check.stderr);
+        assertTrue(stderr.contains("check: BOUNDARY_BYPASS: RULE=NULL_PORT_WIRING: src/main/java/com/example/Wiring.java:"));
+        assertFailureEnvelope(
+            check.stderr,
+            "BOUNDARY_BYPASS",
+            "src/main/java/com/example/Wiring.java",
+            "Wire via generated entrypoints and declared effect ports; remove impl seam bypasses."
+        );
+    }
+
+    @Test
+    void checkBoundaryBypassNullPortNestedExpressionDoesNotFail(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        Path wiring = tempDir.resolve("src/main/java/com/example/Wiring.java");
+        Files.createDirectories(wiring.getParent());
+        Files.writeString(wiring, ""
+            + "package com.example;\n"
+            + "public final class Wiring {\n"
+            + "  void wire() {\n"
+            + "    new com.bear.generated.withdraw.Withdraw((flag == null ? idempotencyPort : idempotencyPort), ledgerPort, logic);\n"
+            + "  }\n"
+            + "}\n",
+            StandardCharsets.UTF_8
+        );
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(0, check.exitCode);
+        assertEquals("", check.stderr);
+        assertTrue(check.stdout.startsWith("check: OK"));
+    }
+
+    @Test
+    void checkBoundaryBypassEffectsMissingRequiredPortUsageFails(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        Path impl = tempDir.resolve("src/main/java/blocks/withdraw/impl/WithdrawImpl.java");
+        Files.writeString(impl, ""
+            + "package blocks.withdraw.impl;\n"
+            + "public final class WithdrawImpl {\n"
+            + "  Object execute(Object request, Object idempotencyPort, Object ledgerPort) {\n"
+            + "    return null;\n"
+            + "  }\n"
+            + "}\n",
+            StandardCharsets.UTF_8
+        );
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(6, check.exitCode);
+        String stderr = normalizeLf(check.stderr);
+        assertTrue(stderr.contains("check: BOUNDARY_BYPASS: RULE=EFFECTS_BYPASS: src/main/java/blocks/withdraw/impl/WithdrawImpl.java: missing required effect port usage: idempotencyPort"));
+        assertFailureEnvelope(
+            check.stderr,
+            "BOUNDARY_BYPASS",
+            "src/main/java/blocks/withdraw/impl/WithdrawImpl.java",
+            "Wire via generated entrypoints and declared effect ports; remove impl seam bypasses."
+        );
+    }
+
+    @Test
+    void checkBoundaryBypassEffectsHelperPassThroughAndSuppression(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        Path impl = tempDir.resolve("src/main/java/blocks/withdraw/impl/WithdrawImpl.java");
+        Files.writeString(impl, ""
+            + "package blocks.withdraw.impl;\n"
+            + "public final class WithdrawImpl {\n"
+            + "  Object execute(Object request, Object idempotencyPort, Object ledgerPort) {\n"
+            + "    return helper(idempotencyPort, ledgerPort);\n"
+            + "  }\n"
+            + "  Object helper(Object left, Object right) { return null; }\n"
+            + "}\n",
+            StandardCharsets.UTF_8
+        );
+        CliRunResult passByHelper = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(0, passByHelper.exitCode);
+
+        Files.writeString(impl, ""
+            + "package blocks.withdraw.impl;\n"
+            + "public final class WithdrawImpl {\n"
+            + "  Object execute(Object request, Object idempotencyPort, Object ledgerPort) {\n"
+            + "    // BEAR:PORT_USED idempotencyPort\n"
+            + "    // BEAR:PORT_USED ledgerPort\n"
+            + "    return null;\n"
+            + "  }\n"
+            + "}\n",
+            StandardCharsets.UTF_8
+        );
+        CliRunResult passBySuppression = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(0, passBySuppression.exitCode);
+
+        Files.writeString(impl, ""
+            + "package blocks.withdraw.impl;\n"
+            + "public final class WithdrawImpl {\n"
+            + "  Object execute(Object request, Object idempotencyPort, Object ledgerPort) {\n"
+            + "    // BEAR:PORT_USED\n"
+            + "    return null;\n"
+            + "  }\n"
+            + "}\n",
+            StandardCharsets.UTF_8
+        );
+        CliRunResult malformedSuppression = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(6, malformedSuppression.exitCode);
+        assertTrue(
+            normalizeLf(malformedSuppression.stderr).contains(
+                "check: BOUNDARY_BYPASS: RULE=EFFECTS_BYPASS: src/main/java/blocks/withdraw/impl/WithdrawImpl.java: missing required effect port usage: idempotencyPort"
+            )
+        );
+    }
+
+    @Test
+    void checkBlockedMarkerRequiresUnblockAndSuccessfulCheckClears(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho java.io.FileNotFoundException: C:\\\\tmp\\\\gradle-8.12.1-bin.zip.lck (Access is denied)\r\necho PROJECT_TEST_GRADLE_LOCK_SIMULATED\r\nexit /b 1\r\n",
+            "#!/usr/bin/env sh\necho \"java.io.FileNotFoundException: /tmp/gradle-8.12.1-bin.zip.lck (Access is denied)\"\necho \"PROJECT_TEST_GRADLE_LOCK_SIMULATED\"\nexit 1\n"
+        );
+        CliRunResult locked = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(74, locked.exitCode);
+        Path marker = tempDir.resolve("build/bear/check.blocked.marker");
+        assertTrue(Files.isRegularFile(marker));
+        assertTrue(Files.readString(marker).contains("reason=LOCK"));
+
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+        CliRunResult blocked = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(74, blocked.exitCode);
+        assertTrue(normalizeLf(blocked.stderr).startsWith("check: IO_ERROR: CHECK_BLOCKED:"));
+
+        CliRunResult unblock = runCli(new String[] { "unblock", "--project", tempDir.toString() });
+        assertEquals(0, unblock.exitCode);
+        assertEquals("unblock: OK\n", normalizeLf(unblock.stdout));
+        assertFalse(Files.exists(marker));
+
+        CliRunResult pass = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(0, pass.exitCode);
+        assertFalse(Files.exists(marker));
+    }
+
+    @Test
+    void checkAllHonorsBlockedMarkerPreflight(@TempDir Path tempDir) throws Exception {
+        MultiBlockFixture fixture = createMultiBlockFixture(tempDir);
+        Path alphaRoot = fixture.projectRoots().get(0);
+        Path marker = alphaRoot.resolve("build/bear/check.blocked.marker");
+        Files.createDirectories(marker.getParent());
+        Files.writeString(marker, "reason=BOOTSTRAP_IO\ndetail=java.nio.file.NoSuchFileException: gradle-8.12.1-bin.zip\n", StandardCharsets.UTF_8);
+
+        CliRunResult run = runCli(new String[] {
+            "check", "--all", "--project", fixture.repoRoot().toString()
+        });
+        assertEquals(74, run.exitCode);
+        assertTrue(normalizeLf(run.stderr).startsWith("check: IO_ERROR: CHECK_BLOCKED: services/alpha:"));
+        assertFailureEnvelope(
+            run.stderr,
+            "IO_ERROR",
+            "services/alpha/build/bear/check.blocked.marker",
+            "Run `bear unblock --project <path>` after fixing lock/bootstrap IO and rerun `bear check --all`."
         );
     }
 

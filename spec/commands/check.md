@@ -1,16 +1,17 @@
-# `bear check` (v1.6)
+# `bear check` (v1.7)
 
 ## Command
 `bear check <ir-file> --project <path>`
 
 `bear check --all --project <repoRoot> [--blocks <path>] [--only <csv>] [--fail-fast] [--strict-orphans]`
 
-`bear check` v1.6 is a deterministic gate for:
+`bear check` v1.7 is a deterministic gate for:
 1. drift regeneration enforcement on BEAR-owned artifacts
 2. undeclared-reach enforcement for covered preview JVM direct HTTP surfaces
-3. project test execution after drift and undeclared-reach pass
-4. boundary-expansion signaling derived from BEAR surface manifests
-5. allowed-deps containment verification when IR declares `block.impl.allowedDeps`
+3. boundary-bypass enforcement on BEAR seams (`DIRECT_IMPL_USAGE`, `NULL_PORT_WIRING`, `EFFECTS_BYPASS`)
+4. project test execution after drift and static boundary gates pass
+5. boundary-expansion signaling derived from BEAR surface manifests
+6. allowed-deps containment verification when IR declares `block.impl.allowedDeps`
 
 For base-branch PR governance classification, use `bear pr-check`.
 
@@ -19,9 +20,9 @@ It performs:
 2. Compile normalized IR into a temporary project root.
 3. Diff temp BEAR-owned tree against project BEAR-owned tree.
 4. If drift passes, run undeclared-reach scan on project source tree.
-5. If IR declares allowed deps, verify containment script/index/marker hash handshake.
-6. If containment passes, run undeclared-reach scan on project source tree.
-7. If undeclared-reach passes, execute project tests via Gradle wrapper.
+5. Load wiring manifest (`build/generated/bear/wiring/<blockKey>.wiring.json`) and run boundary-bypass scan.
+6. If IR declares allowed deps, verify containment script/index/marker hash handshake.
+7. If static gates pass, execute project tests via Gradle wrapper.
 8. Fail deterministically on mismatch or test failure.
 
 `--all` mode orchestrates the same single-block gate for every selected index block in canonical order.
@@ -34,6 +35,8 @@ It is deterministic and uses the block index as inclusion source.
   - project test execution after no-drift result
 - Includes:
   - covered undeclared-reach static checks for preview JVM HTTP surfaces
+- Includes:
+  - boundary-bypass seam checks from wiring manifests
 - Includes:
   - allowed-deps containment handshake gate for supported Java+Gradle targets
 - Excludes:
@@ -52,6 +55,7 @@ Exit codes are defined centrally in `spec/commands/exit-codes.md`.
 - `3`: drift detected (including missing baseline)
 - `4`: project test failure (including timeout)
 - `6`: undeclared reach detected
+- `6`: boundary bypass detected (`CODE=BOUNDARY_BYPASS`)
 - `64`: usage error
 - `74`: IO error
 - `70`: internal/unexpected error
@@ -94,6 +98,17 @@ Missing baseline:
 - Candidate manifest:
   - `<tempRoot>/build/generated/bear/surfaces/<blockKey>.surface.json`
 
+## Wiring manifest source (v1.7)
+- Baseline wiring:
+  - `<project>/build/generated/bear/wiring/<blockKey>.wiring.json`
+- Candidate wiring:
+  - `<tempRoot>/build/generated/bear/wiring/<blockKey>.wiring.json`
+- wiring manifest fields used by `check` boundary hardening:
+  - `entrypointFqcn`
+  - `implSourcePath`
+  - `requiredEffectPorts`
+  - `constructorPortParams`
+
 Boundary classification uses manifest data only (no Java source parsing).
 
 ## Boundary signal format (stderr)
@@ -127,8 +142,9 @@ Output order in `check`:
 3. drift lines
 4. containment lines (if any)
 5. undeclared-reach lines (if any)
-6. test failure/timeout output (if reached)
-7. failure envelope (if non-zero)
+6. boundary-bypass lines (if any)
+7. test failure/timeout output (if reached)
+8. failure envelope (if non-zero)
 
 Relationship to drift:
 - boundary signaling is a classification layer on top of drift context
@@ -137,6 +153,25 @@ Relationship to drift:
 
 ## Undeclared Reach Enforcement (v1.5 preview)
 Detection runs only after drift pass and before project tests.
+
+## Boundary Bypass Enforcement (v1.7)
+Detection runs after drift/undeclared-reach pass and before project tests.
+
+Failure lines (stderr):
+- `check: BOUNDARY_BYPASS: RULE=DIRECT_IMPL_USAGE: <relative/path>: <token>`
+- `check: BOUNDARY_BYPASS: RULE=NULL_PORT_WIRING: <relative/path>: <token>`
+- `check: BOUNDARY_BYPASS: RULE=EFFECTS_BYPASS: <relative/path>: <detail>`
+
+Failure envelope:
+- `CODE=BOUNDARY_BYPASS`
+- `PATH=<first offending path>`
+- `REMEDIATION=Wire via generated entrypoints and declared effect ports; remove impl seam bypasses.`
+
+Suppression:
+- only for `EFFECTS_BYPASS`
+- exact same-file line:
+  - `// BEAR:PORT_USED <portParamName>`
+- wildcard/global suppression is invalid
 
 ## Allowed Deps Containment (v1.6 preview)
 Containment gate runs only when IR declares `block.impl.allowedDeps` and drift has passed.
@@ -230,6 +265,17 @@ Candidate manifest problems are fatal internal errors:
   - then print last 40 lines of merged test output
   - line handling is deterministic: normalize `\r\n` and `\n`, tail by normalized lines
   - tail lines are printed without extra per-line prefixes
+
+Check-blocked marker (v1.7):
+- marker path: `<project>/build/bear/check.blocked.marker`
+- marker is written only when project-test classification is:
+  - `PROJECT_TEST_LOCK`
+  - `PROJECT_TEST_BOOTSTRAP`
+- marker blocks `check` / `check --all` until cleared
+- marker does not block `compile`, `fix`, or `pr-check`
+- clear command:
+  - `bear unblock --project <path>`
+- successful `check` auto-clears marker
 
 ## No-mutation guarantee
 `bear check` does not modify project baseline files.

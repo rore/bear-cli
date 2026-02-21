@@ -49,6 +49,7 @@ Anti-patterns:
 7. Run gate:
 - single-block mode: `bear check <ir-file> --project <repoRoot>`
 - multi-block mode: `bear check --all --project <repoRoot>`
+  - if gate is blocked by `build/bear/check.blocked.marker`, clear with `bear unblock --project <repoRoot>` after fixing lock/bootstrap IO
 8. Implement in `*Impl.java` and tests only.
 9. Re-run check to `0`.
 
@@ -69,6 +70,7 @@ Greenfield hard stop:
 - ensure project applies `build/generated/bear/gradle/bear-containment.gradle`
 - run Gradle build/test once to write containment marker
 7. Run check gate (`check` or `check --all`).
+  - if gate is blocked by `build/bear/check.blocked.marker`, clear with `bear unblock --project <repoRoot>` after fixing lock/bootstrap IO
 8. Implement and test.
 9. Re-run check gate to `0`.
 10. For PR/base governance run:
@@ -105,7 +107,11 @@ Do not assume `bin/bear-all.*` or `bin/pr-gate.*` exists.
 - rerun check
 - do not run `bear fix` for `TEST_FAILURE` or `IO_ERROR`
 
-4. `6` undeclared reach:
+4. `6` boundary-bypass or undeclared reach:
+- for `CODE=BOUNDARY_BYPASS`:
+  - remove direct impl usage from `src/main/**`
+  - wire generated entrypoints with non-null ports
+  - ensure declared effect ports are used (or add exact `// BEAR:PORT_USED <portParam>` suppression)
 - declare required port/op in IR
 - compile
 - route call through generated port interface
@@ -120,6 +126,8 @@ Do not assume `bin/bear-all.*` or `bin/pr-gate.*` exists.
 
 7. `74` IO/git failure:
 - fix path/ref/permission/repo state
+- if lock/bootstrap marker exists (`build/bear/check.blocked.marker`), clear with:
+  - `bear unblock --project <repoRoot>`
 
 Index troubleshooting:
 - `projectRoot` must be a repo-relative directory path.

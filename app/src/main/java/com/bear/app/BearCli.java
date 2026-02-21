@@ -43,6 +43,28 @@ public final class BearCli {
         "super", "switch", "synchronized", "this", "throw", "throws", "transient", "try", "void",
         "volatile", "while", "record", "sealed", "permits", "var", "yield", "non-sealed"
     );
+    private static final String CHECK_BLOCKED_MARKER_RELATIVE = "build/bear/check.blocked.marker";
+    private static final String CHECK_BLOCKED_REASON_LOCK = "LOCK";
+    private static final String CHECK_BLOCKED_REASON_BOOTSTRAP = "BOOTSTRAP_IO";
+    private static final Pattern DIRECT_IMPL_IMPORT_PATTERN = Pattern.compile(
+        "\\bimport\\s+blocks(?:\\.[A-Za-z_][A-Za-z0-9_]*)*\\.impl\\.[A-Za-z_][A-Za-z0-9_]*Impl\\s*;"
+    );
+    private static final Pattern DIRECT_IMPL_NEW_PATTERN = Pattern.compile(
+        "\\bnew\\s+(?:[A-Za-z_][A-Za-z0-9_]*\\s*\\.\\s*)*[A-Za-z_][A-Za-z0-9_]*Impl\\s*\\("
+    );
+    private static final Pattern DIRECT_IMPL_TYPE_CAST_PATTERN = Pattern.compile(
+        "\\(\\s*(?:[A-Za-z_][A-Za-z0-9_]*\\s*\\.\\s*)*[A-Za-z_][A-Za-z0-9_]*Impl\\s*\\)"
+    );
+    private static final Pattern DIRECT_IMPL_VAR_DECL_PATTERN = Pattern.compile(
+        "(?m)\\b(?:[A-Za-z_][A-Za-z0-9_]*\\s*\\.\\s*)*[A-Za-z_][A-Za-z0-9_]*Impl\\b\\s+[A-Za-z_][A-Za-z0-9_]*\\s*(?:[=;,)])"
+    );
+    private static final Pattern DIRECT_IMPL_EXTENDS_IMPL_PATTERN = Pattern.compile(
+        "\\bextends\\s+(?:[A-Za-z_][A-Za-z0-9_]*\\s*\\.\\s*)*[A-Za-z_][A-Za-z0-9_]*Impl\\b"
+    );
+    private static final Pattern DIRECT_IMPL_IMPLEMENTS_IMPL_PATTERN = Pattern.compile(
+        "\\bimplements\\s+(?:[A-Za-z_][A-Za-z0-9_]*\\s*\\.\\s*)*[A-Za-z_][A-Za-z0-9_]*Impl\\b"
+    );
+    private static final Pattern SUPPRESSION_PATTERN = Pattern.compile("(?m)^\\s*//\\s*BEAR:PORT_USED\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*$");
 
     private BearCli() {
     }
@@ -63,6 +85,7 @@ public final class BearCli {
             case "compile" -> runCompile(args, out, err);
             case "fix" -> runFix(args, out, err);
             case "check" -> runCheck(args, out, err);
+            case "unblock" -> runUnblock(args, out, err);
             case "pr-check" -> runPrCheck(args, out, err);
             default -> failWithLegacy(
                 err,
@@ -372,8 +395,52 @@ public final class BearCli {
 
         Path irFile = Path.of(args[1]);
         Path projectRoot = Path.of(args[3]);
+        CheckBlockedState blockedState = readCheckBlockedState(projectRoot);
+        if (blockedState.blocked()) {
+            String line = "check: IO_ERROR: CHECK_BLOCKED: " + blockedState.summary();
+            return failWithLegacy(
+                err,
+                ExitCode.IO,
+                line,
+                FailureCode.IO_ERROR,
+                CHECK_BLOCKED_MARKER_RELATIVE,
+                "Run `bear unblock --project <path>` after fixing lock/bootstrap IO and rerun `bear check`."
+            );
+        }
         CheckResult result = executeCheck(irFile, projectRoot, true, null);
         return emitCheckResult(result, out, err);
+    }
+
+    private static int runUnblock(String[] args, PrintStream out, PrintStream err) {
+        if (args.length == 2 && ("--help".equals(args[1]) || "-h".equals(args[1]))) {
+            printUsage(out);
+            return ExitCode.OK;
+        }
+        if (args.length != 3 || !"--project".equals(args[1])) {
+            return failWithLegacy(
+                err,
+                ExitCode.USAGE,
+                "usage: INVALID_ARGS: expected: bear unblock --project <path>",
+                FailureCode.USAGE_INVALID_ARGS,
+                "cli.args",
+                "Run `bear unblock --project <path>` with the expected arguments."
+            );
+        }
+        Path projectRoot = Path.of(args[2]);
+        try {
+            clearCheckBlockedMarker(projectRoot);
+            out.println("unblock: OK");
+            return ExitCode.OK;
+        } catch (IOException e) {
+            return failWithLegacy(
+                err,
+                ExitCode.IO,
+                "io: IO_ERROR: " + squash(e.getMessage()),
+                FailureCode.IO_ERROR,
+                CHECK_BLOCKED_MARKER_RELATIVE,
+                "Ensure the project path is writable, then rerun `bear unblock --project <path>`."
+            );
+        }
     }
 
     private static int runPrCheck(String[] args, PrintStream out, PrintStream err) {
@@ -478,6 +545,33 @@ public final class BearCli {
             );
         }
 
+        TreeSet<String> managedRoots = new TreeSet<>();
+        for (BlockIndexEntry entry : selected) {
+            if (!entry.enabled()) {
+                continue;
+            }
+            managedRoots.add(entry.projectRoot());
+        }
+        for (String managedRoot : managedRoots) {
+            Path root = options.repoRoot().resolve(managedRoot).normalize();
+            CheckBlockedState blockedState = readCheckBlockedState(root);
+            if (!blockedState.blocked()) {
+                continue;
+            }
+            String markerPath = options.repoRoot()
+                .relativize(root.resolve(CHECK_BLOCKED_MARKER_RELATIVE))
+                .toString()
+                .replace('\\', '/');
+            return failWithLegacy(
+                err,
+                ExitCode.IO,
+                "check: IO_ERROR: CHECK_BLOCKED: " + managedRoot + ": " + blockedState.summary(),
+                FailureCode.IO_ERROR,
+                markerPath,
+                "Run `bear unblock --project <path>` after fixing lock/bootstrap IO and rerun `bear check --all`."
+            );
+        }
+
         try {
             List<String> legacyMarkers = options.strictOrphans()
                 ? computeLegacyMarkersRepoWide(options.repoRoot())
@@ -579,11 +673,37 @@ public final class BearCli {
                     continue;
                 }
 
+                List<WiringManifest> wiringManifests = new ArrayList<>();
+                for (int idx : entry.getValue()) {
+                    String blockKey = blockResults.get(idx).name();
+                    Path wiringPath = root.resolve("build/generated/bear/wiring/" + blockKey + ".wiring.json");
+                    wiringManifests.add(parseWiringManifest(wiringPath));
+                }
+                List<BoundaryBypassFinding> bypassFindings = scanBoundaryBypass(root, wiringManifests);
+                if (!bypassFindings.isEmpty()) {
+                    BoundaryBypassFinding first = bypassFindings.get(0);
+                    String firstLine = "check: BOUNDARY_BYPASS: RULE=" + first.rule() + ": " + first.path() + ": " + first.detail();
+                    for (int idx : entry.getValue()) {
+                        blockResults.set(idx, rootFailure(
+                            blockResults.get(idx),
+                            ExitCode.BOUNDARY_BYPASS,
+                            "BOUNDARY_BYPASS",
+                            FailureCode.BOUNDARY_BYPASS,
+                            first.path(),
+                            firstLine,
+                            "Wire via generated entrypoints and declared effect ports; remove impl seam bypasses."
+                        ));
+                    }
+                    continue;
+                }
+
                 ProjectTestResult testResult = runProjectTests(root);
                 if (testResult.status == ProjectTestStatus.LOCKED) {
+                    String lockLine = firstGradleLockLine(testResult.output);
+                    writeCheckBlockedMarker(root, CHECK_BLOCKED_REASON_LOCK, lockLine);
                     String detail = projectTestDetail(
                         "root-level project test runner lock in projectRoot " + entry.getKey(),
-                        firstGradleLockLine(testResult.output),
+                        lockLine,
                         null
                     );
                     for (int idx : entry.getValue()) {
@@ -598,9 +718,11 @@ public final class BearCli {
                         ));
                     }
                 } else if (testResult.status == ProjectTestStatus.BOOTSTRAP_IO) {
+                    String bootstrapLine = firstGradleBootstrapIoLine(testResult.output);
+                    writeCheckBlockedMarker(root, CHECK_BLOCKED_REASON_BOOTSTRAP, bootstrapLine);
                     String detail = projectTestDetail(
                         "root-level project test bootstrap IO failure in projectRoot " + entry.getKey(),
-                        firstGradleBootstrapIoLine(testResult.output),
+                        bootstrapLine,
                         shortTailSummary(testResult.output, 3)
                     );
                     for (int idx : entry.getValue()) {
@@ -650,6 +772,8 @@ public final class BearCli {
                             "Reduce test runtime or increase timeout, then rerun `bear check --all`."
                         ));
                     }
+                } else if (testResult.status == ProjectTestStatus.PASSED) {
+                    clearCheckBlockedMarker(root);
                 }
             } catch (IOException e) {
                 for (int idx : entry.getValue()) {
@@ -661,6 +785,18 @@ public final class BearCli {
                         "project.root",
                         "io: IO_ERROR: " + squash(e.getMessage()),
                         "Ensure project paths are accessible (including Gradle wrapper), then rerun `bear check --all`."
+                    ));
+                }
+            } catch (ManifestParseException e) {
+                for (int idx : entry.getValue()) {
+                    blockResults.set(idx, rootFailure(
+                        blockResults.get(idx),
+                        ExitCode.DRIFT,
+                        "DRIFT",
+                        FailureCode.DRIFT_MISSING_BASELINE,
+                        "build/generated/bear/wiring/" + blockResults.get(idx).name() + ".wiring.json",
+                        "drift: BASELINE_WIRING_MANIFEST_INVALID: " + e.reasonCode(),
+                        "Run `bear compile <ir-file> --project <path>`, then rerun `bear check --all`."
                     ));
                 }
             } catch (InterruptedException e) {
@@ -967,6 +1103,7 @@ public final class BearCli {
                 "src/test/java/com/bear/generated/" + packageSegment.replace('.', '/') + "/"
             );
             String markerRelPath = "surfaces/" + blockKey + ".surface.json";
+            String wiringRelPath = "wiring/" + blockKey + ".wiring.json";
             Path legacyMarkerPath = baselineRoot.resolve("bear.surface.json");
             if (Files.isRegularFile(legacyMarkerPath)) {
                 return checkFailure(
@@ -999,6 +1136,8 @@ public final class BearCli {
             Path candidateRoot = tempRoot.resolve("build").resolve("generated").resolve("bear");
             Path baselineManifestPath = baselineRoot.resolve(markerRelPath);
             Path candidateManifestPath = candidateRoot.resolve(markerRelPath);
+            Path baselineWiringPath = baselineRoot.resolve(wiringRelPath);
+            Path candidateWiringPath = candidateRoot.resolve(wiringRelPath);
 
             applyCandidateManifestTestMode(candidateManifestPath);
 
@@ -1039,6 +1178,60 @@ public final class BearCli {
                 );
             }
 
+            if (!Files.isRegularFile(baselineWiringPath)) {
+                String line = "drift: MISSING_BASELINE: build/generated/bear/" + wiringRelPath
+                    + " (run: bear compile "
+                    + irFile + " --project " + projectRoot + ")";
+                return checkFailure(
+                    ExitCode.DRIFT,
+                    List.of(line),
+                    "DRIFT",
+                    FailureCode.DRIFT_MISSING_BASELINE,
+                    "build/generated/bear/" + wiringRelPath,
+                    "Run `bear compile <ir-file> --project <path>`, then rerun `bear check <ir-file> --project <path>`.",
+                    "drift: MISSING_BASELINE: build/generated/bear/" + wiringRelPath
+                );
+            }
+            if (!Files.isRegularFile(candidateWiringPath)) {
+                return checkFailure(
+                    ExitCode.INTERNAL,
+                    List.of("internal: INTERNAL_ERROR: CANDIDATE_WIRING_MANIFEST_MISSING"),
+                    "INTERNAL_ERROR",
+                    FailureCode.INTERNAL_ERROR,
+                    "build/generated/bear/" + wiringRelPath,
+                    "Capture stderr and file an issue against bear-cli.",
+                    "internal: INTERNAL_ERROR: CANDIDATE_WIRING_MANIFEST_MISSING"
+                );
+            }
+            WiringManifest baselineWiringManifest;
+            WiringManifest candidateWiringManifest;
+            try {
+                baselineWiringManifest = parseWiringManifest(baselineWiringPath);
+            } catch (ManifestParseException e) {
+                return checkFailure(
+                    ExitCode.DRIFT,
+                    List.of("drift: BASELINE_WIRING_MANIFEST_INVALID: " + e.reasonCode()),
+                    "DRIFT",
+                    FailureCode.DRIFT_MISSING_BASELINE,
+                    "build/generated/bear/" + wiringRelPath,
+                    "Run `bear compile <ir-file> --project <path>`, then rerun `bear check <ir-file> --project <path>`.",
+                    "drift: BASELINE_WIRING_MANIFEST_INVALID: " + e.reasonCode()
+                );
+            }
+            try {
+                candidateWiringManifest = parseWiringManifest(candidateWiringPath);
+            } catch (ManifestParseException e) {
+                return checkFailure(
+                    ExitCode.INTERNAL,
+                    List.of("internal: INTERNAL_ERROR: CANDIDATE_WIRING_MANIFEST_INVALID:" + e.reasonCode()),
+                    "INTERNAL_ERROR",
+                    FailureCode.INTERNAL_ERROR,
+                    "build/generated/bear/" + wiringRelPath,
+                    "Capture stderr and file an issue against bear-cli.",
+                    "internal: INTERNAL_ERROR: CANDIDATE_WIRING_MANIFEST_INVALID:" + e.reasonCode()
+                );
+            }
+
             List<BoundarySignal> boundarySignals = List.of();
             if (baselineManifest != null) {
                 if (!baselineManifest.irHash().equals(candidateManifest.irHash())
@@ -1054,7 +1247,7 @@ public final class BearCli {
             List<DriftItem> drift = computeDrift(
                 baselineRoot,
                 candidateRoot,
-                path -> path.equals(markerRelPath) || startsWithAny(path, ownedPrefixes)
+                path -> path.equals(markerRelPath) || path.equals(wiringRelPath) || startsWithAny(path, ownedPrefixes)
             );
             if (!drift.isEmpty()) {
                 for (DriftItem item : drift) {
@@ -1096,9 +1289,33 @@ public final class BearCli {
                 );
             }
 
+            List<BoundaryBypassFinding> bypassFindings = scanBoundaryBypass(projectRoot, List.of(baselineWiringManifest));
+            if (!bypassFindings.isEmpty()) {
+                for (BoundaryBypassFinding finding : bypassFindings) {
+                    diagnostics.add(
+                        "check: BOUNDARY_BYPASS: RULE="
+                            + finding.rule()
+                            + ": "
+                            + finding.path()
+                            + ": "
+                            + finding.detail()
+                    );
+                }
+                return checkFailure(
+                    ExitCode.BOUNDARY_BYPASS,
+                    diagnostics,
+                    "BOUNDARY_BYPASS",
+                    FailureCode.BOUNDARY_BYPASS,
+                    bypassFindings.get(0).path(),
+                    "Wire via generated entrypoints and declared effect ports; remove impl seam bypasses.",
+                    diagnostics.get(diagnostics.size() - 1)
+                );
+            }
+
             ProjectTestResult testResult = runProjectTests(projectRoot);
             if (testResult.status == ProjectTestStatus.LOCKED) {
                 String lockLine = firstGradleLockLine(testResult.output);
+                writeCheckBlockedMarker(projectRoot, CHECK_BLOCKED_REASON_LOCK, lockLine);
                 String ioLine = lockLine == null
                     ? "io: IO_ERROR: PROJECT_TEST_LOCK: Gradle wrapper lock detected"
                     : "io: IO_ERROR: PROJECT_TEST_LOCK: " + lockLine;
@@ -1116,6 +1333,7 @@ public final class BearCli {
             }
             if (testResult.status == ProjectTestStatus.BOOTSTRAP_IO) {
                 String bootstrapLine = firstGradleBootstrapIoLine(testResult.output);
+                writeCheckBlockedMarker(projectRoot, CHECK_BLOCKED_REASON_BOOTSTRAP, bootstrapLine);
                 String ioLine = bootstrapLine == null
                     ? "io: IO_ERROR: PROJECT_TEST_BOOTSTRAP: Gradle wrapper bootstrap/unzip failed"
                     : "io: IO_ERROR: PROJECT_TEST_BOOTSTRAP: " + bootstrapLine;
@@ -1159,6 +1377,7 @@ public final class BearCli {
                 );
             }
 
+            clearCheckBlockedMarker(projectRoot);
             return new CheckResult(ExitCode.OK, List.of("check: OK"), List.of(), null, null, null, null, null);
         } catch (BearIrValidationException e) {
             return checkFailure(
@@ -2807,6 +3026,33 @@ public final class BearCli {
         return new BoundaryManifest(schemaVersion, target, block, irHash, generatorVersion, capabilities, allowedDeps, invariants);
     }
 
+    private static WiringManifest parseWiringManifest(Path path) throws IOException, ManifestParseException {
+        String json = Files.readString(path, StandardCharsets.UTF_8).trim();
+        if (!json.startsWith("{") || !json.endsWith("}")) {
+            throw new ManifestParseException("MALFORMED_JSON");
+        }
+        String schemaVersion = extractRequiredString(json, "schemaVersion");
+        String blockKey = extractRequiredString(json, "blockKey");
+        String entrypointFqcn = extractRequiredString(json, "entrypointFqcn");
+        String logicInterfaceFqcn = extractRequiredString(json, "logicInterfaceFqcn");
+        String implFqcn = extractRequiredString(json, "implFqcn");
+        String implSourcePath = extractRequiredString(json, "implSourcePath");
+        String requiredEffectPortsPayload = extractRequiredArrayPayload(json, "requiredEffectPorts");
+        String constructorPortParamsPayload = extractRequiredArrayPayload(json, "constructorPortParams");
+        List<String> requiredEffectPorts = parseStringArray(requiredEffectPortsPayload);
+        List<String> constructorPortParams = parseStringArray(constructorPortParamsPayload);
+        return new WiringManifest(
+            schemaVersion,
+            blockKey,
+            entrypointFqcn,
+            logicInterfaceFqcn,
+            implFqcn,
+            implSourcePath,
+            requiredEffectPorts,
+            constructorPortParams
+        );
+    }
+
     private static String extractRequiredString(String json, String key) throws ManifestParseException {
         Matcher m = Pattern.compile("\"" + Pattern.quote(key) + "\":\"((?:\\\\.|[^\\\\\"])*)\"").matcher(json);
         if (!m.find()) {
@@ -2932,6 +3178,21 @@ public final class BearCli {
             throw new ManifestParseException("INVALID_ALLOWED_DEPS");
         }
         return allowedDeps;
+    }
+
+    private static List<String> parseStringArray(String payload) throws ManifestParseException {
+        if (payload.isBlank()) {
+            return List.of();
+        }
+        ArrayList<String> values = new ArrayList<>();
+        Matcher matcher = Pattern.compile("\"((?:\\\\.|[^\\\\\"])*)\"").matcher(payload);
+        while (matcher.find()) {
+            values.add(jsonUnescape(matcher.group(1)));
+        }
+        if (values.isEmpty()) {
+            throw new ManifestParseException("INVALID_STRING_ARRAY");
+        }
+        return List.copyOf(values);
     }
 
     private static String jsonUnescape(String value) {
@@ -3132,6 +3393,387 @@ public final class BearCli {
             || relPath.startsWith(".gradle/")
             || relPath.startsWith("src/test/")
             || relPath.startsWith("build/generated/bear/");
+    }
+
+    private static List<BoundaryBypassFinding> scanBoundaryBypass(Path projectRoot, List<WiringManifest> manifests) throws IOException {
+        if (manifests.isEmpty()) {
+            return List.of();
+        }
+
+        TreeMap<String, WiringManifest> manifestsByImplPath = new TreeMap<>();
+        HashSet<String> governedEntrypointFqcns = new HashSet<>();
+        HashMap<String, Integer> governedSimpleNameCounts = new HashMap<>();
+        for (WiringManifest manifest : manifests) {
+            manifestsByImplPath.put(manifest.implSourcePath(), manifest);
+            governedEntrypointFqcns.add(manifest.entrypointFqcn());
+            String simple = simpleName(manifest.entrypointFqcn());
+            governedSimpleNameCounts.put(simple, governedSimpleNameCounts.getOrDefault(simple, 0) + 1);
+        }
+
+        List<BoundaryBypassFinding> findings = new ArrayList<>();
+        if (Files.isDirectory(projectRoot)) {
+            Files.walkFileTree(projectRoot, new SimpleFileVisitor<>() {
+                @Override
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    if (!attrs.isRegularFile()) {
+                        return FileVisitResult.CONTINUE;
+                    }
+                    String rel = projectRoot.relativize(file).toString().replace('\\', '/');
+                    if (!rel.endsWith(".java") || isBoundaryScanExcluded(rel)) {
+                        return FileVisitResult.CONTINUE;
+                    }
+                    String source = Files.readString(file, StandardCharsets.UTF_8);
+                    String sanitized = stripJavaCommentsStringsAndChars(source);
+
+                    String directImplToken = firstDirectImplUsageToken(sanitized);
+                    if (directImplToken != null) {
+                        findings.add(new BoundaryBypassFinding("DIRECT_IMPL_USAGE", rel, directImplToken));
+                    }
+
+                    String nullWiringToken = firstTopLevelNullPortWiringToken(sanitized, governedEntrypointFqcns, governedSimpleNameCounts);
+                    if (nullWiringToken != null) {
+                        findings.add(new BoundaryBypassFinding("NULL_PORT_WIRING", rel, nullWiringToken));
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        }
+
+        for (Map.Entry<String, WiringManifest> entry : manifestsByImplPath.entrySet()) {
+            WiringManifest manifest = entry.getValue();
+            Path implPath = projectRoot.resolve(entry.getKey()).normalize();
+            String rel = projectRoot.relativize(implPath).toString().replace('\\', '/');
+            if (!Files.isRegularFile(implPath)) {
+                findings.add(new BoundaryBypassFinding(
+                    "EFFECTS_BYPASS",
+                    rel,
+                    "missing governed impl source"
+                ));
+                continue;
+            }
+            String source = Files.readString(implPath, StandardCharsets.UTF_8);
+            String sanitized = stripJavaCommentsStringsAndChars(source);
+            Set<String> suppressions = parsePortSuppressions(source);
+
+            List<String> requiredPorts = new ArrayList<>(manifest.requiredEffectPorts());
+            requiredPorts.sort(String::compareTo);
+            for (String portParam : requiredPorts) {
+                if (suppressions.contains(portParam)) {
+                    continue;
+                }
+                if (referencesPortAsReceiver(sanitized, portParam)) {
+                    continue;
+                }
+                if (passesPortAsInvocationArgument(sanitized, portParam)) {
+                    continue;
+                }
+                findings.add(new BoundaryBypassFinding(
+                    "EFFECTS_BYPASS",
+                    rel,
+                    "missing required effect port usage: " + portParam
+                ));
+            }
+        }
+
+        findings.sort(
+            Comparator.comparing(BoundaryBypassFinding::path)
+                .thenComparing(BoundaryBypassFinding::rule)
+                .thenComparing(BoundaryBypassFinding::detail)
+        );
+        return findings;
+    }
+
+    private static boolean isBoundaryScanExcluded(String relPath) {
+        return !relPath.startsWith("src/main/")
+            || relPath.startsWith("src/test/")
+            || relPath.startsWith("build/")
+            || relPath.startsWith(".gradle/")
+            || relPath.startsWith("build/generated/bear/");
+    }
+
+    private static String firstDirectImplUsageToken(String source) {
+        Matcher importMatcher = DIRECT_IMPL_IMPORT_PATTERN.matcher(source);
+        if (importMatcher.find()) {
+            return normalizeToken(importMatcher.group());
+        }
+        Matcher newMatcher = DIRECT_IMPL_NEW_PATTERN.matcher(source);
+        if (newMatcher.find()) {
+            return normalizeToken(newMatcher.group());
+        }
+        Matcher castMatcher = DIRECT_IMPL_TYPE_CAST_PATTERN.matcher(source);
+        if (castMatcher.find()) {
+            return normalizeToken(castMatcher.group());
+        }
+        Matcher varMatcher = DIRECT_IMPL_VAR_DECL_PATTERN.matcher(source);
+        if (varMatcher.find()) {
+            return normalizeToken(varMatcher.group());
+        }
+        Matcher extendsMatcher = DIRECT_IMPL_EXTENDS_IMPL_PATTERN.matcher(source);
+        if (extendsMatcher.find()) {
+            return normalizeToken(extendsMatcher.group());
+        }
+        Matcher implementsMatcher = DIRECT_IMPL_IMPLEMENTS_IMPL_PATTERN.matcher(source);
+        if (implementsMatcher.find()) {
+            return normalizeToken(implementsMatcher.group());
+        }
+        return null;
+    }
+
+    private static String firstTopLevelNullPortWiringToken(
+        String source,
+        Set<String> governedEntrypointFqcns,
+        Map<String, Integer> governedSimpleNameCounts
+    ) {
+        Matcher constructorMatcher = Pattern.compile("\\bnew\\s+([A-Za-z_][A-Za-z0-9_\\.]*)\\s*\\(").matcher(source);
+        while (constructorMatcher.find()) {
+            String typeName = constructorMatcher.group(1);
+            if (!isGovernedEntrypointType(typeName, governedEntrypointFqcns, governedSimpleNameCounts)) {
+                continue;
+            }
+            List<String> args = parseTopLevelArguments(source, constructorMatcher.end() - 1);
+            if (args == null) {
+                continue;
+            }
+            for (String arg : args) {
+                if ("null".equals(arg.trim())) {
+                    return "new " + typeName + "(..., null, ...)";
+                }
+            }
+        }
+        return null;
+    }
+
+    private static boolean isGovernedEntrypointType(
+        String typeName,
+        Set<String> governedEntrypointFqcns,
+        Map<String, Integer> governedSimpleNameCounts
+    ) {
+        if (governedEntrypointFqcns.contains(typeName)) {
+            return true;
+        }
+        String simple = simpleName(typeName);
+        return governedSimpleNameCounts.getOrDefault(simple, 0) == 1;
+    }
+
+    private static String simpleName(String fqcn) {
+        int idx = fqcn.lastIndexOf('.');
+        if (idx < 0) {
+            return fqcn;
+        }
+        return fqcn.substring(idx + 1);
+    }
+
+    private static List<String> parseTopLevelArguments(String source, int openParenIndex) {
+        if (openParenIndex < 0 || openParenIndex >= source.length() || source.charAt(openParenIndex) != '(') {
+            return null;
+        }
+        List<String> args = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        int parenDepth = 1;
+        int braceDepth = 0;
+        int bracketDepth = 0;
+        for (int i = openParenIndex + 1; i < source.length(); i++) {
+            char c = source.charAt(i);
+            if (c == '(') {
+                parenDepth++;
+                current.append(c);
+                continue;
+            }
+            if (c == ')') {
+                if (parenDepth == 1 && braceDepth == 0 && bracketDepth == 0) {
+                    args.add(current.toString());
+                    return args;
+                }
+                parenDepth--;
+                current.append(c);
+                continue;
+            }
+            if (c == '{') {
+                braceDepth++;
+                current.append(c);
+                continue;
+            }
+            if (c == '}') {
+                if (braceDepth > 0) {
+                    braceDepth--;
+                }
+                current.append(c);
+                continue;
+            }
+            if (c == '[') {
+                bracketDepth++;
+                current.append(c);
+                continue;
+            }
+            if (c == ']') {
+                if (bracketDepth > 0) {
+                    bracketDepth--;
+                }
+                current.append(c);
+                continue;
+            }
+            if (c == ',' && parenDepth == 1 && braceDepth == 0 && bracketDepth == 0) {
+                args.add(current.toString());
+                current.setLength(0);
+                continue;
+            }
+            current.append(c);
+        }
+        return null;
+    }
+
+    private static Set<String> parsePortSuppressions(String source) {
+        TreeSet<String> suppressions = new TreeSet<>();
+        Matcher matcher = SUPPRESSION_PATTERN.matcher(source);
+        while (matcher.find()) {
+            suppressions.add(matcher.group(1));
+        }
+        return suppressions;
+    }
+
+    private static boolean referencesPortAsReceiver(String source, String portParam) {
+        return Pattern.compile("\\b" + Pattern.quote(portParam) + "\\s*\\.").matcher(source).find();
+    }
+
+    private static boolean passesPortAsInvocationArgument(String source, String portParam) {
+        return Pattern.compile("(?:\\(|,)\\s*" + Pattern.quote(portParam) + "\\s*(?:,|\\))").matcher(source).find();
+    }
+
+    private static String normalizeToken(String token) {
+        return token.replaceAll("\\s+", " ").trim();
+    }
+
+    private static String stripJavaCommentsStringsAndChars(String source) {
+        StringBuilder out = new StringBuilder(source.length());
+        boolean inLineComment = false;
+        boolean inBlockComment = false;
+        boolean inString = false;
+        boolean inChar = false;
+        boolean escaped = false;
+
+        for (int i = 0; i < source.length(); i++) {
+            char c = source.charAt(i);
+            char next = i + 1 < source.length() ? source.charAt(i + 1) : '\0';
+
+            if (inLineComment) {
+                if (c == '\n' || c == '\r') {
+                    inLineComment = false;
+                    out.append(c);
+                } else {
+                    out.append(' ');
+                }
+                continue;
+            }
+            if (inBlockComment) {
+                if (c == '*' && next == '/') {
+                    inBlockComment = false;
+                    out.append(' ');
+                    out.append(' ');
+                    i++;
+                } else if (c == '\n' || c == '\r') {
+                    out.append(c);
+                } else {
+                    out.append(' ');
+                }
+                continue;
+            }
+            if (inString) {
+                if (!escaped && c == '"') {
+                    inString = false;
+                }
+                if (!escaped && c == '\\') {
+                    escaped = true;
+                } else {
+                    escaped = false;
+                }
+                out.append(c == '\n' || c == '\r' ? c : ' ');
+                continue;
+            }
+            if (inChar) {
+                if (!escaped && c == '\'') {
+                    inChar = false;
+                }
+                if (!escaped && c == '\\') {
+                    escaped = true;
+                } else {
+                    escaped = false;
+                }
+                out.append(c == '\n' || c == '\r' ? c : ' ');
+                continue;
+            }
+
+            if (c == '/' && next == '/') {
+                inLineComment = true;
+                out.append(' ');
+                out.append(' ');
+                i++;
+                continue;
+            }
+            if (c == '/' && next == '*') {
+                inBlockComment = true;
+                out.append(' ');
+                out.append(' ');
+                i++;
+                continue;
+            }
+            if (c == '"') {
+                inString = true;
+                escaped = false;
+                out.append(' ');
+                continue;
+            }
+            if (c == '\'') {
+                inChar = true;
+                escaped = false;
+                out.append(' ');
+                continue;
+            }
+            out.append(c);
+        }
+        return out.toString();
+    }
+
+    private static CheckBlockedState readCheckBlockedState(Path projectRoot) {
+        Path marker = projectRoot.resolve(CHECK_BLOCKED_MARKER_RELATIVE);
+        if (!Files.isRegularFile(marker)) {
+            return CheckBlockedState.notBlocked();
+        }
+        try {
+            String content = Files.readString(marker, StandardCharsets.UTF_8);
+            String reason = null;
+            String detail = null;
+            for (String rawLine : normalizeLf(content).lines().toList()) {
+                String line = rawLine.trim();
+                if (line.startsWith("reason=")) {
+                    reason = line.substring("reason=".length()).trim();
+                } else if (line.startsWith("detail=")) {
+                    detail = line.substring("detail=".length()).trim();
+                }
+            }
+            if (reason == null || reason.isBlank()) {
+                reason = "UNKNOWN";
+            }
+            if (detail == null || detail.isBlank()) {
+                detail = "no details";
+            }
+            return new CheckBlockedState(true, reason, detail);
+        } catch (IOException e) {
+            return new CheckBlockedState(true, "UNKNOWN", squash(e.getMessage()));
+        }
+    }
+
+    private static void writeCheckBlockedMarker(Path projectRoot, String reason, String detail) throws IOException {
+        Path marker = projectRoot.resolve(CHECK_BLOCKED_MARKER_RELATIVE);
+        Files.createDirectories(marker.getParent());
+        String safeReason = (reason == null || reason.isBlank()) ? "UNKNOWN" : reason;
+        String safeDetail = (detail == null || detail.isBlank()) ? "no details" : detail.trim();
+        String content = "reason=" + safeReason + "\n" + "detail=" + safeDetail + "\n";
+        Files.writeString(marker, content, StandardCharsets.UTF_8);
+    }
+
+    private static void clearCheckBlockedMarker(Path projectRoot) throws IOException {
+        Path marker = projectRoot.resolve(CHECK_BLOCKED_MARKER_RELATIVE);
+        Files.deleteIfExists(marker);
     }
 
     private static boolean hasOwnedBaselineFiles(Path baselineRoot, Set<String> ownedPrefixes, String markerRelPath) throws IOException {
@@ -3464,6 +4106,7 @@ public final class BearCli {
         out.println("       bear fix --all --project <repoRoot> [--blocks <path>] [--only <csv>] [--fail-fast] [--strict-orphans]");
         out.println("       bear check <ir-file> --project <path>");
         out.println("       bear check --all --project <repoRoot> [--blocks <path>] [--only <csv>] [--fail-fast] [--strict-orphans]");
+        out.println("       bear unblock --project <path>");
         out.println("       bear pr-check <ir-file> --project <path> --base <ref>");
         out.println("       bear pr-check --all --project <repoRoot> --base <ref> [--blocks <path>] [--only <csv>] [--strict-orphans]");
         out.println("       bear --help");
@@ -3528,6 +4171,7 @@ public final class BearCli {
         private static final int TEST_FAILURE = 4;
         private static final int BOUNDARY_EXPANSION = 5;
         private static final int UNDECLARED_REACH = 6;
+        private static final int BOUNDARY_BYPASS = 6;
         private static final int USAGE = 64;
         private static final int IO = 74;
         private static final int INTERNAL = 70;
@@ -3545,6 +4189,7 @@ public final class BearCli {
         private static final String TEST_TIMEOUT = "TEST_TIMEOUT";
         private static final String BOUNDARY_EXPANSION = "BOUNDARY_EXPANSION";
         private static final String UNDECLARED_REACH = "UNDECLARED_REACH";
+        private static final String BOUNDARY_BYPASS = "BOUNDARY_BYPASS";
         private static final String CONTAINMENT_NOT_VERIFIED = "CONTAINMENT_NOT_VERIFIED";
         private static final String CONTAINMENT_UNSUPPORTED_TARGET = "CONTAINMENT_UNSUPPORTED_TARGET";
         private static final String REPO_MULTI_BLOCK_FAILED = "REPO_MULTI_BLOCK_FAILED";
@@ -3557,6 +4202,19 @@ public final class BearCli {
     private record UndeclaredReachSurface(String label, Pattern pattern) {
         private boolean matches(String content) {
             return pattern.matcher(content).find();
+        }
+    }
+
+    private record BoundaryBypassFinding(String rule, String path, String detail) {
+    }
+
+    private record CheckBlockedState(boolean blocked, String reason, String detail) {
+        private static CheckBlockedState notBlocked() {
+            return new CheckBlockedState(false, "", "");
+        }
+
+        private String summary() {
+            return "reason=" + reason + "; detail=" + detail;
         }
     }
 
@@ -3723,6 +4381,18 @@ public final class BearCli {
         Map<String, TreeSet<String>> capabilities,
         Map<String, String> allowedDeps,
         TreeSet<String> invariants
+    ) {
+    }
+
+    private record WiringManifest(
+        String schemaVersion,
+        String blockKey,
+        String entrypointFqcn,
+        String logicInterfaceFqcn,
+        String implFqcn,
+        String implSourcePath,
+        List<String> requiredEffectPorts,
+        List<String> constructorPortParams
     ) {
     }
 
