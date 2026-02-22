@@ -27,6 +27,10 @@ Post-Lock++ follow-through:
 
 ## Session Notes
 
+- Added explicit public promise-boundary wording:
+  - `README.md` now includes the precise statement that BEAR enforces declared+supportable semantics by construction and does not over-claim undeclared/non-supportable behavior.
+  - `docs/public/ENFORCEMENT.md` now includes a concise `Promise boundary` section with the same contract intent.
+  - `docs/public/FOUNDATIONS.md` philosophy now states supportability-by-target as a first-class constraint.
 - Applied architect review refinements on public docs:
   - rewrote README top section in plain terms (`what problem`, `what BEAR does`, `what you get`, quickstart first).
   - added explicit bounded coverage language in `README.md` and `docs/public/FOUNDATIONS.md`.

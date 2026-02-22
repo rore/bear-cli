@@ -14,6 +14,7 @@ BEAR addresses this with deterministic contracts and deterministic gates.
 - Make boundary power changes explicit and reviewable.
 - Prefer deterministic contract enforcement over process or prompt discipline.
 - Produce CI-friendly, machine-parseable outputs and stable exit semantics.
+- Enforce only declared semantics that are supportable by target wrappers/ports.
 
 ## BEAR IR fundamentals
 

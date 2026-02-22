@@ -2,6 +2,12 @@
 
 For rationale see [FOUNDATIONS.md](FOUNDATIONS.md). For exact command contracts see [CONTRACTS.md](CONTRACTS.md).
 
+Promise boundary:
+
+- BEAR is a compiler and CI gate for architecture and declared semantics.
+- It enforces only declared behaviors that the active target can support through generated wrappers/ports.
+- Undeclared or non-supportable behaviors are intentionally outside BEAR guarantees.
+
 ## Preview invariant status model
 
 Status labels used in this page:

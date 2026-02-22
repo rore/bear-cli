@@ -8,6 +8,8 @@ BEAR is a deterministic governance CLI for agentic backend development: agents i
 
 It is designed for AI-assisted development (or any fast iteration), where boundary expansion and generated-artifact drift can be easy to miss.
 
+BEAR is a compiler and CI gate for architecture and declared semantics. It makes certain constraints non-bypassable by generating the only allowed integration surface and rejecting code that reaches around it. If a behavior is declared in BEAR IR and is supported by the target wrapper and ports, BEAR enforces it by construction; if it is not declared (or not supportable by the underlying ports/runtime), BEAR does not pretend to guarantee it.
+
 ## What BEAR Does (Plain Terms)
 
 - You declare what code is allowed to do at the boundary.
