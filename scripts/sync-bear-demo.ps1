@@ -143,9 +143,8 @@ if (-not (Test-Path (Join-Path $demoRoot ".git"))) {
 
 $packagedAgentRoot = Resolve-PackagedAgentRoot $repoRoot
 $packagedCli = Find-PackagedCli $repoRoot
-$needsInstalledCli = -not $CliInstallPath -and -not $packagedCli
 
-if (-not $SkipBuild -and $needsInstalledCli) {
+if (-not $SkipBuild -and -not $CliInstallPath) {
     $gradleWrapper = Join-Path $repoRoot "gradlew.bat"
     if (-not (Test-Path $gradleWrapper)) {
         throw "Missing gradle wrapper: $gradleWrapper"
@@ -164,16 +163,25 @@ if (-not $SkipBuild -and $needsInstalledCli) {
     } else {
         Write-Output "WhatIf mode: build skipped."
     }
-} elseif ($packagedCli) {
-    Write-Output ("Using packaged CLI runtime: {0}" -f $packagedCli)
+}
+
+if ($SkipBuild -and $packagedCli -and -not $CliInstallPath) {
+    Write-Output ("SkipBuild enabled; using packaged CLI runtime: {0}" -f $packagedCli)
 }
 
 $installRoot = if ($CliInstallPath) {
     Find-InstalledCli $repoRoot $CliInstallPath
-} elseif ($packagedCli) {
-    $packagedCli
 } else {
-    Find-InstalledCli $repoRoot $null
+    try {
+        Find-InstalledCli $repoRoot $null
+    } catch {
+        if ($packagedCli) {
+            Write-Output ("Falling back to packaged CLI runtime: {0}" -f $packagedCli)
+            $packagedCli
+        } else {
+            throw
+        }
+    }
 }
 $dstCliRoot = Join-Path $demoRoot ".bear\tools\bear-cli"
 $dstCliBin = Join-Path $dstCliRoot "bin"
