@@ -1,5 +1,9 @@
 # Foundations
 
+Role of this page: conceptual rationale and architecture context.
+
+For fastest onboarding use [QUICKSTART.md](QUICKSTART.md). For contract guarantees use [ENFORCEMENT.md](ENFORCEMENT.md) and [CONTRACTS.md](CONTRACTS.md).
+
 ## Why BEAR exists
 
 BEAR exists to make AI-assisted and agentic backend development safer without killing delivery speed.
@@ -53,14 +57,6 @@ Key idea:
 - `check` enforces consistency and policy against that contract.
 - `pr-check` classifies contract deltas against base branch for governance.
 
-## What determinism means in practice
-
-- same IR and project state produce the same generated artifacts
-- same failure class produces stable output envelope and locator semantics
-- stable exit code meanings enable deterministic CI gates
-
-See [output-format.md](output-format.md) and [exit-codes.md](exit-codes.md).
-
 ## Agent workflow and developer visibility
 
 - BEAR is primarily an agent execution framework, not a manual developer checklist.
@@ -77,38 +73,26 @@ Typical agent loop:
 
 Developer-facing visibility:
 
-- PR signal: `pr-check` classifies boundary-expanding vs ordinary changes so reviewers can focus on contract/power expansion.
+- PR signal: `pr-check` classifies boundary-expanding vs ordinary changes.
 - CI signal: deterministic exit codes and failure footer let teams enforce stable merge gates.
 - Local triage signal: consistent output ordering and path normalization make failures actionable quickly.
-
-See [ENFORCEMENT.md](ENFORCEMENT.md) for a focused summary of what BEAR enforces and alerts on.
 
 ## Preview scope mindset
 
 Preview focuses on structural contract enforcement, deterministic diagnostics, and boundary governance.
 It is intentionally not a business-rules engine and does not claim full runtime semantics.
 
-See [CONTRACTS.md](CONTRACTS.md) and [VERSIONING.md](VERSIONING.md).
-
 ## CLI architecture at a glance
 
 BEAR CLI is split into two modules:
 
 - `kernel/`: deterministic trusted seed for IR parsing, validation, normalization, and target abstractions.
-- `app/`: CLI orchestration (`validate`, `compile`, `fix`, `check`, `pr-check`) and contract rendering.
-
-Design intent:
-
-- core deterministic logic in `kernel`
-- command workflow and reporting in `app`
-- stable command/output contracts for external automation
+- `app/`: CLI orchestration (`validate`, `compile`, `fix`, `check`, `unblock`, `pr-check`) and contract rendering.
 
 ## Related
 
 - [INDEX.md](INDEX.md)
-- [INSTALL.md](INSTALL.md)
 - [MODEL.md](MODEL.md)
 - [ENFORCEMENT.md](ENFORCEMENT.md)
 - [CONTRACTS.md](CONTRACTS.md)
 - [commands-check.md](commands-check.md)
-- [commands-pr-check.md](commands-pr-check.md)

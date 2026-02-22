@@ -1,4 +1,4 @@
-﻿# BEAR Session State
+# BEAR Session State
 
 This file is the short operational handoff for the current work window.
 For milestone status and backlog ordering, use `docs/context/program-board.md`.
@@ -27,6 +27,16 @@ Post-Lock++ follow-through:
 
 ## Session Notes
 
+- Completed public docs onboarding upgrade (concise-first, deep-link-second):
+  - rewrote README.md for fast orientation (what it is, what it enforces/alerts, reproducible quickstart, focused links).
+  - restructured docs/public/INDEX.md into Start in 5 minutes, Understand deeper, and Integrate in CI.
+  - hardened docs/public/QUICKSTART.md and docs/public/INSTALL.md with explicit check --all prerequisite (bear.blocks.yaml) and deterministic single-block fallback.
+  - added missing public command contract docs/public/commands-unblock.md and linked it from contracts/index/readme/troubleshooting.
+  - aligned shared public contract pages for unblock coverage (CONTRACTS.md, exit-codes.md, output-format.md).
+  - reduced repetition via role statements in README, MODEL, FOUNDATIONS, and ENFORCEMENT.
+- Stabilized internal context wording to current Preview framing:
+  - updated docs/context/start-here.md (v1 IR and current command surface).
+  - rewrote docs/context/architecture.md and docs/context/governance.md from stale v0 framing to current Preview semantics
 - Implemented BEAR Windows Gradle reliability hardening v1:
   - `ProjectTestRunner` now enforces deterministic cache strategy with Windows early fallback (`isolated -> user-cache -> user-cache-retry`) and fixed `200ms` backoff.
   - tightened lock classification for `Failed to delete file` to scoped Gradle temp paths under selected `GRADLE_USER_HOME`.
@@ -78,7 +88,7 @@ Post-Lock++ follow-through:
 
 - Synced philosophy docs to v1.2 direction:
   - explicit enforcement-by-construction principle
-  - explicit â€œwhy idempotency / why limited invariants / what is out of scopeâ€
+  - explicit “why idempotency / why limited invariants / what is out of scope”
   - canonical selection rule centralized in `docs/context/ir-spec.md` and referenced from user/workflow/spec docs
 - Implemented BEAR v1.2 Final Lock++ core:
   - IR: `idempotency.keyFromInputs`, expanded invariant schema (`kind/scope/params`)
@@ -173,6 +183,11 @@ Post-Lock++ follow-through:
   - all-mode services now pass explicit index locator context and parse index with strict duplicate-tuple guard
   - expanded tests for canonicalization, tuple matching, ambiguity, mismatch, and strict parser duplicate tuple guard
   - updated spec/docs: `docs/public/commands-compile.md`, `docs/public/commands-check.md`, `docs/context/user-guide.md`, `docs/bear-package/WORKFLOW.md`
+
+
+
+
+
 
 
 

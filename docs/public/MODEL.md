@@ -1,5 +1,9 @@
 # Model
 
+Role of this page: operating model and vocabulary only.
+
+For rationale see [FOUNDATIONS.md](FOUNDATIONS.md). For guarantees/signals see [ENFORCEMENT.md](ENFORCEMENT.md).
+
 ## Vocabulary
 
 - `block`: one governed unit of logic.
@@ -7,26 +11,21 @@
 - `compile`: deterministic generation of BEAR-owned artifacts.
 - `check`: deterministic local gate for drift, boundary rules, and tests.
 - `pr-check`: deterministic base-vs-head governance classification.
+- `unblock`: clears `check` blocked marker after lock/bootstrap IO failures.
 - `determinism`: same inputs produce the same output lines, files, and exit behavior.
 - `agent loop`: BEAR command sequence executed by the agent while implementing specs.
 - `developer visibility`: PR/CI signals BEAR emits for review and governance.
 
 ## Agent execution model
 
-BEAR is primarily an agent execution model, not a manual developer checklist.
-
 1. Agent updates block boundaries and contract in IR from project specs.
 2. Agent runs `compile` (or `fix`) to materialize deterministic generated artifacts.
 3. Agent runs `check` to enforce sync and policy.
 4. Agent runs `pr-check` to classify boundary changes against base.
 
-Core flow:
+Core flow: `IR -> compile -> check`
 
-`IR -> compile -> check`
-
-Governance flow:
-
-`pr-check --base <ref>`
+Governance flow: `pr-check --base <ref>`
 
 ## Developer visibility model
 
@@ -37,8 +36,7 @@ Governance flow:
 ## Related
 
 - [INDEX.md](INDEX.md)
-- [FOUNDATIONS.md](FOUNDATIONS.md)
 - [ENFORCEMENT.md](ENFORCEMENT.md)
-- [commands-compile.md](commands-compile.md)
 - [commands-check.md](commands-check.md)
+- [commands-unblock.md](commands-unblock.md)
 - [commands-pr-check.md](commands-pr-check.md)

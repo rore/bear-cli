@@ -18,6 +18,7 @@
 - `compile`: `0,2,64,70,74`
 - `fix`: `0,2,64,70,74`
 - `check`: `0,2,3,4,6,64,70,74`
+- `unblock`: `0,64,70,74`
 - `pr-check`: `0,2,5,64,70,74`
 
 ## `--all` aggregation
@@ -36,6 +37,7 @@ Global non-zero footer in aggregated failures uses:
 
 - [output-format.md](output-format.md)
 - [commands-check.md](commands-check.md)
+- [commands-unblock.md](commands-unblock.md)
 - [commands-pr-check.md](commands-pr-check.md)
 - [troubleshooting.md](troubleshooting.md)
 - [CONTRACTS.md](CONTRACTS.md)

@@ -1,6 +1,6 @@
 # Install
 
-This guide is for installing BEAR into a non-demo project.
+Role of this page: install BEAR package files in a non-demo project.
 
 ## Package rule
 
@@ -58,16 +58,24 @@ macOS/Linux (bash/zsh):
 ./.bear/tools/bear-cli/bin/bear --help
 ```
 
-4. Run a first deterministic gate in the target repo.
+4. Run first deterministic gate.
+
+Use `--all` only when your repo has `bear.blocks.yaml`:
 
 ```powershell
 .\.bear\tools\bear-cli\bin\bear.bat check --all --project .
+```
+
+If no block index exists yet, run single-block check:
+
+```powershell
+.\.bear\tools\bear-cli\bin\bear.bat check spec\<block>.bear.yaml --project .
 ```
 
 ## Related
 
 - [INDEX.md](INDEX.md)
 - [QUICKSTART.md](QUICKSTART.md)
-- [FOUNDATIONS.md](FOUNDATIONS.md)
 - [commands-check.md](commands-check.md)
+- [commands-unblock.md](commands-unblock.md)
 - [troubleshooting.md](troubleshooting.md)

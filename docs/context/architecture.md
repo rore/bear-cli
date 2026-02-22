@@ -1,200 +1,117 @@
-﻿# BEAR v0 Architecture
+# BEAR Preview Architecture
 
-This document defines v0 contract-level guarantees and constraints.
+This document defines current Preview contract-level guarantees and constraints.
 For long-horizon motivation and success criteria, see `docs/context/north-star.md`.
 
 ## Core Purpose
-BEAR is a boundary-governance enforcement layer for agentic development.
+
+BEAR is a boundary-governance enforcement layer for agentic backend development.
 
 It exists because:
-- Agent-generated code is non-deterministic.
-- Boundary expansion can happen silently.
-- Production systems need deterministic, independent gates.
+- agent-generated code can expand capability surfaces silently
+- generated artifacts can drift from declared structure
+- production workflows need deterministic, independent gates
 
-BEAR uses a rigid, machine-checkable intermediate representation (BEAR IR) to:
-- constrain allowed block interaction surfaces
-- compile deterministic structural boundaries and tests
-- detect drift and surface governance-relevant diffs
-
-BEAR is not a full verifier.
-BEAR does not simulate infrastructure behavior.
-BEAR is not a behavior DSL.
-BEAR is not primarily a spec-refinement tool.
+BEAR uses strict BEAR IR plus deterministic commands to make boundary changes explicit and enforceable.
 
 ## Philosophy in Agentic Development
-BEAR assumes agents are highly capable at producing implementation, but weakly bounded unless structure is enforced.
 
-The design stance is:
-- maximize implementation freedom inside a declared cage
-- minimize trust required in agent internal reasoning
-- shift trust to deterministic, independent gates
+BEAR assumes:
+- agents are strong at producing implementation
+- governance must not depend on agent reasoning quality
 
-In practical terms:
-- BEAR does not try to make intent perfect before coding.
-- BEAR makes boundary changes explicit and reviewable.
-- BEAR treats ordinary internal evolution as fast-path work.
-- BEAR treats boundary expansion as governance-sensitive work.
-- BEAR governs side-effect surfaces, not general library usage.
-
-Core litmus:
-- If an agent can add new external interaction capability without a small, obvious, deterministic signal, BEAR is not doing its job.
+Design stance:
+- maximize implementation freedom inside declared boundaries
+- minimize trust in hidden reasoning
+- shift trust to deterministic, machine-checkable gates
 
 Invariant source of truth:
 - `docs/context/invariant-charter.md` is normative for invariant definitions and current enforcement status (`ENFORCED`/`PARTIAL`/`PLANNED`).
 
 ## Core Principles
-1. Deterministic core
-   - Validation, normalization, and code generation are deterministic and reproducible.
-2. Agent-agnostic
-   - BEAR works with Copilot, Codex, or no agent at all.
-   - Agent instructions stay outside BEAR core.
-3. Cage, not code
-   - BEAR generates boundaries (ports), skeletons, and test gates.
-   - Business logic lives in a separate implementation file.
-4. Minimal enforceable semantics
-   - v0 enforces only a narrow, mechanically testable surface.
-5. Boundary visibility over silent expansion
-   - Ordinary IR evolution is expected.
-   - Boundary-expanding changes must be explicit and reviewable.
-   - Governance classification is defined in `docs/context/governance.md`.
 
-## Agentic Process Contract (v0)
-BEAR is expected to be default-on in agent sessions.
+1. Deterministic core
+   - validation, normalization, generation, and checks are reproducible.
+2. Agent-agnostic CLI
+   - BEAR works with Codex/Copilot/manual workflows.
+3. Cage, not code style engine
+   - BEAR governs structure and boundary surfaces, not coding style.
+4. Boundary visibility over silent expansion
+   - boundary-expanding changes must produce deterministic, reviewable signals.
+
+## Agentic Process Contract (Preview)
 
 Role split:
-- Developer: states domain intent and accepts/rejects boundary changes.
-- Agent: handles BEAR mechanics (IR updates, generation, gate execution, and reporting).
-- BEAR gates: provide deterministic, independent checks.
+- Developer: states domain intent and accepts/rejects boundary-expanding changes.
+- Agent: executes BEAR mechanics (IR updates, generation, gates, triage).
+- BEAR gates: provide deterministic independent checks.
 
-Expected operating loop:
+Expected loop:
 1. Prompt in domain language.
-2. Agent explores code and locates/creates affected block IR.
-3. Agent applies IR and code updates.
-4. Agent runs deterministic gates (`validate`, `compile`/`check`, project tests as applicable).
-5. Agent reports:
-   - implementation summary
-   - boundary summary
-   - explicit boundary-expansion signals when present
+2. Agent updates IR and implementation.
+3. Agent runs deterministic gates (`validate`, `compile`/`fix`, `check`, `pr-check`).
+4. Agent reports implementation summary and explicit boundary-governance signals.
 
 Required property:
-- boundary-expanding changes must be visible in workflow output and reviewable in seconds.
-- ordinary changes should remain low-friction.
+- boundary-expanding changes are visible in PR/CI in seconds.
+- ordinary changes remain low-friction.
 
-## What BEAR Guarantees in v0
-If a block passes `bear check`, then:
-- it respects declared input/output contract structure
-- it cannot call undeclared capability operations, via generated structured port interfaces
-- it satisfies declared invariant templates under generated tests
-- it respects declared idempotency semantics under generated tests
-- generated artifacts are unchanged from deterministic regeneration (drift detection)
-- boundary-governance signals are deterministic for covered v0 expansion cases
-- covered undeclared-reach bypass patterns fail deterministically (`UNDECLARED_REACH`, exit `6`) in preview scope
+## What BEAR Guarantees in Preview
 
-## What BEAR Does Not Guarantee in v0
-- business correctness beyond declared invariants
-- real database semantics
-- concurrency correctness
-- transaction semantics
-- runtime enforcement beyond test harness
-- general behavioral verification
-- full static isolation of arbitrary implementation calls outside generated ports
+If a block passes `bear check`:
+- IR and generated artifacts are structurally consistent.
+- deterministic drift gate is clean.
+- active boundary policy gates pass (`UNDECLARED_REACH`, `BOUNDARY_BYPASS`).
+- project test stage passes.
+- deterministic failure/diagnostic contract holds on non-zero outcomes.
 
-Important caveat:
-- v0 structural boundaries are strong at the generated surface.
-- v0 undeclared-reach static detection is intentionally scoped to covered preview surfaces, not every possible external API.
+If `bear pr-check` passes:
+- no boundary-expanding IR delta is detected against base.
 
-BEAR v0 is structural enforcement plus deterministic guardrails.
-Idempotency in v0 means deterministic replay safety in the test harness, not concurrency-safe duplicate handling.
+## What BEAR Does Not Guarantee in Preview
+
+- business correctness beyond declared structural constraints
+- runtime transaction semantics or cross-port atomicity guarantees
+- universal static detection across every possible external API
+- runtime sandboxing, IAM policy enforcement, or orchestration behavior
+
+Preview scope caveat:
+- undeclared-reach detection is intentionally bounded to covered surfaces.
 
 ## Repository Structure (bear-cli)
+
 This repo is a Gradle multi-module project.
 
 - `kernel/`
-  - trusted seed
-  - BEAR IR parsing, strict validation, deterministic normalization, target abstractions
-  - must not depend on generated code
+  - deterministic seed
+  - IR parse/validate/normalize and target abstractions
 - `app/`
-  - CLI wrapper exposing `bear validate`, `bear compile`, `bear check`
-  - depends on `kernel`
-  - contains no LLM logic
+  - CLI orchestration (`validate`, `compile`, `fix`, `check`, `unblock`, `pr-check`)
+  - command output/exit contract rendering
 
-## BEAR IR v0 Scope
-A BEAR IR file defines a single logic block.
+## BEAR IR Scope (v1)
 
-Model:
-- `version` with only `v0` allowed
-- `block.name`
-- `block.kind` with only `logic` allowed in v0
-- `block.contract.inputs` and `block.contract.outputs`
-- `block.effects.allow` as structured ports (`port` + `ops[]`), not free strings
-- `block.idempotency` with key referencing an input field and explicit `store.port/getOp/putOp`
-- `block.invariants` with only `kind: non_negative` plus `field: <outputField>`
+A BEAR IR file defines one governed `logic` block.
 
-IR must be:
-- strictly validated
-- deterministically normalized
-- rejected on unknown keys or invalid references
-- intentionally limited in expressive power
+Current schema and normalization rules are canonical in:
+- `docs/context/ir-spec.md`
 
-Reference: `docs/context/ir-spec.md`.
+Operational rule:
+- IR is strict, deterministic, and intentionally constrained for enforceability.
 
-## v0 Scope Lock
+## Preview Scope Lock
+
 In scope:
-- JVM (Java) target only
-- single logic block per IR file
-- structured ports for effects
+- deterministic `validate`, `compile`, `fix`, `check`, `unblock`, `pr-check`
+- deterministic failure envelope (`CODE/PATH/REMEDIATION`)
+- deterministic PR boundary-governance signaling
+- JVM/Java target in Preview
 
 Out of scope:
-- capability blocks in IR
-- block-to-block graph modeling/composition
-- behavior DSL
-- requires/ensures language
-- state delta modeling
-- infrastructure simulation
-- spec -> IR lowering automation
-- embedded LLM logic in BEAR core
-- multi-target support
-
-## Target Scope (v0)
-Only one target is supported:
-- JVM target generating Java sources and JUnit 5 tests for Gradle projects
-
-## Enforcement Pipeline
-1. Natural language spec -> BEAR IR (agent-assisted or manual)
-2. BEAR IR -> skeleton + structured ports + tests (deterministic compile)
-3. Implementation file authored by agent/human
-4. `bear check` runs:
-   - validate
-   - compile
-   - deterministic drift/governance signal checks
-   - project tests
-
-Two-file approach:
-- generated skeleton is non-editable
-- implementation file is editable
-
-## Demo Scope (bear-account-demo)
-The preview demo proof is:
-- `main` is spec-only and agent-autopilot ready
-- developer gives one instruction (`Implement the specs.`)
-- scenario branches preserve real agent output progression
-
-If work does not move toward this proof, it is scope drift.
-
-## Definition of Done (v0)
-v0 is done when:
-1. `bear validate` deterministically validates and normalizes BEAR IR.
-2. `bear compile` deterministically generates JVM artifacts:
-   - non-editable skeleton
-   - structured port interfaces derived from declared effects
-   - JUnit tests for idempotency (if declared) and `non_negative`
-3. Two-file enforcement is active (skeleton regenerated, impl preserved).
-4. `bear check --project <path>` fails deterministically on violations.
-5. Demo proves spec-only baseline -> greenfield implementation -> governed extension progression with deterministic gates.
-
-## Future Ideas
-Keep future ideas in `docs/context/future.md`. Do not implement them in v0.
+- behavior DSL expansion
+- runtime policy/sandbox systems
+- multi-target production support beyond current Preview target
 
 ## Governance Reference
-`docs/context/governance.md` is the normative source for IR diff classification and boundary-expansion review semantics in v0.
 
+`docs/context/governance.md` is the normative source for IR diff classification and boundary-expansion review semantics.

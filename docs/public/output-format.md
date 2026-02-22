@@ -2,7 +2,7 @@
 
 ## Non-zero failure footer
 
-Every non-zero exit in `validate`, `compile`, `fix`, `check`, and `pr-check` must end with:
+Every non-zero exit in `validate`, `compile`, `fix`, `check`, `unblock`, and `pr-check` must end with:
 
 ```text
 CODE=<enum>
@@ -59,6 +59,7 @@ Common `check` policy lines:
 
 - [exit-codes.md](exit-codes.md)
 - [commands-check.md](commands-check.md)
+- [commands-unblock.md](commands-unblock.md)
 - [commands-pr-check.md](commands-pr-check.md)
 - [commands-validate.md](commands-validate.md)
 - [troubleshooting.md](troubleshooting.md)

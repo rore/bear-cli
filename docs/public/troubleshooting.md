@@ -1,4 +1,4 @@
-﻿# Troubleshooting
+# Troubleshooting
 
 Use `CODE=...` first, then follow exact remediation steps.
 
@@ -140,9 +140,8 @@ Fix:
 
 ## Related
 
+- [commands-check.md](commands-check.md)
+- [commands-unblock.md](commands-unblock.md)
+- [commands-pr-check.md](commands-pr-check.md)
 - [exit-codes.md](exit-codes.md)
 - [output-format.md](output-format.md)
-- [commands-check.md](commands-check.md)
-- [commands-pr-check.md](commands-pr-check.md)
-- [commands-validate.md](commands-validate.md)
-

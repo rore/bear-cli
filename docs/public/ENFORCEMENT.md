@@ -1,6 +1,8 @@
 # Enforcement and Alerts
 
-This page explains what BEAR actively enforces and what it alerts on in Preview.
+Role of this page: what BEAR protects and what signals developers can trust.
+
+For rationale see [FOUNDATIONS.md](FOUNDATIONS.md). For exact command contracts see [CONTRACTS.md](CONTRACTS.md).
 
 ## Preview invariant status model
 
@@ -33,8 +35,6 @@ Primary enforcement happens in `bear check`:
 - containment policy checks where configured
 - project test gate integration in deterministic check flow
 
-For normative command behavior, see [commands-check.md](commands-check.md).
-
 Coverage note:
 
 - Undeclared-reach detection is `PARTIAL` in Preview because static detection is limited to covered surfaces.
@@ -46,8 +46,6 @@ Primary governance alerting happens in `bear pr-check`:
 - normalized IR deltas against `--base`
 - classification of boundary-expanding changes vs ordinary changes
 - deterministic non-zero signal when boundary expansion is detected
-
-For normative delta output and exits, see [commands-pr-check.md](commands-pr-check.md).
 
 ## Where signals show up for developers
 
@@ -63,12 +61,9 @@ See [output-format.md](output-format.md) and [exit-codes.md](exit-codes.md).
 - BEAR does not replace project testing strategy.
 - BEAR does not infer domain intent outside declared IR and configured checks.
 
-See [README.md](../../README.md) and [FOUNDATIONS.md](FOUNDATIONS.md).
-
 ## Related
 
 - [INDEX.md](INDEX.md)
-- [FOUNDATIONS.md](FOUNDATIONS.md)
 - [CONTRACTS.md](CONTRACTS.md)
 - [commands-check.md](commands-check.md)
 - [commands-pr-check.md](commands-pr-check.md)

@@ -1,30 +1,30 @@
 # Public Docs
 
 This folder is the developer-facing documentation for BEAR.
-Use it as a guided path, not just a file list.
 
-## Start by intent
+## Start in 5 minutes
 
-### I am new to BEAR
+1. [QUICKSTART.md](QUICKSTART.md) - shortest first successful run on the demo repo.
+2. [ENFORCEMENT.md](ENFORCEMENT.md) - what BEAR actually enforces and alerts on.
 
-1. [QUICKSTART.md](QUICKSTART.md) to run BEAR on the demo repo and get one clear success signal.
-2. [FOUNDATIONS.md](FOUNDATIONS.md) to understand BEAR philosophy, architecture, and IR model.
-3. [MODEL.md](MODEL.md) for command vocabulary and mental model.
-4. [ENFORCEMENT.md](ENFORCEMENT.md) for what BEAR enforces and what it alerts on.
+## Understand deeper
 
-### I am integrating BEAR into CI or team workflow
+- [FOUNDATIONS.md](FOUNDATIONS.md) - rationale, philosophy, and architecture context.
+- [MODEL.md](MODEL.md) - operating vocabulary and agent/developer flow.
+- [CONTRACTS.md](CONTRACTS.md) - frozen Preview machine contract surface.
+- [VERSIONING.md](VERSIONING.md) - what may change and what is frozen.
 
-1. [INSTALL.md](INSTALL.md) to copy the BEAR package bundle into your project.
-2. [CONTRACTS.md](CONTRACTS.md) for Preview frozen contracts.
-3. [commands-check.md](commands-check.md) and [commands-pr-check.md](commands-pr-check.md) for enforcement and PR governance.
-4. [exit-codes.md](exit-codes.md) and [output-format.md](output-format.md) for machine-parsed behavior.
-5. [VERSIONING.md](VERSIONING.md) for contract-change expectations.
+## Integrate in CI
 
-### I am debugging failures
+- [INSTALL.md](INSTALL.md) - copy the BEAR `.bear` package into your repo.
+- [commands-check.md](commands-check.md) - deterministic enforcement gate.
+- [commands-pr-check.md](commands-pr-check.md) - PR boundary governance gate.
+- [commands-unblock.md](commands-unblock.md) - clear check block marker after lock/bootstrap issues.
+- [exit-codes.md](exit-codes.md) and [output-format.md](output-format.md) - machine parsing contract.
 
-1. [troubleshooting.md](troubleshooting.md) for symptom-to-fix guidance.
-2. [output-format.md](output-format.md) for footer and line-shape guarantees.
-3. Command pages for precise remediation paths.
+## Debug failures
+
+- [troubleshooting.md](troubleshooting.md) - `CODE` to exact fix steps.
 
 ## Full map
 
@@ -32,12 +32,13 @@ Use it as a guided path, not just a file list.
 - [INSTALL.md](INSTALL.md) - Install the BEAR `.bear` bundle in another project.
 - [FOUNDATIONS.md](FOUNDATIONS.md) - Why BEAR exists and how it is structured.
 - [MODEL.md](MODEL.md) - Vocabulary and operating model.
-- [ENFORCEMENT.md](ENFORCEMENT.md) - What BEAR enforces in checks and alerts on in PR governance.
+- [ENFORCEMENT.md](ENFORCEMENT.md) - What BEAR enforces and alerts on.
 - [CONTRACTS.md](CONTRACTS.md) - Frozen Preview contract boundaries.
 - [commands-validate.md](commands-validate.md) - Validate IR.
 - [commands-compile.md](commands-compile.md) - Generate deterministic artifacts.
 - [commands-fix.md](commands-fix.md) - Repair generated artifacts.
 - [commands-check.md](commands-check.md) - Local deterministic enforcement gate.
+- [commands-unblock.md](commands-unblock.md) - Clear blocked check marker.
 - [commands-pr-check.md](commands-pr-check.md) - PR boundary-expansion governance.
 - [exit-codes.md](exit-codes.md) - Numeric registry and aggregation rules.
 - [output-format.md](output-format.md) - Footer, line formats, ordering.
@@ -47,9 +48,7 @@ Use it as a guided path, not just a file list.
 ## Related
 
 - [QUICKSTART.md](QUICKSTART.md)
-- [INSTALL.md](INSTALL.md)
-- [FOUNDATIONS.md](FOUNDATIONS.md)
-- [MODEL.md](MODEL.md)
 - [ENFORCEMENT.md](ENFORCEMENT.md)
+- [INSTALL.md](INSTALL.md)
 - [CONTRACTS.md](CONTRACTS.md)
 - [troubleshooting.md](troubleshooting.md)

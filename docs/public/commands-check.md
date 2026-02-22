@@ -85,6 +85,7 @@ For aggregated `--all` non-zero failures, footer code is `REPO_MULTI_BLOCK_FAILE
 ## Related
 
 - [commands-compile.md](commands-compile.md)
+- [commands-unblock.md](commands-unblock.md)
 - [commands-pr-check.md](commands-pr-check.md)
 - [exit-codes.md](exit-codes.md)
 - [output-format.md](output-format.md)
