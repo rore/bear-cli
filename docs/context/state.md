@@ -28,9 +28,10 @@ Post-Lock++ follow-through:
 
 ## Session Notes
 
-- Added explicit anti-commit-archaeology guardrail to package agent docs:
-  - `docs/bear-package/.bear/agent/BEAR_AGENT.md`: new hard rule forbids mining git history/branches/stashes for implementation/IR patterns unless user explicitly requests historical analysis/recovery.
-  - `docs/bear-package/.bear/agent/WORKFLOW.md`: reference boundary now explicitly current-working-tree-only, and added invalid pattern for unrequested history mining.
+- Adjusted package guidance to allow practical history use in real projects:
+  - replaced strict no-history rule with: history/branches/stashes may be used as auxiliary context, but BEAR decisions must be grounded in current working tree + current IR/index contracts.
+  - updated `docs/bear-package/.bear/agent/BEAR_AGENT.md` and `docs/bear-package/.bear/agent/WORKFLOW.md` accordingly.
+  - updated invalid-pattern wording to forbid history-based outputs that conflict with current state/contracts (instead of forbidding history lookup itself).
   - verified with `.\gradlew.bat --no-daemon :app:test --tests com.bear.app.BearPackageDocsConsistencyTest`.
 
 - Clarified packaged agent policy semantics in one place:
