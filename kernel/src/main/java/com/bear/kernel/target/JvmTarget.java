@@ -107,7 +107,7 @@ public final class JvmTarget implements Target {
         write(stagingMain.resolve(blockName + "Logic.java"), renderLogic(packageName, blockName, logicPorts));
         write(
             stagingMain.resolve(blockName + ".java"),
-            renderEntrypoint(packageName, blockName, effectiveBlockKey, ports, logicPorts, inputs, outputs, ir.block())
+            renderEntrypoint(packageName, blockName, effectiveBlockKey, implPackageName, ports, logicPorts, inputs, outputs, ir.block())
         );
 
         for (PortModel port : ports) {
@@ -242,6 +242,7 @@ public final class JvmTarget implements Target {
         String packageName,
         String blockName,
         String blockKey,
+        String implPackageName,
         List<PortModel> ports,
         List<PortModel> logicPorts,
         List<FieldModel> inputs,
@@ -275,6 +276,28 @@ public final class JvmTarget implements Target {
         }
         s.append("        this.logic = logic;\n");
         s.append("    }\n\n");
+        if (block.kind() == BearIr.BlockKind.LOGIC) {
+            s.append("    public static ").append(blockName).append(" of(");
+            for (int i = 0; i < ports.size(); i++) {
+                if (i > 0) {
+                    s.append(", ");
+                }
+                s.append(ports.get(i).interfaceName).append(" ").append(ports.get(i).variableName);
+            }
+            s.append(") {\n");
+            s.append("        return new ").append(blockName).append("(");
+            for (int i = 0; i < ports.size(); i++) {
+                if (i > 0) {
+                    s.append(", ");
+                }
+                s.append(ports.get(i).variableName);
+            }
+            if (!ports.isEmpty()) {
+                s.append(", ");
+            }
+            s.append("new ").append(implPackageName).append(".").append(blockName).append("Impl());\n");
+            s.append("    }\n\n");
+        }
         s.append("    public ").append(blockName).append("Result execute(").append(blockName).append("Request request) {\n");
 
         if (block.idempotency() != null) {

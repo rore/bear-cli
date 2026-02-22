@@ -28,6 +28,20 @@ Post-Lock++ follow-through:
 
 ## Session Notes
 
+- Implemented governed-impl binding seam closure + sanctioned wrapper factory path:
+  - generator now emits `Wrapper.of(<ports...>)` for logic wrappers (constructor `(ports..., Logic)` preserved).
+  - boundary scanner now detects governed logic->governed impl bindings in:
+    - `src/main/resources/META-INF/services/**`
+    - `src/main/java/module-info.java` (`provides ... with ...`)
+  - deterministic finding details:
+    - `KIND=IMPL_SERVICE_BINDING: <logicFqcn> -> <providerFqcn>`
+    - `KIND=IMPL_MODULE_BINDING: <logicFqcn> -> <providerFqcn>`
+  - check/check-all now map missing governed wiring fields (`logicInterfaceFqcn` / `implFqcn`) to `MANIFEST_INVALID` (`exit 2`) instead of drift/internal buckets.
+  - updated kernel/app tests and docs/package guidance; verified green:
+    - `.\gradlew.bat --no-daemon :kernel:test --tests com.bear.kernel.JvmTargetTest`
+    - `.\gradlew.bat --no-daemon :app:test --tests com.bear.app.BoundaryBypassScannerTest --tests com.bear.app.BearCliTest`
+    - `.\gradlew.bat --no-daemon test`
+
 - Adjusted package guidance to allow practical history use in real projects:
   - replaced strict no-history rule with: history/branches/stashes may be used as auxiliary context, but BEAR decisions must be grounded in current working tree + current IR/index contracts.
   - updated `docs/bear-package/.bear/agent/BEAR_AGENT.md` and `docs/bear-package/.bear/agent/WORKFLOW.md` accordingly.

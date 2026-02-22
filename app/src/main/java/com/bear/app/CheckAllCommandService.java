@@ -385,15 +385,27 @@ final class CheckAllCommandService {
                 }
             } catch (ManifestParseException e) {
                 for (int idx : entry.getValue()) {
-                    blockResults.set(idx, BearCli.rootFailure(
-                        blockResults.get(idx),
-                        CliCodes.EXIT_DRIFT,
-                        "DRIFT",
-                        CliCodes.DRIFT_MISSING_BASELINE,
-                        "build/generated/bear/wiring/" + blockResults.get(idx).name() + ".wiring.json",
-                        "drift: BASELINE_WIRING_MANIFEST_INVALID: " + e.reasonCode(),
-                        "Run `bear compile <ir-file> --project <path>`, then rerun `bear check --all`."
-                    ));
+                    if (isMissingGovernedBindingField(e)) {
+                        blockResults.set(idx, BearCli.rootFailure(
+                            blockResults.get(idx),
+                            CliCodes.EXIT_VALIDATION,
+                            "VALIDATION",
+                            CliCodes.MANIFEST_INVALID,
+                            "build/generated/bear/wiring/" + blockResults.get(idx).name() + ".wiring.json",
+                            "check: MANIFEST_INVALID: " + e.reasonCode(),
+                            "Regenerate wiring manifests with governed binding fields and rerun `bear check --all`."
+                        ));
+                    } else {
+                        blockResults.set(idx, BearCli.rootFailure(
+                            blockResults.get(idx),
+                            CliCodes.EXIT_DRIFT,
+                            "DRIFT",
+                            CliCodes.DRIFT_MISSING_BASELINE,
+                            "build/generated/bear/wiring/" + blockResults.get(idx).name() + ".wiring.json",
+                            "drift: BASELINE_WIRING_MANIFEST_INVALID: " + e.reasonCode(),
+                            "Run `bear compile <ir-file> --project <path>`, then rerun `bear check --all`."
+                        ));
+                    }
                 }
             } catch (InterruptedException e) {
                 for (int idx : entry.getValue()) {
@@ -430,6 +442,12 @@ final class CheckAllCommandService {
             "bear.blocks.yaml",
             "Review per-block results above and fix failing blocks, then rerun the command."
         );
+    }
+
+    private static boolean isMissingGovernedBindingField(ManifestParseException e) {
+        String code = e.reasonCode();
+        return "MISSING_KEY_logicInterfaceFqcn".equals(code)
+            || "MISSING_KEY_implFqcn".equals(code);
     }
 
     private static String testDiagnosticsSuffix(ProjectTestResult testResult) {

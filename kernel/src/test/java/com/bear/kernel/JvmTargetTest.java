@@ -45,6 +45,8 @@ class JvmTargetTest {
         assertEquals(first, second);
         assertEquals(expected, first);
         String withdrawJava = first.get("src/main/java/com/bear/generated/withdraw/Withdraw.java");
+        assertTrue(withdrawJava.contains("public static Withdraw of(IdempotencyPort idempotencyPort, LedgerPort ledgerPort)"));
+        assertTrue(withdrawJava.contains("return new Withdraw(idempotencyPort, ledgerPort, new blocks.withdraw.impl.WithdrawImpl());"));
         assertTrue(withdrawJava.contains("idempotency replay payload missing field: result.balance"));
         String manifest = first.get("surfaces/withdraw.surface.json");
         assertTrue(manifest.contains("\"schemaVersion\":\"v1\""));
@@ -133,6 +135,10 @@ class JvmTargetTest {
         assertTrue(wiringContent.contains("\"implFqcn\":\"blocks.create.wallet.impl.CreateWalletImpl\""));
         assertTrue(wiringContent.contains("\"implSourcePath\":\"src/main/java/blocks/create/wallet/impl/CreateWalletImpl.java\""));
         assertTrue(wiringContent.contains("\"constructorPortParams\":[\"walletStorePort\"]"));
+        Path wrapper = tempDir.resolve("build/generated/bear/src/main/java/com/bear/generated/create/wallet/CreateWallet.java");
+        String wrapperContent = Files.readString(wrapper);
+        assertTrue(wrapperContent.contains("public static CreateWallet of(WalletStorePort walletStorePort)"));
+        assertTrue(wrapperContent.contains("new blocks.create.wallet.impl.CreateWalletImpl()"));
     }
 
     @Test

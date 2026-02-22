@@ -105,6 +105,7 @@ Behavior:
 - regenerates BEAR-owned artifacts under `<project>/build/generated/bear`
 - runtime support classes are emitted only under `<project>/build/generated/bear/src/main/java/com/bear/generated/runtime`
 - does not overwrite user-owned impl files under `<project>/src/main/java`
+- generated logic wrappers include a default wiring factory: `Wrapper.of(<ports...>)`
 - resolves block identity (`blockKey`) deterministically:
   - index-authoritative when exactly one `(ir, projectRoot)` tuple matches in `bear.blocks.yaml`
   - IR fallback when no tuple match exists
@@ -156,9 +157,14 @@ Behavior:
 - fails with boundary-bypass exit code when BEAR seam rules are violated:
   - direct impl usage in `src/main/**`
   - classloading reflection APIs in `src/main/**` (`Class.forName`, `loadClass`) unless allowlisted
+  - governed logic-to-governed-impl binding in production seams:
+    - `src/main/resources/META-INF/services/**`
+    - `src/main/java/module-info.java` (`provides ... with ...`)
   - top-level `null` port args in governed entrypoint constructors
   - governed impl missing required effect-port usage (unless exact suppression comment is present)
   - governed impl placeholder stubs left unimplemented (`RULE=IMPL_PLACEHOLDER`)
+- sanctioned production wiring path is generated `Wrapper.of(<ports...>)`
+  - keep constructor `(ports..., Logic)` for tests/advanced injection
 - optional strict hygiene mode (`--strict-hygiene`) fails on unexpected seed paths (`.g`, `.gradle-user`) unless allowlisted
 - policy allowlist files (optional, exact-path deterministic parser):
   - `.bear/policy/reflection-allowlist.txt`

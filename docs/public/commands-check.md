@@ -23,6 +23,9 @@ bear check --all --project <repoRoot> [--blocks <path>] [--only <csv>] [--fail-f
 - Optional policy files:
   - `.bear/policy/reflection-allowlist.txt`
   - `.bear/policy/hygiene-allowlist.txt`
+- Generated logic wrappers expose a sanctioned default wiring factory: `Wrapper.of(<ports...>)`.
+  - Prefer `Wrapper.of(...)` in user production wiring.
+  - Keep constructor `(ports..., Logic)` for tests/advanced injection.
 
 ## Output schema and ordering guarantees
 
@@ -44,6 +47,14 @@ Key line formats:
 - `check: UNDECLARED_REACH: <relative/path>: <surface>`
 - `check: BOUNDARY_BYPASS: RULE=<rule>: <relative/path>: <detail>`
 - `check: HYGIENE_UNEXPECTED_PATHS: <relative/path>`
+
+`BOUNDARY_BYPASS` seam coverage for governed logic includes:
+- direct governed impl usage in Java source (`src/main/**`)
+- classloading reflection APIs in Java source (`Class.forName`, `loadClass`) unless allowlisted
+- governed logic-to-governed-impl binding through:
+  - `src/main/resources/META-INF/services/**`
+  - `src/main/java/module-info.java` (`provides ... with ...`)
+- null port wiring and effect-port bypass checks on governed wrappers/impls
 
 For lock/bootstrap test-runner failures, detail lines append deterministic diagnostics:
 

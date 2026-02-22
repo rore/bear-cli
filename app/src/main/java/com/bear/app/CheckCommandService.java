@@ -177,6 +177,18 @@ final class CheckCommandService {
             try {
                 baselineWiringManifest = ManifestParsers.parseWiringManifest(baselineWiringPath);
             } catch (ManifestParseException e) {
+                if (isMissingGovernedBindingField(e)) {
+                    String line = "check: MANIFEST_INVALID: " + e.reasonCode();
+                    return checkFailure(
+                        CliCodes.EXIT_VALIDATION,
+                        List.of(line),
+                        "VALIDATION",
+                        CliCodes.MANIFEST_INVALID,
+                        "build/generated/bear/" + wiringRelPath,
+                        "Regenerate wiring manifests with governed binding fields and rerun `bear check`.",
+                        line
+                    );
+                }
                 return checkFailure(
                     CliCodes.EXIT_DRIFT,
                     List.of("drift: BASELINE_WIRING_MANIFEST_INVALID: " + e.reasonCode()),
@@ -191,6 +203,18 @@ final class CheckCommandService {
             try {
                 candidateWiringManifest = ManifestParsers.parseWiringManifest(candidateWiringPath);
             } catch (ManifestParseException e) {
+                if (isMissingGovernedBindingField(e)) {
+                    String line = "check: MANIFEST_INVALID: " + e.reasonCode();
+                    return checkFailure(
+                        CliCodes.EXIT_VALIDATION,
+                        List.of(line),
+                        "VALIDATION",
+                        CliCodes.MANIFEST_INVALID,
+                        "build/generated/bear/" + wiringRelPath,
+                        "Regenerate wiring manifests with governed binding fields and rerun `bear check`.",
+                        line
+                    );
+                }
                 return checkFailure(
                     CliCodes.EXIT_INTERNAL,
                     List.of("internal: INTERNAL_ERROR: CANDIDATE_WIRING_MANIFEST_INVALID:" + e.reasonCode()),
@@ -657,6 +681,30 @@ final class CheckCommandService {
     }
 
     private static CheckResult validateWiringManifestSemantics(WiringManifest manifest, String path) {
+        if (manifest.logicInterfaceFqcn() == null || manifest.logicInterfaceFqcn().trim().isEmpty()) {
+            String line = "check: MANIFEST_INVALID: missing logicInterfaceFqcn";
+            return checkFailure(
+                CliCodes.EXIT_VALIDATION,
+                List.of(line),
+                "VALIDATION",
+                CliCodes.MANIFEST_INVALID,
+                path,
+                "Regenerate wiring manifests with governed binding fields and rerun `bear check`.",
+                line
+            );
+        }
+        if (manifest.implFqcn() == null || manifest.implFqcn().trim().isEmpty()) {
+            String line = "check: MANIFEST_INVALID: missing implFqcn";
+            return checkFailure(
+                CliCodes.EXIT_VALIDATION,
+                List.of(line),
+                "VALIDATION",
+                CliCodes.MANIFEST_INVALID,
+                path,
+                "Regenerate wiring manifests with governed binding fields and rerun `bear check`.",
+                line
+            );
+        }
         for (String semanticPort : manifest.wrapperOwnedSemanticPorts()) {
             if (manifest.logicRequiredPorts().contains(semanticPort)) {
                 String line = "check: MANIFEST_INVALID: wrapperOwnedSemanticPorts overlaps logicRequiredPorts: " + semanticPort;
@@ -672,6 +720,12 @@ final class CheckCommandService {
             }
         }
         return null;
+    }
+
+    private static boolean isMissingGovernedBindingField(ManifestParseException e) {
+        String code = e.reasonCode();
+        return "MISSING_KEY_logicInterfaceFqcn".equals(code)
+            || "MISSING_KEY_implFqcn".equals(code);
     }
 
     private static void writeCheckBlockedMarker(Path projectRoot, String reason, String detail) throws IOException {

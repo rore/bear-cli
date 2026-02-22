@@ -53,6 +53,12 @@ final class BoundaryBypassScanner {
     );
     private static final Pattern SUPPRESSION_PATTERN = Pattern.compile("(?m)^\\s*//\\s*BEAR:PORT_USED\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*$");
     private static final Pattern IDENTIFIER_TOKEN_PATTERN = Pattern.compile("\\b[A-Za-z_][A-Za-z0-9_]*\\b");
+    private static final Pattern MODULE_PROVIDES_PATTERN = Pattern.compile(
+        "\\bprovides\\s+([A-Za-z_][A-Za-z0-9_$.]*)\\s+with\\s+([^;]+);",
+        Pattern.DOTALL
+    );
+    private static final String SERVICE_DESCRIPTOR_PREFIX = "src/main/resources/META-INF/services/";
+    private static final String MODULE_INFO_PATH = "src/main/java/module-info.java";
 
     private BoundaryBypassScanner() {
     }
@@ -73,11 +79,17 @@ final class BoundaryBypassScanner {
         TreeMap<String, WiringManifest> manifestsByImplPath = new TreeMap<>();
         HashSet<String> governedEntrypointFqcns = new HashSet<>();
         HashMap<String, Integer> governedSimpleNameCounts = new HashMap<>();
+        TreeMap<String, String> governedImplByLogicFqcn = new TreeMap<>();
         for (WiringManifest manifest : manifests) {
             manifestsByImplPath.put(manifest.implSourcePath(), manifest);
             governedEntrypointFqcns.add(manifest.entrypointFqcn());
             String simple = simpleName(manifest.entrypointFqcn());
             governedSimpleNameCounts.put(simple, governedSimpleNameCounts.getOrDefault(simple, 0) + 1);
+            String logicFqcn = safeTrim(manifest.logicInterfaceFqcn());
+            String implFqcn = safeTrim(manifest.implFqcn());
+            if (!logicFqcn.isEmpty() && !implFqcn.isEmpty()) {
+                governedImplByLogicFqcn.putIfAbsent(logicFqcn, implFqcn);
+            }
         }
 
         List<BoundaryBypassFinding> findings = new ArrayList<>();
@@ -89,7 +101,18 @@ final class BoundaryBypassScanner {
                         return FileVisitResult.CONTINUE;
                     }
                     String rel = projectRoot.relativize(file).toString().replace('\\', '/');
-                    if (!rel.endsWith(".java") || isBoundaryScanExcluded(rel)) {
+                    if (isBoundaryScanExcluded(rel)) {
+                        return FileVisitResult.CONTINUE;
+                    }
+                    if (rel.startsWith(SERVICE_DESCRIPTOR_PREFIX)) {
+                        scanServiceDescriptor(file, rel, governedImplByLogicFqcn, findings);
+                        return FileVisitResult.CONTINUE;
+                    }
+                    if (MODULE_INFO_PATH.equals(rel)) {
+                        scanModuleInfo(file, rel, governedImplByLogicFqcn, findings);
+                        return FileVisitResult.CONTINUE;
+                    }
+                    if (!rel.endsWith(".java")) {
                         return FileVisitResult.CONTINUE;
                     }
                     String source = Files.readString(file, StandardCharsets.UTF_8);
@@ -244,6 +267,79 @@ final class BoundaryBypassScanner {
         return null;
     }
 
+    static void scanServiceDescriptor(
+        Path file,
+        String relPath,
+        Map<String, String> governedImplByLogicFqcn,
+        List<BoundaryBypassFinding> findings
+    ) throws IOException {
+        String servicePath = relPath.substring(SERVICE_DESCRIPTOR_PREFIX.length());
+        String serviceFqcn = servicePath.replace('/', '.').trim();
+        String governedImpl = governedImplByLogicFqcn.get(serviceFqcn);
+        if (governedImpl == null) {
+            return;
+        }
+
+        List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+                continue;
+            }
+            String provider = firstToken(trimmed);
+            if (provider.equals(governedImpl)) {
+                findings.add(new BoundaryBypassFinding(
+                    "DIRECT_IMPL_USAGE",
+                    relPath,
+                    "KIND=IMPL_SERVICE_BINDING: " + serviceFqcn + " -> " + provider
+                ));
+            }
+        }
+    }
+
+    static void scanModuleInfo(
+        Path file,
+        String relPath,
+        Map<String, String> governedImplByLogicFqcn,
+        List<BoundaryBypassFinding> findings
+    ) throws IOException {
+        String source = Files.readString(file, StandardCharsets.UTF_8);
+        String sanitized = stripJavaCommentsStringsAndChars(source);
+        Matcher providesMatcher = MODULE_PROVIDES_PATTERN.matcher(sanitized);
+        while (providesMatcher.find()) {
+            String serviceFqcn = providesMatcher.group(1).trim();
+            String governedImpl = governedImplByLogicFqcn.get(serviceFqcn);
+            if (governedImpl == null) {
+                continue;
+            }
+            String providersPayload = providesMatcher.group(2);
+            for (String providerRaw : providersPayload.split(",")) {
+                String provider = providerRaw.trim();
+                if (provider.isEmpty()) {
+                    continue;
+                }
+                if (provider.equals(governedImpl)) {
+                    findings.add(new BoundaryBypassFinding(
+                        "DIRECT_IMPL_USAGE",
+                        relPath,
+                        "KIND=IMPL_MODULE_BINDING: " + serviceFqcn + " -> " + provider
+                    ));
+                }
+            }
+        }
+    }
+
+    private static String firstToken(String value) {
+        int split = value.indexOf(' ');
+        if (split < 0) {
+            split = value.indexOf('\t');
+        }
+        if (split < 0) {
+            return value;
+        }
+        return value.substring(0, split).trim();
+    }
+
     static boolean hasPlaceholderStub(String source, String sanitized) {
         if (source.contains(PLACEHOLDER_MARKER_TODO) && source.contains(PLACEHOLDER_MARKER_RETURN)) {
             return true;
@@ -308,6 +404,10 @@ final class BoundaryBypassScanner {
             return fqcn;
         }
         return fqcn.substring(idx + 1);
+    }
+
+    private static String safeTrim(String value) {
+        return value == null ? "" : value.trim();
     }
 
     static List<String> parseTopLevelArguments(String source, int openParenIndex) {

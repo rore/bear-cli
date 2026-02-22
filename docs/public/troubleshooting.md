@@ -115,8 +115,12 @@ Likely cause: impl seam bypass (`DIRECT_IMPL_USAGE`, `NULL_PORT_WIRING`, `EFFECT
 Fix:
 
 1. Remove seam bypass usage.
-2. Wire through generated entrypoints and declared ports.
-3. Re-run `bear check`.
+2. Do not bind governed logic interfaces to governed impls via:
+   - `META-INF/services`
+   - `module-info.java provides ... with ...`
+3. Prefer generated `Wrapper.of(<ports...>)` for production wiring.
+4. Keep `(ports..., Logic)` constructor only for tests/advanced injection.
+5. Re-run `bear check`.
 
 `DIRECT_IMPL_USAGE` also includes classloading reflection API usage in `src/main/**` (`Class.forName`, `loadClass`) unless allowlisted.
 
@@ -143,7 +147,7 @@ Fix:
 ## `MANIFEST_INVALID`
 
 Symptom: wiring/surface semantic inconsistency with exit `2`.
-Likely cause: generated manifest mismatch or unsupported semantic enforcement target.
+Likely cause: generated manifest mismatch, missing governed binding fields (`logicInterfaceFqcn`, `implFqcn`), or unsupported semantic enforcement target.
 Fix:
 
 1. Re-run `bear compile` to regenerate manifests.

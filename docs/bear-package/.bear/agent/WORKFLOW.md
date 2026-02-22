@@ -133,7 +133,12 @@ Canonical rule:
 - for `CODE=BOUNDARY_BYPASS`:
   - remove direct impl usage from `src/main/**`
   - remove classloading reflection APIs (`Class.forName`, `loadClass`) unless exact-path allowlisted
+  - remove governed logic->governed impl bindings from:
+    - `src/main/resources/META-INF/services/**`
+    - `src/main/java/module-info.java` (`provides ... with ...`)
   - remove generated impl placeholder bodies (`RULE=IMPL_PLACEHOLDER`)
+  - use generated `Wrapper.of(<ports...>)` for production wiring
+  - keep `(ports..., Logic)` constructor for tests/advanced injection
   - wire generated entrypoints with non-null ports
   - ensure declared logic-required effect ports are used
   - do not suppress wrapper-owned semantic ports (`// BEAR:PORT_USED ...` is invalid for those)

@@ -34,6 +34,8 @@ Runtime distribution note:
 - adopters copy the full `.bear/` bundle from this directory into `<repoRoot>/.bear/`
 - commands are invoked via vendored path (for example `.bear/tools/bear-cli/bin/bear(.bat) ...`)
 - generated runtime support classes are canonical under `build/generated/bear/src/main/java/com/bear/generated/runtime` (legacy `build/generated/bear/runtime/**` is unsupported)
+- generated logic wrappers expose `Wrapper.of(<ports...>)` as the sanctioned default wiring path in user production code
+- governed logic interface -> governed impl bindings in `META-INF/services` / `module-info.java` are blocked by `bear check` seam rules
 
 Containment note (v1 preview):
 - if IR declares `block.impl.allowedDeps`, Java+Gradle projects must apply generated containment entrypoint:

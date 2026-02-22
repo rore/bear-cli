@@ -1457,6 +1457,102 @@ class BearCliTest {
     }
 
     @Test
+    void checkBoundaryBypassGovernedServiceBindingFails(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+        writeWorkingWithdrawImpl(tempDir);
+
+        Path descriptor = tempDir.resolve("src/main/resources/META-INF/services/com.bear.generated.withdraw.WithdrawLogic");
+        Files.createDirectories(descriptor.getParent());
+        Files.writeString(
+            descriptor,
+            "# comment\n"
+                + "blocks.withdraw.impl.WithdrawImpl extra\n",
+            StandardCharsets.UTF_8
+        );
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(6, check.exitCode);
+        String stderr = normalizeLf(check.stderr);
+        assertTrue(stderr.contains(
+            "check: BOUNDARY_BYPASS: RULE=DIRECT_IMPL_USAGE: src/main/resources/META-INF/services/com.bear.generated.withdraw.WithdrawLogic: KIND=IMPL_SERVICE_BINDING: com.bear.generated.withdraw.WithdrawLogic -> blocks.withdraw.impl.WithdrawImpl"
+        ));
+        assertFailureEnvelope(
+            check.stderr,
+            "BOUNDARY_BYPASS",
+            "src/main/resources/META-INF/services/com.bear.generated.withdraw.WithdrawLogic",
+            "Wire via generated entrypoints and declared effect ports; remove impl seam bypasses."
+        );
+    }
+
+    @Test
+    void checkBoundaryBypassGovernedModuleBindingFails(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+        writeWorkingWithdrawImpl(tempDir);
+
+        Path moduleInfo = tempDir.resolve("src/main/java/module-info.java");
+        Files.createDirectories(moduleInfo.getParent());
+        Files.writeString(
+            moduleInfo,
+            "module demo {\n"
+                + "  provides com.bear.generated.withdraw.WithdrawLogic\n"
+                + "      with blocks.withdraw.impl.WithdrawImpl,\n"
+                + "           com.example.Other;\n"
+                + "}\n",
+            StandardCharsets.UTF_8
+        );
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(6, check.exitCode);
+        String stderr = normalizeLf(check.stderr);
+        assertTrue(stderr.contains(
+            "check: BOUNDARY_BYPASS: RULE=DIRECT_IMPL_USAGE: src/main/java/module-info.java: KIND=IMPL_MODULE_BINDING: com.bear.generated.withdraw.WithdrawLogic -> blocks.withdraw.impl.WithdrawImpl"
+        ));
+        assertFailureEnvelope(
+            check.stderr,
+            "BOUNDARY_BYPASS",
+            "src/main/java/module-info.java",
+            "Wire via generated entrypoints and declared effect ports; remove impl seam bypasses."
+        );
+    }
+
+    @Test
+    void checkAllowsWrapperOfDefaultWiringPath(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+        writeWorkingWithdrawImpl(tempDir);
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        Path wiring = tempDir.resolve("src/main/java/com/example/Wiring.java");
+        Files.createDirectories(wiring.getParent());
+        Files.writeString(
+            wiring,
+            "package com.example;\n"
+                + "import com.bear.generated.withdraw.IdempotencyPort;\n"
+                + "import com.bear.generated.withdraw.LedgerPort;\n"
+                + "import com.bear.generated.withdraw.Withdraw;\n"
+                + "public final class Wiring {\n"
+                + "  Withdraw wire(IdempotencyPort idempotencyPort, LedgerPort ledgerPort) {\n"
+                + "    return Withdraw.of(idempotencyPort, ledgerPort);\n"
+                + "  }\n"
+                + "}\n",
+            StandardCharsets.UTF_8
+        );
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(0, check.exitCode);
+        assertTrue(check.stdout.startsWith("check: OK"));
+    }
+
+    @Test
     void checkBoundaryBypassIgnoresImplTextInCommentsAndStrings(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
         Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
@@ -2899,6 +2995,29 @@ class BearCliTest {
             "MANIFEST_INVALID",
             "build/generated/bear/wiring/withdraw.wiring.json",
             "Regenerate wiring so semantic ports are wrapper-owned only, then rerun `bear check`."
+        );
+    }
+
+    @Test
+    void checkFailsManifestInvalidWhenGovernedBindingFieldsMissing(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+        writeWorkingWithdrawImpl(tempDir);
+
+        Path wiring = tempDir.resolve("build/generated/bear/wiring/withdraw.wiring.json");
+        String content = Files.readString(wiring, StandardCharsets.UTF_8);
+        content = content.replace("\"logicInterfaceFqcn\":\"com.bear.generated.withdraw.WithdrawLogic\",", "");
+        Files.writeString(wiring, content, StandardCharsets.UTF_8);
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(2, check.exitCode);
+        assertTrue(normalizeLf(check.stderr).contains("check: MANIFEST_INVALID: MISSING_KEY_logicInterfaceFqcn"));
+        assertFailureEnvelope(
+            check.stderr,
+            "MANIFEST_INVALID",
+            "build/generated/bear/wiring/withdraw.wiring.json",
+            "Regenerate wiring manifests with governed binding fields and rerun `bear check`."
         );
     }
 

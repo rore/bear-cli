@@ -37,7 +37,7 @@ Purpose:
 21. Canonical user-owned implementation path is `src/main/java/blocks/<pkg-segment>/impl/<BlockName>Impl.java` and package `blocks.<pkg-segment>.impl`; do not relocate `*Impl.java` to `src/main/java/com/bear/generated/**`.
 22. In greenfield, default to exactly one block; creating block #2 requires `Decomposition Evidence` with direct spec quotes before generation.
 23. `bear fix` is drift-repair only; do not run `bear fix` for `TEST_FAILURE` or `IO_ERROR`.
-24. In `src/main/**`, do not import or instantiate governed `*Impl` classes directly; wire through generated entrypoints under `com.bear.generated.*`.
+24. In `src/main/**`, do not import or instantiate governed `*Impl` classes directly, and do not bind governed logic interfaces to governed impls via `META-INF/services` or `module-info.java provides`; wire through generated entrypoints under `com.bear.generated.*` (prefer `Wrapper.of(<ports...>)`).
 25. Do not wire governed entrypoints with top-level `null` port arguments in production code.
 26. For each logic-required effect port, impl code must use the corresponding port parameter directly, pass it through to a helper call, or explicitly suppress with exact same-file line `// BEAR:PORT_USED <portParamName>`; wrapper-owned semantic ports must not be used/suppressed from impl code.
 27. If `check` writes `build/bear/check.blocked.marker` (`PROJECT_TEST_LOCK`/`PROJECT_TEST_BOOTSTRAP`), treat it as advisory and continue fixing root cause; use `bear unblock --project <path>` to clear stale marker when needed.
@@ -61,9 +61,13 @@ When running `bear check` or `bear check --all`:
 4. Missing policy file means empty allowlist; malformed policy file fails with `CODE=POLICY_INVALID`.
 5. Reflection boundary rule:
 - classloading reflection in `src/main/**` (`Class.forName`, `loadClass`) is blocked unless exact-path allowlisted.
-6. Strict hygiene rule:
+6. Governed binding seam rule:
+- binding governed logic interface -> governed impl in `src/main/resources/META-INF/services/**` or `src/main/java/module-info.java` is blocked.
+7. Generated wiring preference:
+- in production code, prefer generated `Wrapper.of(<ports...>)`; keep `(ports..., Logic)` constructor for tests/advanced injection.
+8. Strict hygiene rule:
 - unexpected seed paths fail with `CODE=HYGIENE_UNEXPECTED_PATHS` unless allowlisted.
-7. For concrete syntax examples, see header comments in `.bear/policy/reflection-allowlist.txt` and `.bear/policy/hygiene-allowlist.txt`.
+9. For concrete syntax examples, see header comments in `.bear/policy/reflection-allowlist.txt` and `.bear/policy/hygiene-allowlist.txt`.
 
 ## Session Baseline Check
 

@@ -19,6 +19,10 @@ public final class Withdraw {
         this.logic = logic;
     }
 
+    public static Withdraw of(IdempotencyPort idempotencyPort, LedgerPort ledgerPort) {
+        return new Withdraw(idempotencyPort, ledgerPort, new blocks.withdraw.impl.WithdrawImpl());
+    }
+
     public WithdrawResult execute(WithdrawRequest request) {
         String idempotencyKey = computeIdempotencyKey(request);
         BearValue existing = idempotencyPort.get(BearValue.builder().put("key", idempotencyKey).build());

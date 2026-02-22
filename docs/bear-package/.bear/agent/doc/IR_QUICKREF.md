@@ -158,3 +158,7 @@ For each changed IR:
 Policy files used by `check`:
 - `.bear/policy/reflection-allowlist.txt`
 - `.bear/policy/hygiene-allowlist.txt`
+
+Generated wiring note:
+- logic wrappers expose `Wrapper.of(<ports...>)` for default production wiring.
+- keep constructor `(ports..., Logic)` for tests/advanced injection only.

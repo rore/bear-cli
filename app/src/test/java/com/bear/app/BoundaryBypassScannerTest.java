@@ -199,4 +199,117 @@ class BoundaryBypassScannerTest {
         assertTrue(findings.stream().noneMatch(f ->
             "DIRECT_IMPL_USAGE".equals(f.rule()) && "src/main/java/com/example/App.java".equals(f.path())));
     }
+
+    @Test
+    void scanBoundaryBypassFlagsGovernedServiceBinding(@TempDir Path tempDir) throws Exception {
+        writeWorkingWithdrawImpl(tempDir);
+        Path descriptor = tempDir.resolve("src/main/resources/META-INF/services/com.bear.generated.withdraw.WithdrawLogic");
+        Files.createDirectories(descriptor.getParent());
+        Files.writeString(
+            descriptor,
+            "# comment\n"
+                + "blocks.withdraw.impl.WithdrawImpl  # trailing\n",
+            java.nio.charset.StandardCharsets.UTF_8
+        );
+
+        WiringManifest manifest = new WiringManifest(
+            "v2",
+            "withdraw",
+            "com.bear.generated.withdraw.Withdraw",
+            "com.bear.generated.withdraw.WithdrawLogic",
+            "blocks.withdraw.impl.WithdrawImpl",
+            "src/main/java/blocks/withdraw/impl/WithdrawImpl.java",
+            List.of("ledgerPort"),
+            List.of("ledgerPort"),
+            List.of("ledgerPort"),
+            List.of(),
+            List.of()
+        );
+
+        List<BoundaryBypassFinding> findings = BoundaryBypassScanner.scanBoundaryBypass(tempDir, List.of(manifest));
+        assertTrue(findings.stream().anyMatch(f ->
+            "DIRECT_IMPL_USAGE".equals(f.rule())
+                && "src/main/resources/META-INF/services/com.bear.generated.withdraw.WithdrawLogic".equals(f.path())
+                && f.detail().contains("KIND=IMPL_SERVICE_BINDING: com.bear.generated.withdraw.WithdrawLogic -> blocks.withdraw.impl.WithdrawImpl")
+        ));
+    }
+
+    @Test
+    void scanBoundaryBypassIgnoresNonGovernedServiceBinding(@TempDir Path tempDir) throws Exception {
+        writeWorkingWithdrawImpl(tempDir);
+        Path descriptor = tempDir.resolve("src/main/resources/META-INF/services/com.example.OtherLogic");
+        Files.createDirectories(descriptor.getParent());
+        Files.writeString(descriptor, "blocks.withdraw.impl.WithdrawImpl\n", java.nio.charset.StandardCharsets.UTF_8);
+
+        WiringManifest manifest = new WiringManifest(
+            "v2",
+            "withdraw",
+            "com.bear.generated.withdraw.Withdraw",
+            "com.bear.generated.withdraw.WithdrawLogic",
+            "blocks.withdraw.impl.WithdrawImpl",
+            "src/main/java/blocks/withdraw/impl/WithdrawImpl.java",
+            List.of("ledgerPort"),
+            List.of("ledgerPort"),
+            List.of("ledgerPort"),
+            List.of(),
+            List.of()
+        );
+
+        List<BoundaryBypassFinding> findings = BoundaryBypassScanner.scanBoundaryBypass(tempDir, List.of(manifest));
+        assertTrue(findings.stream().noneMatch(f ->
+            "DIRECT_IMPL_USAGE".equals(f.rule()) && f.detail().contains("KIND=IMPL_SERVICE_BINDING")
+        ));
+    }
+
+    @Test
+    void scanBoundaryBypassFlagsGovernedModuleInfoBinding(@TempDir Path tempDir) throws Exception {
+        writeWorkingWithdrawImpl(tempDir);
+        Path moduleInfo = tempDir.resolve("src/main/java/module-info.java");
+        Files.createDirectories(moduleInfo.getParent());
+        Files.writeString(
+            moduleInfo,
+            "module demo {\n"
+                + "  provides com.bear.generated.withdraw.WithdrawLogic\n"
+                + "      with blocks.withdraw.impl.WithdrawImpl,\n"
+                + "           com.example.Other;\n"
+                + "}\n",
+            java.nio.charset.StandardCharsets.UTF_8
+        );
+
+        WiringManifest manifest = new WiringManifest(
+            "v2",
+            "withdraw",
+            "com.bear.generated.withdraw.Withdraw",
+            "com.bear.generated.withdraw.WithdrawLogic",
+            "blocks.withdraw.impl.WithdrawImpl",
+            "src/main/java/blocks/withdraw/impl/WithdrawImpl.java",
+            List.of("ledgerPort"),
+            List.of("ledgerPort"),
+            List.of("ledgerPort"),
+            List.of(),
+            List.of()
+        );
+
+        List<BoundaryBypassFinding> findings = BoundaryBypassScanner.scanBoundaryBypass(tempDir, List.of(manifest));
+        assertTrue(findings.stream().anyMatch(f ->
+            "DIRECT_IMPL_USAGE".equals(f.rule())
+                && "src/main/java/module-info.java".equals(f.path())
+                && f.detail().contains("KIND=IMPL_MODULE_BINDING: com.bear.generated.withdraw.WithdrawLogic -> blocks.withdraw.impl.WithdrawImpl")
+        ));
+    }
+
+    private static void writeWorkingWithdrawImpl(Path tempDir) throws Exception {
+        Path impl = tempDir.resolve("src/main/java/blocks/withdraw/impl/WithdrawImpl.java");
+        Files.createDirectories(impl.getParent());
+        Files.writeString(
+            impl,
+            "package blocks.withdraw.impl;\n"
+                + "public final class WithdrawImpl {\n"
+                + "  Object execute(Object request, Object ledgerPort) {\n"
+                + "    return helper(ledgerPort);\n"
+                + "  }\n"
+                + "  Object helper(Object value) { return null; }\n"
+                + "}\n"
+        );
+    }
 }
