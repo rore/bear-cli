@@ -57,6 +57,7 @@ Preview standing note:
 1. `Boundary hardening v1.2 Final Lock++` (implemented in cli/kernel; stabilization + demo sync pending)
 2. `Declared allowed deps containment` (stabilization/operational hardening)
 3. Generated structural tests and cross-target parity follow-up
+4. BEAR-owned generated-source wiring auto-enforcement (avoid ad-hoc `build.gradle` patching)
 
 ## Backlog Buckets (P1/P2/P3)
 

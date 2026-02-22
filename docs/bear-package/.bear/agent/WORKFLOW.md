@@ -184,11 +184,17 @@ Lock and environment troubleshooting:
 - Do not introduce workaround classes under `com.bear.generated.*`.
 - Remediate by:
   - rerunning and letting BEAR apply deterministic Gradle-home policy:
-    - external `GRADLE_USER_HOME` set: same path only, with one self-heal + one retry
-    - no external `GRADLE_USER_HOME`: isolated home (`<project>/.bear-gradle-user-home`) + one retry, then one fallback attempt via user cache (`<user-home>/.gradle`)
+    - external `GRADLE_USER_HOME` set: `external-env`, then `external-env-retry`
+    - no external `GRADLE_USER_HOME` on Windows: `isolated`, then early fallback `user-cache`, then `user-cache-retry`
+    - no external `GRADLE_USER_HOME` on non-Windows: `isolated`, `isolated-retry`, then `user-cache`
   - ensuring no concurrent gate/test process holds locks
   - rerunning compile/check after lock release
   - if `check` writes `build/bear/check.blocked.marker`, clear it with `bear unblock --project <repoRoot>` after fixing lock/bootstrap cause
+  - reading lock/bootstrap detail diagnostics:
+    - `attempts=<csv>`
+    - `CACHE_MODE=<isolated|user-cache|external-env>`
+    - `FALLBACK=<none|to_user_cache>`
+  - avoiding ad-hoc `build.gradle` edits as a first response; prefer BEAR-owned generated wiring and deterministic retry/fallback flow
 
 ## Constraints
 

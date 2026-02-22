@@ -5,7 +5,10 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -88,6 +91,7 @@ class ProjectTestRunnerTest {
         );
         Files.createDirectories(partFile.getParent());
         Files.writeString(partFile, "partial");
+        Files.setLastModifiedTime(partFile, FileTime.from(Instant.now().minus(Duration.ofMinutes(11))));
 
         String partPath = partFile.toString();
         writeProjectWrapper(
@@ -112,7 +116,15 @@ class ProjectTestRunnerTest {
             System.setProperty(key, "NONE");
             ProjectTestResult result = ProjectTestRunner.runProjectTests(projectRoot);
             assertEquals(ProjectTestStatus.PASSED, result.status());
-            assertEquals("isolated,isolated-retry", result.attemptTrail());
+            if (isWindows()) {
+                assertEquals("isolated,user-cache", result.attemptTrail());
+                assertEquals("user-cache", result.cacheMode());
+                assertTrue(result.fallbackToUserCache());
+            } else {
+                assertEquals("isolated,isolated-retry", result.attemptTrail());
+                assertEquals("isolated", result.cacheMode());
+                assertFalse(result.fallbackToUserCache());
+            }
             assertFalse(Files.exists(partFile));
         } finally {
             if (previous == null) {
@@ -151,7 +163,13 @@ class ProjectTestRunnerTest {
             System.setProperty(key, "NONE");
             ProjectTestResult result = ProjectTestRunner.runProjectTests(projectRoot);
             assertEquals(ProjectTestStatus.PASSED, result.status());
-            assertEquals("isolated,isolated-retry,user-cache", result.attemptTrail());
+            if (isWindows()) {
+                assertEquals("isolated,user-cache", result.attemptTrail());
+            } else {
+                assertEquals("isolated,isolated-retry,user-cache", result.attemptTrail());
+            }
+            assertEquals("user-cache", result.cacheMode());
+            assertTrue(result.fallbackToUserCache());
         } finally {
             if (previous == null) {
                 System.clearProperty(key);
@@ -159,6 +177,63 @@ class ProjectTestRunnerTest {
                 System.setProperty(key, previous);
             }
         }
+    }
+
+    @Test
+    void gradleTempDeleteClassificationIsScopedToSelectedGradleHome(@TempDir Path tempDir) {
+        Path gradleHome = tempDir.resolve("gradle-home");
+        String selectedHome = gradleHome.toString();
+
+        String validTmp = "Failed to delete file: " + gradleHome.resolve(".tmp/cp_settings123.tmp");
+        String validGroovy = "Failed to delete file: " + gradleHome.resolve("caches/8.12.1/groovy-dsl/a/instrumented/cp_settings.tmp");
+        String outsideHome = "Failed to delete file: " + tempDir.resolve("other/.tmp/cp_settings123.tmp");
+        String wrongPattern = "Failed to delete file: " + gradleHome.resolve("caches/8.12.1/other/cp_settings.tmp");
+
+        assertTrue(ProjectTestRunner.isGradleWrapperLockOutput(validTmp, selectedHome));
+        assertTrue(ProjectTestRunner.isGradleWrapperLockOutput(validGroovy, selectedHome));
+        assertFalse(ProjectTestRunner.isGradleWrapperLockOutput(outsideHome, selectedHome));
+        assertFalse(ProjectTestRunner.isGradleWrapperLockOutput(wrongPattern, selectedHome));
+    }
+
+    @Test
+    void safeSelfHealDeletesOnlyStaleKnownArtifacts(@TempDir Path tempDir) throws Exception {
+        Path gradleHome = tempDir.resolve("gradle-home");
+        Path stalePart = gradleHome.resolve("wrapper/dists/gradle-8.12.1-bin/x/gradle-8.12.1-bin.zip.part");
+        Path freshPart = gradleHome.resolve("wrapper/dists/gradle-8.12.1-bin/x/fresh.zip.part");
+        Path staleTmp = gradleHome.resolve(".tmp/cp_settings1.tmp");
+        Path freshZip = gradleHome.resolve("wrapper/dists/gradle-8.12.1-bin/x/gradle-8.12.1-bin.zip");
+        Path staleGroovyTmp = gradleHome.resolve("caches/8.12.1/groovy-dsl/a/instrumented/cp_settings2.tmp");
+
+        createFile(stalePart);
+        createFile(freshPart);
+        createFile(staleTmp);
+        createFile(freshZip);
+        createFile(staleGroovyTmp);
+
+        FileTime staleTime = FileTime.from(Instant.now().minus(Duration.ofMinutes(11)));
+        Files.setLastModifiedTime(stalePart, staleTime);
+        Files.setLastModifiedTime(staleTmp, staleTime);
+        Files.setLastModifiedTime(staleGroovyTmp, staleTime);
+
+        ProjectTestRunner.safeSelfHealGradleHome(gradleHome.toString());
+
+        assertFalse(Files.exists(stalePart));
+        assertFalse(Files.exists(staleTmp));
+        assertFalse(Files.exists(staleGroovyTmp));
+        assertTrue(Files.exists(freshPart));
+        assertTrue(Files.exists(freshZip));
+    }
+
+    @Test
+    void safeSelfHealSkipsFutureTimestampArtifacts(@TempDir Path tempDir) throws Exception {
+        Path gradleHome = tempDir.resolve("gradle-home");
+        Path futureTmp = gradleHome.resolve(".tmp/cp_settings_future.tmp");
+        createFile(futureTmp);
+        Files.setLastModifiedTime(futureTmp, FileTime.from(Instant.now().plus(Duration.ofMinutes(30))));
+
+        ProjectTestRunner.safeSelfHealGradleHome(gradleHome.toString());
+
+        assertTrue(Files.exists(futureTmp));
     }
 
     @Test
@@ -214,5 +289,10 @@ class ProjectTestRunnerTest {
 
     private static boolean isWindows() {
         return System.getProperty("os.name").toLowerCase().contains("win");
+    }
+
+    private static void createFile(Path file) throws Exception {
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, "x");
     }
 }

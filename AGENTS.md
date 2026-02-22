@@ -20,8 +20,10 @@ Session hygiene:
 - Update `docs/context/program-board.md` when milestone feature status/queue/risk entries change.
 - Update `docs/context/project-log.md` only for major architectural shifts/decisions.
 - Before ending a session, follow `docs/context/start-here.md` -> "Session close protocol".
+- Exception: routine demo cleanup/reset operations do not require `docs/context/state.md` updates unless cleanup policy/process changed.
 
 Safety guardrails:
 - Read `docs/context/safety-rules.md` before running any delete/cleanup command.
 - Never run recursive deletes outside the repository root.
 - For temp cleanup, prefer `scripts/safe-clean-temp.ps1` over ad-hoc `Remove-Item`.
+- For demo branch cleanup, prefer `scripts/clean-demo-branch.ps1` over ad-hoc cleanup + git commands.

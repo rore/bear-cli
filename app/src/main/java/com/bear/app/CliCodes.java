@@ -33,4 +33,5 @@ final class CliCodes {
     static final String INTERNAL_ERROR = "INTERNAL_ERROR";
     static final String MANIFEST_INVALID = "MANIFEST_INVALID";
     static final String INVARIANT_VIOLATION = "INVARIANT_VIOLATION";
+    static final String UNBLOCK_LOCKED = "UNBLOCK_LOCKED";
 }

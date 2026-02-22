@@ -893,17 +893,26 @@ class BearCliTest {
             "#!/usr/bin/env sh\necho \"java.io.FileNotFoundException: /tmp/gradle-8.12.1-bin.zip.lck (Access is denied)\"\necho \"PROJECT_TEST_GRADLE_LOCK_SIMULATED\"\nexit 1\n"
         );
 
-        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
-        assertEquals(74, check.exitCode);
-        String stderr = normalizeLf(check.stderr);
-        assertTrue(stderr.startsWith("io: IO_ERROR: PROJECT_TEST_LOCK:"));
-        assertTrue(stderr.contains("; attempts="));
-        assertFailureEnvelope(
-            check.stderr,
-            "IO_ERROR",
-            "project.tests",
-            "Release Gradle wrapper lock or set isolated GRADLE_USER_HOME, then rerun `bear check <ir-file> --project <path>`."
-        );
+        String key = "bear.cli.test.gradleUserHomeOverride";
+        String previous = System.getProperty(key);
+        try {
+            System.setProperty(key, "NONE");
+            CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+            assertEquals(74, check.exitCode);
+            String stderr = normalizeLf(check.stderr);
+            assertTrue(stderr.startsWith("io: IO_ERROR: PROJECT_TEST_LOCK:"));
+            assertTrue(stderr.contains("; attempts="));
+            assertTrue(stderr.contains("; CACHE_MODE=user-cache"));
+            assertTrue(stderr.contains("; FALLBACK=to_user_cache"));
+            assertFailureEnvelope(
+                check.stderr,
+                "IO_ERROR",
+                "project.tests",
+                "Release Gradle wrapper lock or set isolated GRADLE_USER_HOME, then rerun `bear check <ir-file> --project <path>`."
+            );
+        } finally {
+            restoreSystemProperty(key, previous);
+        }
     }
 
     @Test
@@ -918,17 +927,26 @@ class BearCliTest {
             "#!/usr/bin/env sh\necho \"java.nio.file.NoSuchFileException: /tmp/gradle-8.12.1-bin.zip\"\necho \"PROJECT_TEST_GRADLE_BOOTSTRAP_SIMULATED\"\nexit 1\n"
         );
 
-        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
-        assertEquals(74, check.exitCode);
-        String stderr = normalizeLf(check.stderr);
-        assertTrue(stderr.startsWith("io: IO_ERROR: PROJECT_TEST_BOOTSTRAP:"));
-        assertTrue(stderr.contains("; attempts="));
-        assertFailureEnvelope(
-            check.stderr,
-            "IO_ERROR",
-            "project.tests",
-            "Fix Gradle wrapper bootstrap/cache (distribution zip/unzip) and rerun `bear check <ir-file> --project <path>`."
-        );
+        String key = "bear.cli.test.gradleUserHomeOverride";
+        String previous = System.getProperty(key);
+        try {
+            System.setProperty(key, "NONE");
+            CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+            assertEquals(74, check.exitCode);
+            String stderr = normalizeLf(check.stderr);
+            assertTrue(stderr.startsWith("io: IO_ERROR: PROJECT_TEST_BOOTSTRAP:"));
+            assertTrue(stderr.contains("; attempts="));
+            assertTrue(stderr.contains("; CACHE_MODE=user-cache"));
+            assertTrue(stderr.contains("; FALLBACK=to_user_cache"));
+            assertFailureEnvelope(
+                check.stderr,
+                "IO_ERROR",
+                "project.tests",
+                "Fix Gradle wrapper bootstrap/cache (distribution zip/unzip) and rerun `bear check <ir-file> --project <path>`."
+            );
+        } finally {
+            restoreSystemProperty(key, previous);
+        }
     }
 
     @Test
@@ -1430,6 +1448,60 @@ class BearCliTest {
     }
 
     @Test
+    void unblockIsIdempotentWhenMarkerIsMissing(@TempDir Path tempDir) {
+        CliRunResult unblock = runCli(new String[] { "unblock", "--project", tempDir.toString() });
+        assertEquals(0, unblock.exitCode);
+        assertEquals("unblock: OK\n", normalizeLf(unblock.stdout));
+        assertEquals("", unblock.stderr);
+    }
+
+    @Test
+    void unblockRetriesAndSucceedsAfterTransientDeleteFailure(@TempDir Path tempDir) throws Exception {
+        Path marker = tempDir.resolve("build/bear/check.blocked.marker");
+        Files.createDirectories(marker.getParent());
+        Files.writeString(marker, "reason=LOCK\ndetail=x\n", StandardCharsets.UTF_8);
+
+        String key = "bear.cli.test.unblock.failDeletes";
+        String previous = System.getProperty(key);
+        try {
+            System.setProperty(key, "1");
+            CliRunResult unblock = runCli(new String[] { "unblock", "--project", tempDir.toString() });
+            assertEquals(0, unblock.exitCode);
+            assertEquals("unblock: OK\n", normalizeLf(unblock.stdout));
+            assertFalse(Files.exists(marker));
+        } finally {
+            restoreSystemProperty(key, previous);
+        }
+    }
+
+    @Test
+    void unblockReturnsDeterministicUnblockLockedEnvelopeWhenDeleteFails(@TempDir Path tempDir) throws Exception {
+        Path marker = tempDir.resolve("build/bear/check.blocked.marker");
+        Files.createDirectories(marker.getParent());
+        Files.writeString(marker, "reason=LOCK\ndetail=x\n", StandardCharsets.UTF_8);
+
+        String key = "bear.cli.test.unblock.failDeletes";
+        String previous = System.getProperty(key);
+        try {
+            System.setProperty(key, "always");
+            CliRunResult unblock = runCli(new String[] { "unblock", "--project", tempDir.toString() });
+            assertEquals(74, unblock.exitCode);
+            String stderr = normalizeLf(unblock.stderr);
+            assertTrue(stderr.startsWith("io: IO_ERROR: UNBLOCK_LOCKED:"));
+            assertTrue(stderr.contains("; ATTRS="));
+            assertFailureEnvelope(
+                unblock.stderr,
+                "UNBLOCK_LOCKED",
+                "build/bear/check.blocked.marker",
+                "Close processes locking the marker and rerun `bear unblock --project <path>`."
+            );
+            assertTrue(Files.exists(marker));
+        } finally {
+            restoreSystemProperty(key, previous);
+        }
+    }
+
+    @Test
     void checkAllHonorsBlockedMarkerPreflight(@TempDir Path tempDir) throws Exception {
         MultiBlockFixture fixture = createMultiBlockFixture(tempDir);
         Path alphaRoot = fixture.projectRoots().get(0);
@@ -1594,19 +1666,28 @@ class BearCliTest {
             "#!/usr/bin/env sh\necho \"java.io.FileNotFoundException: /tmp/gradle-8.12.1-bin.zip.lck (Access is denied)\"\nexit 1\n"
         );
 
-        CliRunResult run = runCli(new String[] {
-            "check", "--all", "--project", fixture.repoRoot().toString()
-        });
-        assertEquals(74, run.exitCode);
-        assertTrue(normalizeLf(run.stderr).contains("CATEGORY: IO_ERROR"));
-        assertTrue(normalizeLf(run.stderr).contains("DETAIL: root-level project test runner lock in projectRoot services/alpha; line:"));
-        assertTrue(normalizeLf(run.stderr).contains("; attempts="));
-        assertFailureEnvelope(
-            run.stderr,
-            "REPO_MULTI_BLOCK_FAILED",
-            "bear.blocks.yaml",
-            "Review per-block results above and fix failing blocks, then rerun the command."
-        );
+        String key = "bear.cli.test.gradleUserHomeOverride";
+        String previous = System.getProperty(key);
+        try {
+            System.setProperty(key, "NONE");
+            CliRunResult run = runCli(new String[] {
+                "check", "--all", "--project", fixture.repoRoot().toString()
+            });
+            assertEquals(74, run.exitCode);
+            assertTrue(normalizeLf(run.stderr).contains("CATEGORY: IO_ERROR"));
+            assertTrue(normalizeLf(run.stderr).contains("DETAIL: root-level project test runner lock in projectRoot services/alpha; line:"));
+            assertTrue(normalizeLf(run.stderr).contains("; attempts="));
+            assertTrue(normalizeLf(run.stderr).contains("; CACHE_MODE=user-cache"));
+            assertTrue(normalizeLf(run.stderr).contains("; FALLBACK=to_user_cache"));
+            assertFailureEnvelope(
+                run.stderr,
+                "REPO_MULTI_BLOCK_FAILED",
+                "bear.blocks.yaml",
+                "Review per-block results above and fix failing blocks, then rerun the command."
+            );
+        } finally {
+            restoreSystemProperty(key, previous);
+        }
     }
 
     @Test
@@ -1619,20 +1700,29 @@ class BearCliTest {
             "#!/usr/bin/env sh\necho \"java.nio.file.NoSuchFileException: /tmp/gradle-8.12.1-bin.zip\"\necho \"PROJECT_TEST_GRADLE_BOOTSTRAP_SIMULATED\"\nexit 1\n"
         );
 
-        CliRunResult run = runCli(new String[] {
-            "check", "--all", "--project", fixture.repoRoot().toString()
-        });
-        assertEquals(74, run.exitCode);
-        String stderr = normalizeLf(run.stderr);
-        assertTrue(stderr.contains("CATEGORY: IO_ERROR"));
-        assertTrue(stderr.contains("DETAIL: root-level project test bootstrap IO failure in projectRoot services/alpha; line:"));
-        assertTrue(stderr.contains("; attempts="));
-        assertFailureEnvelope(
-            run.stderr,
-            "REPO_MULTI_BLOCK_FAILED",
-            "bear.blocks.yaml",
-            "Review per-block results above and fix failing blocks, then rerun the command."
-        );
+        String key = "bear.cli.test.gradleUserHomeOverride";
+        String previous = System.getProperty(key);
+        try {
+            System.setProperty(key, "NONE");
+            CliRunResult run = runCli(new String[] {
+                "check", "--all", "--project", fixture.repoRoot().toString()
+            });
+            assertEquals(74, run.exitCode);
+            String stderr = normalizeLf(run.stderr);
+            assertTrue(stderr.contains("CATEGORY: IO_ERROR"));
+            assertTrue(stderr.contains("DETAIL: root-level project test bootstrap IO failure in projectRoot services/alpha; line:"));
+            assertTrue(stderr.contains("; attempts="));
+            assertTrue(stderr.contains("; CACHE_MODE=user-cache"));
+            assertTrue(stderr.contains("; FALLBACK=to_user_cache"));
+            assertFailureEnvelope(
+                run.stderr,
+                "REPO_MULTI_BLOCK_FAILED",
+                "bear.blocks.yaml",
+                "Review per-block results above and fix failing blocks, then rerun the command."
+            );
+        } finally {
+            restoreSystemProperty(key, previous);
+        }
     }
 
     @Test

@@ -38,6 +38,8 @@ public final class BearCli {
     private static final String CHECK_BLOCKED_MARKER_RELATIVE = "build/bear/check.blocked.marker";
     private static final String CHECK_BLOCKED_REASON_LOCK = "LOCK";
     private static final String CHECK_BLOCKED_REASON_BOOTSTRAP = "BOOTSTRAP_IO";
+    private static final int UNBLOCK_DELETE_ATTEMPTS = 3;
+    private static final long UNBLOCK_RETRY_BACKOFF_MILLIS = 200L;
     private static final Pattern DIRECT_IMPL_IMPORT_PATTERN = Pattern.compile(
         "\\bimport\\s+blocks(?:\\.[A-Za-z_][A-Za-z0-9_]*)*\\.impl\\.[A-Za-z_][A-Za-z0-9_]*Impl\\s*;"
     );
@@ -324,20 +326,46 @@ public final class BearCli {
             );
         }
         Path projectRoot = Path.of(args[2]);
-        try {
-            clearCheckBlockedMarker(projectRoot);
+        Path marker = projectRoot.resolve(CHECK_BLOCKED_MARKER_RELATIVE);
+        if (!Files.isRegularFile(marker)) {
             out.println("unblock: OK");
             return ExitCode.OK;
-        } catch (IOException e) {
-            return failWithLegacy(
-                err,
-                ExitCode.IO,
-                "io: IO_ERROR: " + squash(e.getMessage()),
-                FailureCode.IO_ERROR,
-                CHECK_BLOCKED_MARKER_RELATIVE,
-                "Ensure the project path is writable, then rerun `bear unblock --project <path>`."
-            );
         }
+
+        IOException lastDeleteError = null;
+        for (int attempt = 1; attempt <= UNBLOCK_DELETE_ATTEMPTS; attempt++) {
+            try {
+                maybeInjectUnblockDeleteFailureForTest(attempt);
+                clearCheckBlockedMarker(projectRoot);
+                out.println("unblock: OK");
+                return ExitCode.OK;
+            } catch (IOException e) {
+                lastDeleteError = e;
+                if (attempt < UNBLOCK_DELETE_ATTEMPTS) {
+                    try {
+                        Thread.sleep(UNBLOCK_RETRY_BACKOFF_MILLIS);
+                    } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                        lastDeleteError = new IOException("unblock interrupted during retry backoff", interrupted);
+                        break;
+                    }
+                }
+            }
+        }
+
+        String attrs = markerAttributes(marker);
+        String line = "io: IO_ERROR: UNBLOCK_LOCKED: failed to delete check blocked marker: "
+            + squash(lastDeleteError == null ? "unknown IO error" : lastDeleteError.getMessage())
+            + "; ATTRS="
+            + attrs;
+        return failWithLegacy(
+            err,
+            ExitCode.IO,
+            line,
+            CliCodes.UNBLOCK_LOCKED,
+            CHECK_BLOCKED_MARKER_RELATIVE,
+            "Close processes locking the marker and rerun `bear unblock --project <path>`."
+        );
     }
 
     private static int runPrCheck(String[] args, PrintStream out, PrintStream err) {
@@ -1391,6 +1419,41 @@ public final class BearCli {
 
     private static String markerWriteFailureSuffix(IOException error) {
         return "; markerWrite=failed:" + squash(error.getMessage());
+    }
+
+    private static String markerAttributes(Path marker) {
+        try {
+            BasicFileAttributes attrs = Files.readAttributes(marker, BasicFileAttributes.class);
+            boolean readonly = !Files.isWritable(marker);
+            boolean hidden;
+            try {
+                hidden = Files.isHidden(marker);
+            } catch (IOException ignored) {
+                hidden = false;
+            }
+            return "readonly=" + readonly + ",hidden=" + hidden + ",size=" + attrs.size();
+        } catch (IOException e) {
+            return "unavailable";
+        }
+    }
+
+    private static void maybeInjectUnblockDeleteFailureForTest(int attempt) throws IOException {
+        String raw = System.getProperty("bear.cli.test.unblock.failDeletes");
+        if (raw == null || raw.isBlank()) {
+            return;
+        }
+        String normalized = raw.trim().toLowerCase();
+        if ("always".equals(normalized)) {
+            throw new IOException("INJECTED_UNBLOCK_DELETE_FAILURE");
+        }
+        try {
+            int count = Integer.parseInt(normalized);
+            if (attempt <= count) {
+                throw new IOException("INJECTED_UNBLOCK_DELETE_FAILURE");
+            }
+        } catch (NumberFormatException ignored) {
+            // Ignore invalid test hook values.
+        }
     }
 
     private static Path resolveWrapper(Path projectRoot) throws IOException {

@@ -194,6 +194,8 @@ Use when:
 Behavior:
 - clears `<project>/build/bear/check.blocked.marker` if present
 - idempotent (`unblock: OK` even when marker is absent)
+- retries marker delete up to 3 attempts with fixed `200ms` backoff
+- on persistent marker lock, fails with `CODE=UNBLOCK_LOCKED` (exit `74`)
 - marker is written only after BEAR exhausts deterministic retry/fallback for Gradle lock/bootstrap IO
 
 ### 5. PR governance gate (base diff classification)
@@ -268,10 +270,20 @@ If `compile`/`check`/`check --all` fails with lock signatures (for example `.zip
 Deterministic remediation order:
 1. Ensure no concurrent Gradle/BEAR gate process is running on the same repo.
 2. Rerun the command and let BEAR apply deterministic Gradle-home policy:
-   - if `GRADLE_USER_HOME` is externally set: BEAR uses only that path (self-heal + one retry)
-   - otherwise: isolated home (`<project>/.bear-gradle-user-home`) + one retry, then one fallback attempt via user cache (`<user-home>/.gradle`)
+   - if `GRADLE_USER_HOME` is externally set: BEAR uses only that path (`external-env`, `external-env-retry`)
+   - on Windows without external override: `isolated` -> early fallback `user-cache` -> `user-cache-retry`
+   - on non-Windows without external override: `isolated` -> `isolated-retry` -> `user-cache`
 3. If lock/bootstrap persists after BEAR retries, stop and report blocker details (path + command + output); do not apply IR renames, ACL edits, or manual generated-file surgery as workarounds.
 4. If check writes `<project>/build/bear/check.blocked.marker`, clear it with `bear unblock --project <path>` after fixing lock/bootstrap cause.
+
+Lock/bootstrap failure detail includes deterministic diagnostics:
+- `attempts=<csv>`
+- `CACHE_MODE=<isolated|user-cache|external-env>`
+- `FALLBACK=<none|to_user_cache>`
+
+Build wiring note:
+- use BEAR-owned generated wiring (`build/generated/bear/gradle/bear-containment.gradle` where applicable)
+- do not patch `build.gradle` manually as first response to lock/bootstrap failures
 
 Expected classification:
 - lock/tooling faults -> `IO_ERROR` (`74`)

@@ -282,6 +282,8 @@ record ProjectTestResult(
     String output,
     String attemptTrail,
     String firstLockLine,
-    String firstBootstrapLine
+    String firstBootstrapLine,
+    String cacheMode,
+    boolean fallbackToUserCache
 ) {
 }

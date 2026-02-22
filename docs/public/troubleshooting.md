@@ -31,6 +31,35 @@ Fix:
 2. Ensure required wrapper files are present for `check`.
 3. Re-run command.
 
+For Gradle lock/bootstrap paths during `check`:
+
+1. BEAR runs deterministic attempts with fixed backoff (`200ms`) and bounded stale-file self-heal inside selected `GRADLE_USER_HOME`.
+2. Windows default attempt order:
+   - `isolated`
+   - early fallback to `user-cache` on first lock/bootstrap classification
+   - `user-cache-retry` if needed
+3. Non-Windows default attempt order:
+   - `isolated`
+   - `isolated-retry`
+   - `user-cache`
+4. Failure detail includes deterministic diagnostics:
+   - `attempts=<csv>`
+   - `CACHE_MODE=<isolated|user-cache|external-env>`
+   - `FALLBACK=<none|to_user_cache>`
+5. If marker block is raised, run `bear unblock --project <path>` after lock cause is resolved.
+
+Do not patch `build.gradle` as first response to lock/bootstrap errors. First use BEAR retry/fallback flow and verify BEAR-owned generated wiring.
+
+## `UNBLOCK_LOCKED`
+
+Symptom: `bear unblock` cannot remove `build/bear/check.blocked.marker`, exit `74`.
+Likely cause: filesystem lock/attribute constraint on marker file.
+Fix:
+
+1. Close processes locking marker path.
+2. Re-run `bear unblock --project <path>`.
+3. Re-run `bear check`/`bear check --all`.
+
 ## `IO_GIT`
 
 Symptom: git merge-base or git read failure in `pr-check`, exit `74`.

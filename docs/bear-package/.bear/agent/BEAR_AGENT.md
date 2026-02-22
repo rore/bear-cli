@@ -29,7 +29,7 @@ Purpose:
 13. If you add new production architecture (platform/adapters/executors/etc.), include a brief necessity rationale tied to requirements and boundary ownership.
 14. If BEAR tooling fails with IO/lock/environment defects, stop and report the tooling failure; do not mutate unrelated IR to fit stale generated outputs.
 15. On `IO_ERROR`/`WINDOWS_FILE_LOCK`, do not rename blocks/IR files, do not alter filesystem ACL/permissions, and do not perform manual generated-file surgery as a workaround.
-16. Retry budget for tooling/lock defects: one deterministic retry after setting repo-local `GRADLE_USER_HOME`; if failure persists, stop and report blocker details.
+16. Retry budget for tooling/lock defects: rely on BEAR's deterministic project-test runner attempts/fallback (including Windows early fallback); if failure persists after BEAR retries, stop and report blocker details.
 17. Never add workaround type stubs/classes under `src/main/java/com/bear/generated/**` (for example fake `BigDecimal`); generated classes there are BEAR-owned.
 18. If implementation needs a new library, declare it in `block.impl.allowedDeps` (IR-first); do not silently add impl classpath reach.
 19. For IR with `impl.allowedDeps` on Java+Gradle projects, ensure the project applies generated containment entrypoint and run Gradle once before relying on `bear check`.
@@ -41,7 +41,8 @@ Purpose:
 25. Do not wire governed entrypoints with top-level `null` port arguments in production code.
 26. For each logic-required effect port, impl code must use the corresponding port parameter directly, pass it through to a helper call, or explicitly suppress with exact same-file line `// BEAR:PORT_USED <portParamName>`; wrapper-owned semantic ports must not be used/suppressed from impl code.
 27. If `check` writes `build/bear/check.blocked.marker` (`PROJECT_TEST_LOCK`/`PROJECT_TEST_BOOTSTRAP`), stop feature edits and clear with `bear unblock --project <path>` after fixing environment.
-28. Agent guidance must remain package-local: rely on `.bear/agent/**` plus project-local BEAR artifacts (`spec/*.bear.yaml`, `bear.blocks.yaml`, `build/generated/bear/**`), not non-shipped repo docs.
+28. Do not patch `build.gradle` manually as first response to lock/bootstrap failures; first use BEAR deterministic retry/fallback and BEAR-owned generated wiring.
+29. Agent guidance must remain package-local: rely on `.bear/agent/**` plus project-local BEAR artifacts (`spec/*.bear.yaml`, `bear.blocks.yaml`, `build/generated/bear/**`), not non-shipped repo docs.
 
 ## Session Baseline Check
 

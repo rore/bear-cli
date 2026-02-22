@@ -313,10 +313,7 @@ final class CheckCommandService {
                 String ioLine = lockLine == null
                     ? "io: IO_ERROR: PROJECT_TEST_LOCK: Gradle wrapper lock detected"
                     : "io: IO_ERROR: PROJECT_TEST_LOCK: " + lockLine;
-                String attemptsSuffix = attemptTrailSuffix(testResult.attemptTrail());
-                if (!attemptsSuffix.isBlank()) {
-                    ioLine += attemptsSuffix;
-                }
+                ioLine += testDiagnosticsSuffix(testResult);
                 if (!markerWriteSuffix.isBlank()) {
                     ioLine += markerWriteSuffix;
                 }
@@ -345,10 +342,7 @@ final class CheckCommandService {
                 String ioLine = bootstrapLine == null
                     ? "io: IO_ERROR: PROJECT_TEST_BOOTSTRAP: Gradle wrapper bootstrap/unzip failed"
                     : "io: IO_ERROR: PROJECT_TEST_BOOTSTRAP: " + bootstrapLine;
-                String attemptsSuffix = attemptTrailSuffix(testResult.attemptTrail());
-                if (!attemptsSuffix.isBlank()) {
-                    ioLine += attemptsSuffix;
-                }
+                ioLine += testDiagnosticsSuffix(testResult);
                 if (!markerWriteSuffix.isBlank()) {
                     ioLine += markerWriteSuffix;
                 }
@@ -595,11 +589,15 @@ final class CheckCommandService {
         }
     }
 
-    private static String attemptTrailSuffix(String attemptTrail) {
-        if (attemptTrail == null || attemptTrail.isBlank()) {
-            return "";
-        }
-        return "; attempts=" + attemptTrail.trim();
+    private static String testDiagnosticsSuffix(ProjectTestResult testResult) {
+        String attempts = testResult.attemptTrail() == null || testResult.attemptTrail().isBlank()
+            ? "<none>"
+            : testResult.attemptTrail().trim();
+        String cacheMode = testResult.cacheMode() == null || testResult.cacheMode().isBlank()
+            ? "isolated"
+            : testResult.cacheMode().trim();
+        String fallback = testResult.fallbackToUserCache() ? "to_user_cache" : "none";
+        return "; attempts=" + attempts + "; CACHE_MODE=" + cacheMode + "; FALLBACK=" + fallback;
     }
 
     private static String markerWriteFailureSuffix(IOException error) {

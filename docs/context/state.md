@@ -5,13 +5,14 @@ For milestone status and backlog ordering, use `docs/context/program-board.md`.
 
 ## Last Updated
 
-2026-02-21
+2026-02-22
 
 ## Current Focus
 
 P2 feature delivery:
 - active milestone is `P2`
 - v1.2 Final Lock++ semantic hardening (wrapper-owned idempotency + invariants)
+- Windows Gradle reliability hardening v1 (deterministic retry/fallback, bounded stale self-heal, robust unblock)
 - deterministic marker-first invariant classification and manifest semantic validation
 - documentation alignment for enforcement-by-construction philosophy and semantic scope boundaries
 - preserve strict command contract compatibility (stdout/stderr ordering, exit buckets, failure envelope)
@@ -19,13 +20,20 @@ P2 feature delivery:
 ## Next Concrete Task
 
 Post-Lock++ follow-through:
-1. sync updated BEAR runtime/contracts into demo repo and validate end-to-end `compile/check/pr-check` flows
-2. run targeted scenario checks for semantic-port bypass and invariant marker paths in demo contexts
+1. validate demo repo behavior with new lock/bootstrap diagnostics (`attempts/CACHE_MODE/FALLBACK`) and robust `unblock`
+2. follow through on BEAR-owned generated-source wiring enforcement (avoid ad-hoc `build.gradle` edits)
 3. continue command-service modularization cleanup with no contract drift
 4. keep full `:app:test` + root `test` green after each incremental update
 
 ## Session Notes
 
+- Implemented BEAR Windows Gradle reliability hardening v1:
+  - `ProjectTestRunner` now enforces deterministic cache strategy with Windows early fallback (`isolated -> user-cache -> user-cache-retry`) and fixed `200ms` backoff.
+  - tightened lock classification for `Failed to delete file` to scoped Gradle temp paths under selected `GRADLE_USER_HOME`.
+  - bounded stale-only self-heal (`10m`) for known artifacts (`.zip.lck`, `.zip.part`, `.tmp/*.tmp`, groovy-dsl instrumented `*.tmp`) with deterministic sorted deletion.
+  - `check` / `check --all` lock/bootstrap details now include `attempts=...`, `CACHE_MODE=...`, `FALLBACK=...`.
+  - `bear unblock` now retries marker delete (3 attempts, `200ms`), stays idempotent when marker missing, and emits deterministic `CODE=UNBLOCK_LOCKED` on persistent lock (exit `74`) with `ATTRS=...`.
+  - added/updated tests in `ProjectTestRunnerTest` and `BearCliTest`; verified with `.\gradlew.bat --no-daemon :app:test`.
 - Clarified invariant-doc split:
   - keep `docs/context/invariant-charter.md` as internal normative catalog.
   - expose a distilled public Preview invariant view in `docs/public/ENFORCEMENT.md` (explicit `ENFORCED` vs `PARTIAL` statuses and coverage caveat).

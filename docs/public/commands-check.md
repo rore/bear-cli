@@ -40,6 +40,17 @@ Key line formats:
 - `check: UNDECLARED_REACH: <relative/path>: <surface>`
 - `check: BOUNDARY_BYPASS: RULE=<rule>: <relative/path>: <detail>`
 
+For lock/bootstrap test-runner failures, detail lines append deterministic diagnostics:
+
+- `attempts=<csv>`
+- `CACHE_MODE=<isolated|user-cache|external-env>`
+- `FALLBACK=<none|to_user_cache>`
+
+Diagnostics are emitted in detail text only (footer contract is unchanged).
+
+Troubleshooting guardrail:
+- do not patch `build.gradle` manually as first response to lock/bootstrap failures; first use BEAR retry/fallback flow and BEAR-owned generated wiring (`build/generated/bear/gradle/bear-containment.gradle` where applicable).
+
 `--all` mode renders deterministic block sections and summary fields.
 
 ## Exit codes emitted
@@ -69,6 +80,7 @@ For aggregated `--all` non-zero failures, footer code is `REPO_MULTI_BLOCK_FAILE
 - [troubleshooting.md#undeclared_reach](troubleshooting.md#undeclared_reach)
 - [troubleshooting.md#boundary_bypass](troubleshooting.md#boundary_bypass)
 - [troubleshooting.md#test_failure-test_timeout-or-invariant_violation](troubleshooting.md#test_failure-test_timeout-or-invariant_violation)
+- [troubleshooting.md#io_error](troubleshooting.md#io_error)
 
 ## Related
 

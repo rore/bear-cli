@@ -62,20 +62,32 @@ powershell -ExecutionPolicy Bypass -File .\scripts\safe-clean-bear-generated.ps1
 
 ## Demo Cleanup Contract (Mandatory)
 
-When asked to "clean the demo", use this exact contract:
+When asked to "clean the demo" or "clean demo branch", use this exact contract:
 
-1. Remove generated/demo-run artifacts:
+1. Run:
+   - `powershell -ExecutionPolicy Bypass -File .\scripts\clean-demo-branch.ps1`
+2. Artifact scope that must be removed:
    - `build/`
    - `bin/main`
    - `bin/test`
    - `bear.blocks.yaml`
    - `spec/`
    - `src/main/java/blocks/`
-2. Keep `.bear-gradle-user-home/` by default.
-3. Only remove `.bear-gradle-user-home/` if explicitly requested.
-4. After cleanup, always report:
+3. Reset demo repo working tree to branch HEAD:
+   - restore tracked changes
+   - remove untracked files
+4. Keep `.bear-gradle-user-home/` by default.
+5. Only remove `.bear-gradle-user-home/` if explicitly requested.
+6. Routine demo cleanup is operational; do not update `docs/context/state.md` for cleanup-only work.
+7. After cleanup, always report:
    - `git status --short`
    - explicit exists/missing checks for the cleanup target paths.
+
+Dry run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\clean-demo-branch.ps1 -WhatIf
+```
 
 ## Safe Demo Sync
 
