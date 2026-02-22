@@ -28,6 +28,11 @@ Post-Lock++ follow-through:
 
 ## Session Notes
 
+- Added explicit anti-commit-archaeology guardrail to package agent docs:
+  - `docs/bear-package/.bear/agent/BEAR_AGENT.md`: new hard rule forbids mining git history/branches/stashes for implementation/IR patterns unless user explicitly requests historical analysis/recovery.
+  - `docs/bear-package/.bear/agent/WORKFLOW.md`: reference boundary now explicitly current-working-tree-only, and added invalid pattern for unrequested history mining.
+  - verified with `.\gradlew.bat --no-daemon :app:test --tests com.bear.app.BearPackageDocsConsistencyTest`.
+
 - Clarified packaged agent policy semantics in one place:
   - added `Policy Contract (Check)` section to `docs/bear-package/.bear/agent/BEAR_AGENT.md` covering strict hygiene mode, optional policy files, exact-path allowlist format, and `POLICY_INVALID` / `HYGIENE_UNEXPECTED_PATHS` behavior.
   - linked to `.bear/policy/*.txt` header comments for concrete syntax examples.

@@ -44,6 +44,7 @@ Purpose:
 28. Do not patch `build.gradle` manually as first response to lock/bootstrap failures; first use BEAR deterministic retry/fallback and BEAR-owned generated wiring.
 29. Agent guidance must remain package-local: rely on `.bear/agent/**` plus project-local BEAR artifacts (`spec/*.bear.yaml`, `bear.blocks.yaml`, `build/generated/bear/**`), not non-shipped repo docs.
 30. If using reflection/hygiene policy allowlists, keep exact repo-relative path entries in `.bear/policy/*.txt` sorted, unique, and non-glob.
+31. You may use git history/branches/stashes for context in real projects, but BEAR decisions and outputs must remain grounded in the current working tree plus current IR/index contracts.
 
 ## Policy Contract (Check)
 
@@ -77,6 +78,7 @@ Before planning or editing:
 - inspect `spec/*.bear.yaml`
 - inspect `bear.blocks.yaml` if present
 - inspect generated namespaces and existing `*Impl.java` files
+ - treat current working tree + current IR/index as authoritative for BEAR decisions (history can be auxiliary context)
 3. Classify repo BEAR state from disk:
 - `0` IR files: greenfield bootstrap mode
 - `1` IR file: single-block mode

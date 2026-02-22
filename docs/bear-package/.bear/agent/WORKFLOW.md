@@ -13,6 +13,7 @@ Purpose:
 
 Reference boundary:
 - use only `.bear/agent/**` guidance plus project-local BEAR artifacts (`spec/*.bear.yaml`, `bear.blocks.yaml`, `build/generated/bear/**` when present).
+- current working tree + current IR/index contracts are authoritative for BEAR decisions; history can be used as auxiliary context.
 
 ## Canonical Flows
 
@@ -213,6 +214,7 @@ Lock and environment troubleshooting:
 1. Writing feature classes before creating any `spec/*.bear.yaml`.
 2. Implementing custom ports/contracts to replace missing generated BEAR interfaces.
 3. Deleting or skipping `bear.blocks.yaml` in multi-block state to force per-IR fallback.
+4. Using old commits/branches/stashes to justify outputs that conflict with current working tree state or current IR/index contracts.
 
 ## Completion Report Addendum
 
