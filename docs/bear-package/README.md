@@ -37,6 +37,7 @@ Runtime distribution note:
 - generated logic wrappers expose `Wrapper.of(<ports...>)` as the sanctioned default wiring path in user production code
 - governed logic interface -> governed impl bindings in `META-INF/services` / `module-info.java` are blocked by `bear check` seam rules
 - governed impl containment is always on: execute-body logic must stay inside manifest `governedSourceRoots`
+- `pr-check` also enforces generated-port adapter containment: implementations of `com.bear.generated.*Port` must live under governed roots (block root or `_shared`)
 
 Containment note (v1 preview):
 - if IR declares `block.impl.allowedDeps`, Java+Gradle projects must apply generated containment entrypoint:

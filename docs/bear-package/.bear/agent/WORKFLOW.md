@@ -81,6 +81,7 @@ Greenfield hard stop:
 10. For PR/base governance run:
 - `bear pr-check <ir-file> --project <repoRoot> --base <ref>`
 - or `bear pr-check --all --project <repoRoot> --base <ref>` when indexed
+  - `pr-check` uses deterministic temp staging and wiring-only generation for manifest analysis; it does not require full compile output in the project tree
 
 ## Block Index Gate
 
@@ -157,7 +158,13 @@ Canonical rule:
 6. `5` boundary expansion (`pr-check`):
 - confirm expansion is intentional and reviewable
 
-7. `74` IO/git failure:
+7. `6` boundary bypass (`pr-check`):
+- if `CODE=PORT_IMPL_OUTSIDE_GOVERNED_ROOT`, move generated port adapters under governed roots:
+  - block root (`src/main/java/blocks/<block>/...`)
+  - shared governed root (`src/main/java/blocks/_shared/...`)
+- do not keep generated-port adapter implementations in app-layer packages
+
+8. `74` IO/git failure:
 - fix path/ref/permission/repo state
 - if lock/bootstrap marker exists (`build/bear/check.blocked.marker`), clear with:
   - `bear unblock --project <repoRoot>`
@@ -172,14 +179,14 @@ Index troubleshooting:
   - `>1` matches => deterministic ambiguous-index validation failure
 - canonical identity mismatch is validated using frozen normalization (camel split, non-alnum collapse, lowercase token join with `-`).
 
-8. `70` internal failure:
+9. `70` internal failure:
 - collect output and report as tool defect
 
-8b. `2` manifest semantic validation failure:
+9b. `2` manifest semantic validation failure:
 - `CODE=MANIFEST_INVALID` means generated wiring semantic contracts are inconsistent
 - regenerate compile artifacts and rerun; do not hand-edit generated wiring as a final fix
 
-9. `74` containment failure (`CONTAINMENT_NOT_VERIFIED` / `CONTAINMENT_UNSUPPORTED_TARGET`):
+10. `74` containment failure (`CONTAINMENT_NOT_VERIFIED` / `CONTAINMENT_UNSUPPORTED_TARGET`):
 - if missing/stale marker or missing generated containment script/index:
   - rerun `bear compile`
   - ensure project applies generated containment entrypoint

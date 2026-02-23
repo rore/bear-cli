@@ -103,6 +103,17 @@ Fix:
 2. Route through explicit review and acceptance for expansion.
 3. Keep or revert change as policy requires.
 
+## `PORT_IMPL_OUTSIDE_GOVERNED_ROOT`
+
+Symptom: `pr-check` failure with exit `6` and `CODE=PORT_IMPL_OUTSIDE_GOVERNED_ROOT`.
+Likely cause: a class in `src/main/java/**` implements generated `com.bear.generated.*Port` outside governed roots.
+Fix:
+
+1. Move generated-port adapter implementation under governed roots:
+   - block root (`src/main/java/blocks/<block>/...`)
+   - shared governed root (`src/main/java/blocks/_shared/...`)
+2. Re-run `bear pr-check`.
+
 ## `UNDECLARED_REACH`
 
 Symptom: `check: UNDECLARED_REACH` and exit `6`.

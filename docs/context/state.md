@@ -28,6 +28,16 @@ v1.3 follow-through:
 
 ## Session Notes
 
+- Synced remaining `pr-check` public/operator docs to current behavior:
+  - updated `docs/public/commands-pr-check.md` for dual governance role (IR delta + port-impl containment), `exit 6`, and deterministic wiring-only temp staging note.
+  - updated `docs/public/exit-codes.md` registry/command matrix/rank to include `pr-check` exit `6`.
+  - updated `docs/context/user-guide.md` `pr-check` behavior and quick-exit table for `CODE=PORT_IMPL_OUTSIDE_GOVERNED_ROOT`.
+  - updated `docs/public/output-format.md` with `pr-check` boundary-bypass line format + deterministic ordering note.
+  - updated `docs/public/troubleshooting.md` with `PORT_IMPL_OUTSIDE_GOVERNED_ROOT` remediation section.
+  - updated `docs/public/ENFORCEMENT.md` to include `pr-check` generated-port containment signaling.
+  - verified docs/package consistency test remains green:
+    - `.\gradlew.bat --no-daemon :app:test --tests com.bear.app.BearPackageDocsConsistencyTest`
+
 - Implemented `pr-check` wiring-only staging + governed port-impl containment enforcement:
   - kernel target contract now includes `generateWiringOnly(...)`.
   - `JvmTarget` now emits wiring-only manifests without generating Java sources/tests/runtime trees.

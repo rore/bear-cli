@@ -50,6 +50,7 @@ Primary governance alerting happens in `bear pr-check`:
 - normalized IR deltas against `--base`
 - classification of boundary-expanding changes vs ordinary changes
 - deterministic non-zero signal when boundary expansion is detected
+- generated-port adapter containment check (`CODE=PORT_IMPL_OUTSIDE_GOVERNED_ROOT`) for implementations outside governed roots
 
 ## Where signals show up for developers
 

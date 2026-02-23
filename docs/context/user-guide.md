@@ -239,8 +239,11 @@ Use when:
 - classifying IR deltas against base branch in CI/review flow
 
 Behavior:
-- exits `5` when boundary expansion is detected
-- exits `0` for no-boundary-expansion outcomes
+- exits `5` when boundary expansion is detected in IR delta classification
+- exits `6` when boundary bypass is detected (`CODE=PORT_IMPL_OUTSIDE_GOVERNED_ROOT`)
+  - triggered when implementations of generated `com.bear.generated.*Port` interfaces are outside governed roots
+- exits `0` for no-boundary-expansion and no-boundary-bypass outcomes
+- uses deterministic temp staging + wiring-only generation for manifest analysis (no full compile dependency in project tree)
 
 ### 5b. PR governance gate (multi-block)
 
@@ -286,6 +289,7 @@ Disallowed:
 - `3` drift failure
 - `4` project test failure (including timeout)
 - `5` boundary expansion detected in `pr-check`
+- `6` boundary bypass detected in `pr-check` (`CODE=PORT_IMPL_OUTSIDE_GOVERNED_ROOT`)
 - `6` undeclared reach detected in `check` (`CODE=UNDECLARED_REACH`)
 - `6` boundary bypass detected in `check` (`CODE=BOUNDARY_BYPASS`)
 - `64` usage/argument failure
@@ -331,6 +335,7 @@ Expected classification:
 `bear pr-check` enforces:
 - deterministic base-vs-head boundary-delta visibility
 - explicit boundary-expansion verdict for CI/review
+- generated-port adapter containment: `com.bear.generated.*Port` implementations must stay under governed roots
 
 Planned after preview:
 - broader undeclared-reach coverage classes

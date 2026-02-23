@@ -35,6 +35,10 @@ Contract:
 
 - `pr-delta: <CLASS>: <CATEGORY>: <CHANGE>: <KEY>`
 
+`pr-check` boundary-bypass lines:
+
+- `pr-check: BOUNDARY_BYPASS: RULE=PORT_IMPL_OUTSIDE_GOVERNED_ROOT: <relative/path>: KIND=PORT_IMPL_EXTERNAL_BINDING: <interfaceFqcn> <- <implClassFqcn>`
+
 Common `check` policy lines:
 
 - `check: HYGIENE_UNEXPECTED_PATHS: <relative/path>`
@@ -56,6 +60,7 @@ Common `check` policy lines:
 9. failure footer
 
 `pr-check` delta lines are deterministically sorted by class, category, change, and key.
+`pr-check` port-impl containment findings are deterministically sorted by interface FQCN, impl class FQCN, and path.
 
 ## Related
 
