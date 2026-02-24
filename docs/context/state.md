@@ -13,14 +13,15 @@ P2 feature delivery:
 - active milestone is `P2`
 - post-hard-break follow-through with explicit dual-gate agent completion evidence
 - preserve structural governance focus (no endpoint-per-block policy, no style policing)
-- prioritize declared deps containment hardening and `_shared` policy follow-up
+- declared deps containment strict marker semantics are now implemented with selection gating
+- prioritize `_shared` policy follow-up next
 - keep deterministic diagnostics high-signal and directly actionable
 
 ## Next Concrete Task
 
 next feature sequence (one-by-one):
-1. continue `Declared allowed deps containment` stabilization/operational hardening
-2. implement `_shared` allowedDeps policy contract after core deps stabilization
+1. implement `_shared` allowedDeps policy contract after core deps stabilization
+2. keep containment-lane smoke fixtures handy for future regressions (`exit 3` drift lane vs `exit 74` verification lane)
 3. keep full `:kernel:test` + `:app:test` + root `test` green after each incremental update
 
 ## Session Notes
@@ -69,6 +70,25 @@ next feature sequence (one-by-one):
     - `check --all` first-pass-block detail placement + deterministic rerun output
     - renderer pass-detail placement coverage
   - verification:
+    - `.\gradlew.bat --no-daemon :app:test` (green)
+    - `.\gradlew.bat --no-daemon test` (green)
+
+- Implemented P2 strict containment marker semantics with selection gating (next slice):
+  - containment verification (`containment-required`, aggregate marker, per-block markers) now runs only when `considerContainmentSurfaces=true`.
+  - skip mode (`considerContainmentSurfaces=false`) is non-failing for containment files/markers and emits info only when required index exists + parses + has non-empty required block set.
+  - strict marker contract now enforced:
+    - aggregate `build/bear/containment/applied.marker` must match both required hash and canonical `blocks=` CSV.
+    - per-block `build/bear/containment/<blockKey>.applied.marker` required for every canonical required block key; each must match `block=<blockKey>` and required hash.
+  - deterministic per-block fail-fast order uses canonical lexicographic required block keys.
+  - tests added:
+    - `BearCliTest.checkAllowedDepsPerBlockMarkerUsesFirstSortedRequiredBlock`
+    - `BearCliTest.checkAllEnforcesContainmentWhenSelectedBlocksIncludeAllowedDeps`
+  - docs updated:
+    - `docs/public/commands-check.md`
+    - `docs/public/troubleshooting.md`
+    - `docs/bear-package/README.md`
+  - verification:
+    - `.\gradlew.bat --no-daemon :app:test --tests "com.bear.app.BearCliTest.checkAllowedDepsPerBlockMarkerUsesFirstSortedRequiredBlock" --tests "com.bear.app.BearCliTest.checkAllEnforcesContainmentWhenSelectedBlocksIncludeAllowedDeps"` (green)
     - `.\gradlew.bat --no-daemon :app:test` (green)
     - `.\gradlew.bat --no-daemon test` (green)
 

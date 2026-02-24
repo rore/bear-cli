@@ -95,6 +95,12 @@ Fix:
 1. Run `bear compile <ir-file> --project <path>` (or `bear compile --all --project <repoRoot>`).
 2. Re-run `bear check`.
 
+Containment-specific drift note:
+- when containment verification is active for the selected block set, missing/malformed generated containment artifacts also fail in drift lane:
+  - `build/generated/bear/config/containment-required.json`
+  - `build/generated/bear/gradle/bear-containment.gradle`
+- remediation stays compile-only (`bear compile ...`), then rerun `bear check`.
+
 ## `CONTAINMENT_SURFACES_SKIPPED_FOR_SELECTION` (informational)
 
 Symptom: `check` outputs:
@@ -109,6 +115,21 @@ Action:
 
 1. If you intended containment enforcement, run `check`/`check --all` on a selected set that includes allowedDeps blocks in that project root.
 2. If selection was intentional, no remediation is required.
+
+## `CONTAINMENT_NOT_VERIFIED`
+
+Symptom: `check: CONTAINMENT_REQUIRED: ...` with exit `74`.
+Likely cause:
+- aggregate marker missing/stale (`build/bear/containment/applied.marker`), or
+- per-block marker missing/stale (`build/bear/containment/<blockKey>.applied.marker`).
+Fix:
+
+1. Run Gradle build once to refresh containment markers for the current generated containment requirement.
+2. Re-run `bear check`.
+
+Marker strictness:
+- aggregate marker must match both `hash=<sha256(containment-required.json)>` and canonical `blocks=<csv>` from required set.
+- per-block markers are required for every canonical required block key and must match `block=<blockKey>` plus the same required hash.
 
 ## `BOUNDARY_EXPANSION`
 

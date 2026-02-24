@@ -54,15 +54,9 @@ Preview standing note:
 
 ## Ready Queue (Ordered, Execution Work Items)
 
-1. `Declared allowed deps containment` (stabilization/operational hardening)
-   - in progress lock-ins completed:
-     - selection-aware containment enforcement flag per `projectRoot` in `check --all`
-     - deterministic containment-skip info signaling (`check` stdout + `check --all` first-pass-block `DETAIL`)
-     - lane-specific remediation split (`build/generated/bear/...` drift vs `build/bear/containment/...` verification)
-   - remaining: strict aggregate/per-block marker semantics and final containment index/marker consistency hardening.
-2. `_shared` allowedDeps policy (path-scoped shared policy, no IR schema changes; queued after core allowedDeps stabilization)
-3. Generated structural tests and cross-target parity follow-up
-4. BEAR-owned generated-source wiring auto-enforcement (avoid ad-hoc `build.gradle` patching)
+1. `_shared` allowedDeps policy (path-scoped shared policy, no IR schema changes; next after core containment hardening)
+2. Generated structural tests and cross-target parity follow-up
+3. BEAR-owned generated-source wiring auto-enforcement (avoid ad-hoc `build.gradle` patching)
 
 ## Recently Completed (P2)
 
@@ -88,6 +82,18 @@ Preview standing note:
    - marker misuse outside `_shared` fails deterministically (`KIND=MARKER_MISUSED_OUTSIDE_SHARED`).
    - dedupe lock: when `PORT_IMPL_OUTSIDE_GOVERNED_ROOT` exists for a file, multi-block findings for that file are suppressed.
    - enforced via `check`/`check --all`/`pr-check` in bypass lane (`exit=7`, `CODE=BOUNDARY_BYPASS`).
+
+4. `Declared allowed deps containment strict marker semantics` (selection-gated)
+   - containment verification now runs only when selected blocks for a `projectRoot` include at least one `impl.allowedDeps` block.
+   - skip mode is non-failing for containment artifacts/markers and emits deterministic info only when required index exists+parses+non-empty.
+   - aggregate marker strictness:
+     - `build/bear/containment/applied.marker` must match required hash and canonical `blocks=` CSV.
+   - per-block marker strictness:
+     - `build/bear/containment/<blockKey>.applied.marker` required for every canonical required block key (`block=` and `hash=` must match).
+   - deterministic per-block fail-fast uses lexicographic canonical required block order.
+   - lane/remediation split remains locked:
+     - generated containment artifacts -> drift lane (`exit 3`, compile remediation)
+     - handshake marker issues -> containment-not-verified lane (`exit 74`, marker refresh remediation)
 
 ## Next Feature Specs (Locked)
 

@@ -30,6 +30,7 @@ final class CheckCommandService {
     private static final String GENERATED_WIRING_PREFIX = GENERATED_BEAR_ROOT + "/wiring/";
     private static final String CONTAINMENT_REQUIRED_PATH = "build/generated/bear/config/containment-required.json";
     private static final String CONTAINMENT_SKIP_REASON = "no_selected_blocks_with_impl_allowedDeps";
+    private static final String CONTAINMENT_MARKER_DIR = "build/bear/containment";
     private static final int WIRING_DETAIL_LIMIT = 20;
     private static final String RUNTIME_LEGACY_PREFIX = "runtime/src/main/java/com/bear/generated/runtime/";
     private static final String RUNTIME_CANONICAL_PREFIX = "src/main/java/com/bear/generated/runtime/";
@@ -706,16 +707,16 @@ final class CheckCommandService {
             );
         }
 
-        Path marker = projectRoot.resolve("build/bear/containment/applied.marker");
+        Path marker = projectRoot.resolve(CONTAINMENT_MARKER_DIR + "/applied.marker");
         if (!Files.isRegularFile(marker)) {
-            String line = "check: CONTAINMENT_REQUIRED: MARKER_MISSING: build/bear/containment/applied.marker";
+            String line = "check: CONTAINMENT_REQUIRED: MARKER_MISSING: " + CONTAINMENT_MARKER_DIR + "/applied.marker";
             diagnostics.add(line);
             return checkFailure(
                 CliCodes.EXIT_IO,
                 diagnostics,
                 "CONTAINMENT",
                 CliCodes.CONTAINMENT_NOT_VERIFIED,
-                "build/bear/containment/applied.marker",
+                CONTAINMENT_MARKER_DIR + "/applied.marker",
                 "Run Gradle build once so BEAR containment marker tasks write markers, then rerun `bear check`.",
                 line
             );
@@ -726,17 +727,50 @@ final class CheckCommandService {
         List<String> markerBlocks = readMarkerBlocks(marker);
         List<String> expectedBlocks = requiredIndex.blockKeys();
         if (markerHash == null || !markerHash.equals(expectedHash) || markerBlocks == null || !markerBlocks.equals(expectedBlocks)) {
-            String line = "check: CONTAINMENT_REQUIRED: MARKER_STALE: build/bear/containment/applied.marker";
+            String line = "check: CONTAINMENT_REQUIRED: MARKER_STALE: " + CONTAINMENT_MARKER_DIR + "/applied.marker";
             diagnostics.add(line);
             return checkFailure(
                 CliCodes.EXIT_IO,
                 diagnostics,
                 "CONTAINMENT",
                 CliCodes.CONTAINMENT_NOT_VERIFIED,
-                "build/bear/containment/applied.marker",
+                CONTAINMENT_MARKER_DIR + "/applied.marker",
                 "Run Gradle build once after BEAR compile so containment markers refresh, then rerun `bear check`.",
                 line
             );
+        }
+
+        for (String blockKey : expectedBlocks) {
+            String blockMarkerRel = CONTAINMENT_MARKER_DIR + "/" + blockKey + ".applied.marker";
+            Path blockMarker = projectRoot.resolve(blockMarkerRel);
+            if (!Files.isRegularFile(blockMarker)) {
+                String line = "check: CONTAINMENT_REQUIRED: BLOCK_MARKER_MISSING: " + blockMarkerRel;
+                diagnostics.add(line);
+                return checkFailure(
+                    CliCodes.EXIT_IO,
+                    diagnostics,
+                    "CONTAINMENT",
+                    CliCodes.CONTAINMENT_NOT_VERIFIED,
+                    blockMarkerRel,
+                    "Run Gradle build once so BEAR containment marker tasks write markers, then rerun `bear check`.",
+                    line
+                );
+            }
+            String blockMarkerHash = readMarkerHash(blockMarker);
+            String markerBlockKey = readMarkerBlockKey(blockMarker);
+            if (blockMarkerHash == null || !expectedHash.equals(blockMarkerHash) || markerBlockKey == null || !blockKey.equals(markerBlockKey)) {
+                String line = "check: CONTAINMENT_REQUIRED: BLOCK_MARKER_STALE: " + blockMarkerRel;
+                diagnostics.add(line);
+                return checkFailure(
+                    CliCodes.EXIT_IO,
+                    diagnostics,
+                    "CONTAINMENT",
+                    CliCodes.CONTAINMENT_NOT_VERIFIED,
+                    blockMarkerRel,
+                    "Run Gradle build once after BEAR compile so containment markers refresh, then rerun `bear check`.",
+                    line
+                );
+            }
         }
 
         return null;
@@ -809,15 +843,30 @@ final class CheckCommandService {
             if (raw.isEmpty()) {
                 return List.of();
             }
-            TreeSet<String> blocks = new TreeSet<>();
+            ArrayList<String> blocks = new ArrayList<>();
+            Set<String> dedupe = new java.util.HashSet<>();
             for (String token : raw.split(",")) {
                 String value = token.trim();
                 if (value.isEmpty()) {
                     return null;
                 }
+                if (!dedupe.add(value)) {
+                    return null;
+                }
                 blocks.add(value);
             }
             return List.copyOf(blocks);
+        }
+        return null;
+    }
+
+    private static String readMarkerBlockKey(Path markerFile) throws IOException {
+        String content = CliText.normalizeLf(Files.readString(markerFile, StandardCharsets.UTF_8));
+        for (String line : content.lines().toList()) {
+            if (line.startsWith("block=")) {
+                String value = line.substring("block=".length()).trim();
+                return value.isEmpty() ? null : value;
+            }
         }
         return null;
     }

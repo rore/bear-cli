@@ -60,6 +60,15 @@ Key line formats:
 - informational skip signal (selection does not include allowedDeps blocks, but containment-required set is non-empty):
   - `check: INFO: CONTAINMENT_SURFACES_SKIPPED_FOR_SELECTION: projectRoot=<root>: reason=no_selected_blocks_with_impl_allowedDeps`
 
+Containment verification semantics:
+- containment verification runs only when selected blocks for the invocation include at least one block with `impl.allowedDeps` in that `projectRoot`.
+- in skip mode (`considerContainmentSurfaces=false`), containment index/marker state does not fail the command.
+- when containment verification is active:
+  - generated containment artifacts (`build/generated/bear/config/containment-required.json`, `build/generated/bear/gradle/bear-containment.gradle`) fail in drift lane (`exit 3`) with compile remediation.
+  - handshake markers fail in containment-not-verified lane (`exit 74`):
+    - aggregate marker: `build/bear/containment/applied.marker` must match both required hash and canonical `blocks=` CSV.
+    - per-block markers: `build/bear/containment/<blockKey>.applied.marker` must exist and match `block=<blockKey>` + required hash.
+
 `BOUNDARY_BYPASS` seam coverage for governed logic includes:
 - direct governed impl usage in Java source (`src/main/**`)
 - classloading reflection APIs in Java source (`Class.forName`, `loadClass`) unless allowlisted

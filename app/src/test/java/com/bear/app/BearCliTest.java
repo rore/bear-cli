@@ -883,6 +883,187 @@ class BearCliTest {
     }
 
     @Test
+    void checkAllowedDepsMissingContainmentRequiredIsDrift(@TempDir Path tempDir) throws Exception {
+        Path ir = tempDir.resolve("withdraw-allowedDeps.bear.yaml");
+        Files.writeString(ir, fixtureIrWithAllowedDep("com.fasterxml.jackson.core:jackson-databind", "2.17.2"));
+        assertEquals(0, runCli(new String[] { "compile", ir.toString(), "--project", tempDir.toString() }).exitCode);
+        writeWorkingWithdrawImpl(tempDir);
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+        Files.deleteIfExists(tempDir.resolve("build/generated/bear/config/containment-required.json"));
+
+        CliRunResult check = runCli(new String[] { "check", ir.toString(), "--project", tempDir.toString() });
+        assertEquals(3, check.exitCode);
+        assertTrue(normalizeLf(check.stderr).contains("drift: MISSING_BASELINE: build/generated/bear/config/containment-required.json"));
+        assertFailureEnvelope(
+            check.stderr,
+            "DRIFT_MISSING_BASELINE",
+            "build/generated/bear/config/containment-required.json",
+            "Run `bear compile <ir-file> --project <path>`, then rerun `bear check <ir-file> --project <path>`."
+        );
+    }
+
+    @Test
+    void checkAllowedDepsMalformedContainmentRequiredIsDrift(@TempDir Path tempDir) throws Exception {
+        Path ir = tempDir.resolve("withdraw-allowedDeps.bear.yaml");
+        Files.writeString(ir, fixtureIrWithAllowedDep("com.fasterxml.jackson.core:jackson-databind", "2.17.2"));
+        assertEquals(0, runCli(new String[] { "compile", ir.toString(), "--project", tempDir.toString() }).exitCode);
+        writeWorkingWithdrawImpl(tempDir);
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+        Files.writeString(
+            tempDir.resolve("build/generated/bear/config/containment-required.json"),
+            "{\n",
+            StandardCharsets.UTF_8
+        );
+
+        CliRunResult check = runCli(new String[] { "check", ir.toString(), "--project", tempDir.toString() });
+        assertEquals(3, check.exitCode);
+        assertTrue(normalizeLf(check.stderr).contains("drift: CHANGED: build/generated/bear/config/containment-required.json"));
+        assertFailureEnvelope(
+            check.stderr,
+            "DRIFT_DETECTED",
+            "build/generated/bear/config/containment-required.json",
+            "Run `bear compile <ir-file> --project <path>`, then rerun `bear check <ir-file> --project <path>`."
+        );
+    }
+
+    @Test
+    void checkAllowedDepsAggregateBlocksMismatchFailsDeterministically(@TempDir Path tempDir) throws Exception {
+        Path ir = tempDir.resolve("withdraw-allowedDeps.bear.yaml");
+        Files.writeString(ir, fixtureIrWithAllowedDep("com.fasterxml.jackson.core:jackson-databind", "2.17.2"));
+        assertEquals(0, runCli(new String[] { "compile", ir.toString(), "--project", tempDir.toString() }).exitCode);
+        writeWorkingWithdrawImpl(tempDir);
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        Path required = tempDir.resolve("build/generated/bear/config/containment-required.json");
+        String hash = bytesToHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(required)));
+        Path marker = tempDir.resolve("build/bear/containment/applied.marker");
+        Files.createDirectories(marker.getParent());
+        Files.writeString(marker, "hash=" + hash + "\nblocks=other\n", StandardCharsets.UTF_8);
+
+        CliRunResult check = runCli(new String[] { "check", ir.toString(), "--project", tempDir.toString() });
+        assertEquals(74, check.exitCode);
+        assertTrue(normalizeLf(check.stderr).contains("check: CONTAINMENT_REQUIRED: MARKER_STALE: build/bear/containment/applied.marker"));
+        assertFailureEnvelope(
+            check.stderr,
+            "CONTAINMENT_NOT_VERIFIED",
+            "build/bear/containment/applied.marker",
+            "Run Gradle build once after BEAR compile so containment markers refresh, then rerun `bear check`."
+        );
+    }
+
+    @Test
+    void checkAllowedDepsMissingPerBlockMarkerFailsDeterministically(@TempDir Path tempDir) throws Exception {
+        Path ir = tempDir.resolve("withdraw-allowedDeps.bear.yaml");
+        Files.writeString(ir, fixtureIrWithAllowedDep("com.fasterxml.jackson.core:jackson-databind", "2.17.2"));
+        assertEquals(0, runCli(new String[] { "compile", ir.toString(), "--project", tempDir.toString() }).exitCode);
+        writeWorkingWithdrawImpl(tempDir);
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        Path required = tempDir.resolve("build/generated/bear/config/containment-required.json");
+        String hash = bytesToHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(required)));
+        Path marker = tempDir.resolve("build/bear/containment/applied.marker");
+        Files.createDirectories(marker.getParent());
+        Files.writeString(marker, "hash=" + hash + "\nblocks=withdraw\n", StandardCharsets.UTF_8);
+
+        CliRunResult check = runCli(new String[] { "check", ir.toString(), "--project", tempDir.toString() });
+        assertEquals(74, check.exitCode);
+        assertTrue(normalizeLf(check.stderr).contains("check: CONTAINMENT_REQUIRED: BLOCK_MARKER_MISSING: build/bear/containment/withdraw.applied.marker"));
+        assertFailureEnvelope(
+            check.stderr,
+            "CONTAINMENT_NOT_VERIFIED",
+            "build/bear/containment/withdraw.applied.marker",
+            "Run Gradle build once so BEAR containment marker tasks write markers, then rerun `bear check`."
+        );
+    }
+
+    @Test
+    void checkAllowedDepsStalePerBlockMarkerFailsDeterministically(@TempDir Path tempDir) throws Exception {
+        Path ir = tempDir.resolve("withdraw-allowedDeps.bear.yaml");
+        Files.writeString(ir, fixtureIrWithAllowedDep("com.fasterxml.jackson.core:jackson-databind", "2.17.2"));
+        assertEquals(0, runCli(new String[] { "compile", ir.toString(), "--project", tempDir.toString() }).exitCode);
+        writeWorkingWithdrawImpl(tempDir);
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        Path required = tempDir.resolve("build/generated/bear/config/containment-required.json");
+        String hash = bytesToHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(required)));
+        Path marker = tempDir.resolve("build/bear/containment/applied.marker");
+        Files.createDirectories(marker.getParent());
+        Files.writeString(marker, "hash=" + hash + "\nblocks=withdraw\n", StandardCharsets.UTF_8);
+        Path perBlockMarker = tempDir.resolve("build/bear/containment/withdraw.applied.marker");
+        Files.writeString(perBlockMarker, "block=other\nhash=" + hash + "\n", StandardCharsets.UTF_8);
+
+        CliRunResult check = runCli(new String[] { "check", ir.toString(), "--project", tempDir.toString() });
+        assertEquals(74, check.exitCode);
+        assertTrue(normalizeLf(check.stderr).contains("check: CONTAINMENT_REQUIRED: BLOCK_MARKER_STALE: build/bear/containment/withdraw.applied.marker"));
+        assertFailureEnvelope(
+            check.stderr,
+            "CONTAINMENT_NOT_VERIFIED",
+            "build/bear/containment/withdraw.applied.marker",
+            "Run Gradle build once after BEAR compile so containment markers refresh, then rerun `bear check`."
+        );
+    }
+
+    @Test
+    void checkAllowedDepsPerBlockMarkerUsesFirstSortedRequiredBlock(@TempDir Path tempDir) throws Exception {
+        Path ir = tempDir.resolve("withdraw-allowedDeps.bear.yaml");
+        Files.writeString(ir, fixtureIrWithAllowedDep("com.fasterxml.jackson.core:jackson-databind", "2.17.2"));
+        assertEquals(0, runCli(new String[] { "compile", ir.toString(), "--project", tempDir.toString() }).exitCode);
+        writeWorkingWithdrawImpl(tempDir);
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        Path required = tempDir.resolve("build/generated/bear/config/containment-required.json");
+        Files.writeString(
+            required,
+            ""
+                + "{\"schemaVersion\":\"v1\",\"target\":\"java-gradle\",\"blocks\":["
+                + "{\"blockKey\":\"withdraw\",\"implDir\":\"src/main/java/blocks/withdraw/impl\",\"allowedDeps\":[{\"ga\":\"com.fasterxml.jackson.core:jackson-databind\",\"version\":\"2.17.2\"}]},"
+                + "{\"blockKey\":\"alpha\",\"implDir\":\"src/main/java/blocks/alpha/impl\",\"allowedDeps\":[{\"ga\":\"com.fasterxml.jackson.core:jackson-databind\",\"version\":\"2.17.2\"}]}"
+                + "]}\n",
+            StandardCharsets.UTF_8
+        );
+        String hash = bytesToHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(required)));
+        Path marker = tempDir.resolve("build/bear/containment/applied.marker");
+        Files.createDirectories(marker.getParent());
+        Files.writeString(marker, "hash=" + hash + "\nblocks=alpha,withdraw\n", StandardCharsets.UTF_8);
+        Path withdrawBlockMarker = tempDir.resolve("build/bear/containment/withdraw.applied.marker");
+        Files.writeString(withdrawBlockMarker, "block=withdraw\nhash=" + hash + "\n", StandardCharsets.UTF_8);
+
+        CliRunResult check = runCli(new String[] { "check", ir.toString(), "--project", tempDir.toString() });
+        assertEquals(74, check.exitCode);
+        assertTrue(normalizeLf(check.stderr).contains("check: CONTAINMENT_REQUIRED: BLOCK_MARKER_MISSING: build/bear/containment/alpha.applied.marker"));
+        assertFailureEnvelope(
+            check.stderr,
+            "CONTAINMENT_NOT_VERIFIED",
+            "build/bear/containment/alpha.applied.marker",
+            "Run Gradle build once so BEAR containment marker tasks write markers, then rerun `bear check`."
+        );
+    }
+
+    @Test
     void checkAllowedDepsWithFreshMarkerPasses(@TempDir Path tempDir) throws Exception {
         Path ir = tempDir.resolve("withdraw-allowedDeps.bear.yaml");
         Files.writeString(ir, fixtureIrWithAllowedDep("com.fasterxml.jackson.core:jackson-databind", "2.17.2"));
@@ -902,6 +1083,8 @@ class BearCliTest {
         Path marker = tempDir.resolve("build/bear/containment/applied.marker");
         Files.createDirectories(marker.getParent());
         Files.writeString(marker, "hash=" + hash + "\nblocks=withdraw\n", StandardCharsets.UTF_8);
+        Path perBlockMarker = tempDir.resolve("build/bear/containment/withdraw.applied.marker");
+        Files.writeString(perBlockMarker, "block=withdraw\nhash=" + hash + "\n", StandardCharsets.UTF_8);
 
         CliRunResult check = runCli(new String[] { "check", ir.toString(), "--project", tempDir.toString() });
         assertEquals(0, check.exitCode);
@@ -941,6 +1124,49 @@ class BearCliTest {
     }
 
     @Test
+    void checkAllEnforcesContainmentWhenSelectedBlocksIncludeAllowedDeps(@TempDir Path tempDir) throws Exception {
+        Path specDir = tempDir.resolve("spec");
+        Files.createDirectories(specDir);
+        Path betaIr = specDir.resolve("beta.bear.yaml");
+        Files.writeString(
+            betaIr,
+            fixtureIrWithAllowedDepForBlock("beta", "com.fasterxml.jackson.core:jackson-databind", "2.17.2"),
+            StandardCharsets.UTF_8
+        );
+
+        Path projectRoot = tempDir.resolve("services/shared");
+        Files.createDirectories(projectRoot);
+        assertEquals(0, runCli(new String[] { "compile", betaIr.toString(), "--project", projectRoot.toString() }).exitCode);
+        writeWorkingBlockImpl(projectRoot, "beta");
+        writeProjectWrapper(
+            projectRoot,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        writeBlockIndex(tempDir, ""
+            + "version: v0\n"
+            + "blocks:\n"
+            + "  - name: beta\n"
+            + "    ir: spec/beta.bear.yaml\n"
+            + "    projectRoot: services/shared\n");
+
+        CliRunResult run = runCli(new String[] { "check", "--all", "--project", tempDir.toString() });
+        assertEquals(74, run.exitCode);
+        String stderr = normalizeLf(run.stderr);
+        assertTrue(stderr.contains("BLOCK: beta"));
+        assertTrue(stderr.contains("DETAIL: check: CONTAINMENT_REQUIRED: MARKER_MISSING: build/bear/containment/applied.marker"));
+        assertTrue(stderr.contains("BLOCK_CODE: CONTAINMENT_NOT_VERIFIED"));
+        assertFalse(stderr.contains("CONTAINMENT_SURFACES_SKIPPED_FOR_SELECTION"));
+        assertFailureEnvelope(
+            run.stderr,
+            "REPO_MULTI_BLOCK_FAILED",
+            "bear.blocks.yaml",
+            "Review per-block results above and fix failing blocks, then rerun the command."
+        );
+    }
+
+    @Test
     void checkOmitsContainmentSkipInfoWhenContainmentRequiredMissing(@TempDir Path tempDir) throws Exception {
         Path specDir = tempDir.resolve("spec");
         Files.createDirectories(specDir);
@@ -954,6 +1180,39 @@ class BearCliTest {
         assertEquals(0, runCli(new String[] { "compile", betaIr.toString(), "--project", projectRoot.toString() }).exitCode);
         assertEquals(0, runCli(new String[] { "compile", alphaIr.toString(), "--project", projectRoot.toString() }).exitCode);
         Files.deleteIfExists(projectRoot.resolve("build/generated/bear/config/containment-required.json"));
+        writeWorkingBlockImpl(projectRoot, "alpha");
+        writeProjectWrapper(
+            projectRoot,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        CliRunResult check = runCli(new String[] { "check", alphaIr.toString(), "--project", projectRoot.toString() });
+        assertEquals(0, check.exitCode);
+        String stdout = normalizeLf(check.stdout);
+        assertFalse(stdout.contains("CONTAINMENT_SURFACES_SKIPPED_FOR_SELECTION"));
+        assertEquals("check: OK\n", stdout);
+        assertEquals("", check.stderr);
+    }
+
+    @Test
+    void checkOmitsContainmentSkipInfoWhenContainmentRequiredMalformed(@TempDir Path tempDir) throws Exception {
+        Path specDir = tempDir.resolve("spec");
+        Files.createDirectories(specDir);
+        Path alphaIr = specDir.resolve("alpha.bear.yaml");
+        Path betaIr = specDir.resolve("beta.bear.yaml");
+        Files.writeString(alphaIr, fixtureIrForBlockName("alpha"), StandardCharsets.UTF_8);
+        Files.writeString(betaIr, fixtureIrWithAllowedDepForBlock("beta", "com.fasterxml.jackson.core:jackson-databind", "2.17.2"), StandardCharsets.UTF_8);
+
+        Path projectRoot = tempDir.resolve("service");
+        Files.createDirectories(projectRoot);
+        assertEquals(0, runCli(new String[] { "compile", betaIr.toString(), "--project", projectRoot.toString() }).exitCode);
+        assertEquals(0, runCli(new String[] { "compile", alphaIr.toString(), "--project", projectRoot.toString() }).exitCode);
+        Files.writeString(
+            projectRoot.resolve("build/generated/bear/config/containment-required.json"),
+            "{\n",
+            StandardCharsets.UTF_8
+        );
         writeWorkingBlockImpl(projectRoot, "alpha");
         writeProjectWrapper(
             projectRoot,

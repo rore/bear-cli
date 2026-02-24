@@ -47,7 +47,11 @@ Runtime distribution note:
 Containment note (v1 preview):
 - if IR declares `block.impl.allowedDeps`, Java+Gradle projects must apply generated containment entrypoint:
   - `build/generated/bear/gradle/bear-containment.gradle`
-- `bear check` verifies containment marker/hash and does not invoke Gradle automatically.
+- `bear check` verifies containment only when selected blocks in that `projectRoot` include at least one `impl.allowedDeps` block.
+- when verification is active, `bear check` requires:
+  - aggregate marker `build/bear/containment/applied.marker` with matching `hash=` and canonical `blocks=` set.
+  - per-block marker `build/bear/containment/<blockKey>.applied.marker` for each required block key (`block=` + `hash=` must match).
+- `bear check` does not invoke Gradle automatically.
 
 Semantic context included in package docs:
 - enforcement-by-construction (wrapper-owned idempotency + invariants)
