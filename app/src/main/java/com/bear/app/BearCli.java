@@ -926,6 +926,7 @@ public final class BearCli {
 
     static BlockExecutionResult toCheckBlockResult(BlockIndexEntry block, CheckResult result) {
         if (result.exitCode() == ExitCode.OK) {
+            String detail = result.detail() == null || result.detail().isBlank() ? null : result.detail().trim();
             return new BlockExecutionResult(
                 block.name(),
                 block.ir(),
@@ -935,7 +936,7 @@ public final class BearCli {
                 null,
                 null,
                 null,
-                null,
+                detail,
                 null,
                 null,
                 null,

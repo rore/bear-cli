@@ -849,7 +849,7 @@ class BearCliTest {
             check.stderr,
             "CONTAINMENT_NOT_VERIFIED",
             "build/bear/containment/applied.marker",
-            "Run Gradle build once so BEAR containment compile tasks write markers, then rerun `bear check`."
+            "Run Gradle build once so BEAR containment marker tasks write markers, then rerun `bear check`."
         );
     }
 
@@ -906,6 +906,87 @@ class BearCliTest {
         CliRunResult check = runCli(new String[] { "check", ir.toString(), "--project", tempDir.toString() });
         assertEquals(0, check.exitCode);
         assertTrue(check.stdout.startsWith("check: OK"));
+    }
+
+    @Test
+    void checkEmitsContainmentSkipInfoWhenSelectionHasNoAllowedDepsAndRequirementIsNonEmpty(@TempDir Path tempDir) throws Exception {
+        Path specDir = tempDir.resolve("spec");
+        Files.createDirectories(specDir);
+        Path alphaIr = specDir.resolve("alpha.bear.yaml");
+        Path betaIr = specDir.resolve("beta.bear.yaml");
+        Files.writeString(alphaIr, fixtureIrForBlockName("alpha"), StandardCharsets.UTF_8);
+        Files.writeString(betaIr, fixtureIrWithAllowedDepForBlock("beta", "com.fasterxml.jackson.core:jackson-databind", "2.17.2"), StandardCharsets.UTF_8);
+
+        Path projectRoot = tempDir.resolve("service");
+        Files.createDirectories(projectRoot);
+        assertEquals(0, runCli(new String[] { "compile", betaIr.toString(), "--project", projectRoot.toString() }).exitCode);
+        assertEquals(0, runCli(new String[] { "compile", alphaIr.toString(), "--project", projectRoot.toString() }).exitCode);
+        writeWorkingBlockImpl(projectRoot, "alpha");
+        writeWorkingBlockImpl(projectRoot, "beta");
+        writeProjectWrapper(
+            projectRoot,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        CliRunResult check = runCli(new String[] { "check", alphaIr.toString(), "--project", projectRoot.toString() });
+        assertEquals(0, check.exitCode);
+        String stdout = normalizeLf(check.stdout);
+        String info = "check: INFO: CONTAINMENT_SURFACES_SKIPPED_FOR_SELECTION: projectRoot="
+            + projectRoot.toString().replace('\\', '/')
+            + ": reason=no_selected_blocks_with_impl_allowedDeps";
+        assertTrue(stdout.contains(info));
+        assertTrue(stdout.indexOf(info) < stdout.indexOf("check: OK"));
+        assertEquals("", check.stderr);
+    }
+
+    @Test
+    void checkOmitsContainmentSkipInfoWhenContainmentRequiredMissing(@TempDir Path tempDir) throws Exception {
+        Path specDir = tempDir.resolve("spec");
+        Files.createDirectories(specDir);
+        Path alphaIr = specDir.resolve("alpha.bear.yaml");
+        Path betaIr = specDir.resolve("beta.bear.yaml");
+        Files.writeString(alphaIr, fixtureIrForBlockName("alpha"), StandardCharsets.UTF_8);
+        Files.writeString(betaIr, fixtureIrWithAllowedDepForBlock("beta", "com.fasterxml.jackson.core:jackson-databind", "2.17.2"), StandardCharsets.UTF_8);
+
+        Path projectRoot = tempDir.resolve("service");
+        Files.createDirectories(projectRoot);
+        assertEquals(0, runCli(new String[] { "compile", betaIr.toString(), "--project", projectRoot.toString() }).exitCode);
+        assertEquals(0, runCli(new String[] { "compile", alphaIr.toString(), "--project", projectRoot.toString() }).exitCode);
+        Files.deleteIfExists(projectRoot.resolve("build/generated/bear/config/containment-required.json"));
+        writeWorkingBlockImpl(projectRoot, "alpha");
+        writeProjectWrapper(
+            projectRoot,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        CliRunResult check = runCli(new String[] { "check", alphaIr.toString(), "--project", projectRoot.toString() });
+        assertEquals(0, check.exitCode);
+        String stdout = normalizeLf(check.stdout);
+        assertFalse(stdout.contains("CONTAINMENT_SURFACES_SKIPPED_FOR_SELECTION"));
+        assertEquals("check: OK\n", stdout);
+        assertEquals("", check.stderr);
+    }
+
+    @Test
+    void checkOmitsContainmentSkipInfoWhenContainmentRequiredIsEmpty(@TempDir Path tempDir) throws Exception {
+        Path alphaIr = tempDir.resolve("alpha.bear.yaml");
+        Files.writeString(alphaIr, fixtureIrForBlockName("alpha"), StandardCharsets.UTF_8);
+        assertEquals(0, runCli(new String[] { "compile", alphaIr.toString(), "--project", tempDir.toString() }).exitCode);
+        writeWorkingBlockImpl(tempDir, "alpha");
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        CliRunResult check = runCli(new String[] { "check", alphaIr.toString(), "--project", tempDir.toString() });
+        assertEquals(0, check.exitCode);
+        String stdout = normalizeLf(check.stdout);
+        assertFalse(stdout.contains("CONTAINMENT_SURFACES_SKIPPED_FOR_SELECTION"));
+        assertEquals("check: OK\n", stdout);
+        assertEquals("", check.stderr);
     }
 
     @Test
@@ -2154,6 +2235,63 @@ class BearCliTest {
         assertTrue(stdout.contains("SUMMARY:"));
         assertTrue(stdout.contains("EXIT_CODE: 0"));
         assertEquals("", run.stderr);
+    }
+
+    @Test
+    void checkAllAttachesContainmentSkipInfoToFirstPassingBlockOnlyAndIsDeterministic(@TempDir Path tempDir) throws Exception {
+        Path specDir = tempDir.resolve("spec");
+        Files.createDirectories(specDir);
+        Path alphaIr = specDir.resolve("alpha.bear.yaml");
+        Path gammaIr = specDir.resolve("gamma.bear.yaml");
+        Files.writeString(alphaIr, fixtureIrForBlockName("alpha"), StandardCharsets.UTF_8);
+        Files.writeString(gammaIr, fixtureIrForBlockName("gamma"), StandardCharsets.UTF_8);
+
+        Path sharedRoot = tempDir.resolve("services/shared");
+        Files.createDirectories(sharedRoot);
+        assertEquals(0, runCli(new String[] { "compile", alphaIr.toString(), "--project", sharedRoot.toString() }).exitCode);
+        assertEquals(0, runCli(new String[] { "compile", gammaIr.toString(), "--project", sharedRoot.toString() }).exitCode);
+        Path required = sharedRoot.resolve("build/generated/bear/config/containment-required.json");
+        Files.createDirectories(required.getParent());
+        Files.writeString(required, ""
+            + "{\"schemaVersion\":\"v1\",\"target\":\"java-gradle\",\"blocks\":[{\"blockKey\":\"beta\",\"implDir\":\"src/main/java/blocks/beta/impl\",\"allowedDeps\":[{\"ga\":\"com.fasterxml.jackson.core:jackson-databind\",\"version\":\"2.17.2\"}]}]}\n",
+            StandardCharsets.UTF_8
+        );
+        writeWorkingBlockImpl(sharedRoot, "alpha");
+        writeWorkingBlockImpl(sharedRoot, "gamma");
+        writeProjectWrapper(
+            sharedRoot,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        writeBlockIndex(tempDir, ""
+            + "version: v0\n"
+            + "blocks:\n"
+            + "  - name: alpha\n"
+            + "    ir: spec/alpha.bear.yaml\n"
+            + "    projectRoot: services/shared\n"
+            + "  - name: gamma\n"
+            + "    ir: spec/gamma.bear.yaml\n"
+            + "    projectRoot: services/shared\n");
+
+        CliRunResult first = runCli(new String[] {
+            "check", "--all", "--project", tempDir.toString()
+        });
+        CliRunResult second = runCli(new String[] {
+            "check", "--all", "--project", tempDir.toString()
+        });
+        assertEquals(0, first.exitCode);
+        assertEquals(0, second.exitCode);
+        assertEquals("", first.stderr);
+        assertEquals("", second.stderr);
+
+        String firstStdout = normalizeLf(first.stdout);
+        String secondStdout = normalizeLf(second.stdout);
+        assertEquals(firstStdout, secondStdout);
+        String infoLine = "DETAIL: check: INFO: CONTAINMENT_SURFACES_SKIPPED_FOR_SELECTION: projectRoot=services/shared: reason=no_selected_blocks_with_impl_allowedDeps";
+        assertEquals(1, countOccurrences(firstStdout, infoLine));
+        assertTrue(firstStdout.indexOf("BLOCK: alpha") < firstStdout.indexOf(infoLine));
+        assertTrue(firstStdout.indexOf(infoLine) < firstStdout.indexOf("BLOCK: gamma"));
     }
 
     @Test
@@ -3805,6 +3943,14 @@ class BearCliTest {
             + "        version: " + version + "\n";
     }
 
+    private static String fixtureIrWithAllowedDepForBlock(String blockName, String maven, String version) throws Exception {
+        return fixtureIrForBlockName(blockName)
+            + "  impl:\n"
+            + "    allowedDeps:\n"
+            + "      - maven: " + maven + "\n"
+            + "        version: " + version + "\n";
+    }
+
     private static void writeFixtureIr(Path path) throws Exception {
         Files.createDirectories(path.getParent());
         Files.writeString(path, fixtureIrContent(), StandardCharsets.UTF_8);
@@ -3879,6 +4025,19 @@ class BearCliTest {
 
     private static String normalizeLf(String text) {
         return text.replace("\r\n", "\n");
+    }
+
+    private static int countOccurrences(String text, String needle) {
+        int count = 0;
+        int index = 0;
+        while (true) {
+            index = text.indexOf(needle, index);
+            if (index < 0) {
+                return count;
+            }
+            count++;
+            index += needle.length();
+        }
     }
 
     private static final class ManifestData {

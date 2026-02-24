@@ -53,6 +53,25 @@ next feature sequence (one-by-one):
     - focused smoke:
       - `.\gradlew.bat --no-daemon :app:test --tests "com.bear.app.BearCliTest.checkWiringDriftUsesCanonicalPathWithoutDuplicates" --tests "com.bear.app.BearCliTest.checkAllBlockDetailIncludesCanonicalWiringPathForWiringDrift"` (green)
 
+- Implemented P2 containment addendum lock-ins for selection-aware check signaling:
+  - single `check` now emits one stdout info line (before `check: OK`) when:
+    - selected invocation does not enforce containment surfaces,
+    - `build/generated/bear/config/containment-required.json` exists and parses,
+    - required block set is non-empty.
+  - `check --all` now computes containment-surface enforcement per `projectRoot` from selected blocks and passes that flag into per-block checks.
+  - for skipped roots in `check --all`, exactly one contextual info line is attached as `DETAIL:` to the first passing block in that root.
+  - renderer now prints `DETAIL:` for `PASS` blocks only when non-blank.
+  - lane remediation precision tightened in containment verification:
+    - generated containment artifact missing/malformed (`build/generated/bear/...`) -> drift lane (`exit 3`) with compile regeneration remediation.
+    - handshake marker missing/stale (`build/bear/containment/applied.marker`) -> containment-not-verified lane (`exit 74`) with Gradle marker refresh remediation.
+  - tests added/updated:
+    - single-check info emission/no-emission coverage (non-empty/missing/empty containment-required cases)
+    - `check --all` first-pass-block detail placement + deterministic rerun output
+    - renderer pass-detail placement coverage
+  - verification:
+    - `.\gradlew.bat --no-daemon :app:test` (green)
+    - `.\gradlew.bat --no-daemon test` (green)
+
 - Hardened general BEAR agent done-gate contract (not demo-only):
   - updated package agent/workflow docs to require both gates before done:
     - `bear check --all --project <repoRoot>`

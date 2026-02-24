@@ -53,6 +53,7 @@ Common `check` policy lines:
 - `check: HYGIENE_UNEXPECTED_PATHS: <relative/path>`
 - `check: UNDECLARED_REACH: <relative/path>: <surface>`
 - `check: BOUNDARY_BYPASS: RULE=<rule>: <relative/path>: <detail>`
+- `check: INFO: CONTAINMENT_SURFACES_SKIPPED_FOR_SELECTION: projectRoot=<root>: reason=no_selected_blocks_with_impl_allowedDeps`
 
 ## Ordering guarantees
 
@@ -61,7 +62,7 @@ Common `check` policy lines:
 1. baseline manifest diagnostics
 2. boundary signal lines
 3. drift lines
-4. containment lines
+4. containment lines (including informational containment-skip line when applicable)
 5. strict-hygiene lines (if enabled)
 6. undeclared-reach lines
 7. boundary-bypass lines
@@ -79,6 +80,9 @@ Wiring drift diagnostics:
   2. `REMOVED`
   3. `CHANGED`
   4. `ADDED`
+
+`check --all` block section note:
+- for `PASS` blocks, `DETAIL:` is emitted only when non-blank contextual detail is present.
 
 ## Related
 

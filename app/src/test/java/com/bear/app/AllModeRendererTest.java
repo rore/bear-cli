@@ -30,6 +30,36 @@ class AllModeRendererTest {
     }
 
     @Test
+    void renderCheckAllOutputPrintsPassDetailAfterExitCode() {
+        List<BlockExecutionResult> results = List.of(
+            new BlockExecutionResult(
+                "alpha",
+                "spec/alpha.bear.yaml",
+                "services/alpha",
+                BlockStatus.PASS,
+                0,
+                null,
+                null,
+                null,
+                "check: INFO: CONTAINMENT_SURFACES_SKIPPED_FOR_SELECTION: projectRoot=services/alpha: reason=no_selected_blocks_with_impl_allowedDeps",
+                null,
+                null,
+                null,
+                List.of()
+            )
+        );
+        RepoAggregationResult summary = new RepoAggregationResult(0, 1, 1, 1, 0, 0, false, 0, 0, 0);
+
+        String output = String.join("\n", AllModeRenderer.renderCheckAllOutput(results, summary));
+        CliTestAsserts.assertContainsInOrder(output, List.of(
+            "STATUS: PASS",
+            "EXIT_CODE: 0",
+            "DETAIL: check: INFO: CONTAINMENT_SURFACES_SKIPPED_FOR_SELECTION: projectRoot=services/alpha: reason=no_selected_blocks_with_impl_allowedDeps",
+            "SUMMARY:"
+        ));
+    }
+
+    @Test
     void renderPrAllOutputCountsBoundaryExpandingClassifications() {
         List<BlockExecutionResult> results = List.of(
             new BlockExecutionResult("alpha", "spec/alpha.bear.yaml", "services/alpha", BlockStatus.FAIL, 5, null, null, null, null, null, null, "BOUNDARY_EXPANDING", List.of("pr-delta: BOUNDARY_EXPANDING: PORTS: ADDED: ledger")),

@@ -22,6 +22,8 @@ final class AllModeRenderer {
                 lines.add("BLOCK_PATH: " + result.blockPath());
                 lines.add("DETAIL: " + result.detail());
                 lines.add("BLOCK_REMEDIATION: " + result.blockRemediation());
+            } else if (result.status() == BlockStatus.PASS && result.detail() != null && !result.detail().isBlank()) {
+                lines.add("DETAIL: " + result.detail());
             } else if (result.status() == BlockStatus.SKIP) {
                 lines.add("REASON: " + result.reason());
             }

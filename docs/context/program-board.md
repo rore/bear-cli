@@ -55,6 +55,11 @@ Preview standing note:
 ## Ready Queue (Ordered, Execution Work Items)
 
 1. `Declared allowed deps containment` (stabilization/operational hardening)
+   - in progress lock-ins completed:
+     - selection-aware containment enforcement flag per `projectRoot` in `check --all`
+     - deterministic containment-skip info signaling (`check` stdout + `check --all` first-pass-block `DETAIL`)
+     - lane-specific remediation split (`build/generated/bear/...` drift vs `build/bear/containment/...` verification)
+   - remaining: strict aggregate/per-block marker semantics and final containment index/marker consistency hardening.
 2. `_shared` allowedDeps policy (path-scoped shared policy, no IR schema changes; queued after core allowedDeps stabilization)
 3. Generated structural tests and cross-target parity follow-up
 4. BEAR-owned generated-source wiring auto-enforcement (avoid ad-hoc `build.gradle` patching)

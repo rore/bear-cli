@@ -95,6 +95,21 @@ Fix:
 1. Run `bear compile <ir-file> --project <path>` (or `bear compile --all --project <repoRoot>`).
 2. Re-run `bear check`.
 
+## `CONTAINMENT_SURFACES_SKIPPED_FOR_SELECTION` (informational)
+
+Symptom: `check` outputs:
+- `check: INFO: CONTAINMENT_SURFACES_SKIPPED_FOR_SELECTION: projectRoot=<root>: reason=no_selected_blocks_with_impl_allowedDeps`
+
+Meaning:
+- selected block set for this invocation does not declare `impl.allowedDeps`,
+- containment-required index exists with non-empty required block set,
+- containment verification surfaces are intentionally not enforced for this selected set.
+
+Action:
+
+1. If you intended containment enforcement, run `check`/`check --all` on a selected set that includes allowedDeps blocks in that project root.
+2. If selection was intentional, no remediation is required.
+
 ## `BOUNDARY_EXPANSION`
 
 Symptom: `pr-check: FAIL: BOUNDARY_EXPANSION_DETECTED` and exit `5`.

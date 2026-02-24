@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -123,6 +124,20 @@ final class CheckAllCommandService {
         }
 
         List<BlockExecutionResult> blockResults = new ArrayList<>();
+        Map<String, Boolean> rootContainmentRequiredBySelection = new TreeMap<>();
+        for (BlockIndexEntry block : selected) {
+            if (!block.enabled()) {
+                continue;
+            }
+            rootContainmentRequiredBySelection.putIfAbsent(block.projectRoot(), false);
+            if (rootContainmentRequiredBySelection.get(block.projectRoot())) {
+                continue;
+            }
+            Path irPath = options.repoRoot().resolve(block.ir()).normalize();
+            if (CheckCommandService.blockDeclaresAllowedDeps(irPath)) {
+                rootContainmentRequiredBySelection.put(block.projectRoot(), true);
+            }
+        }
         boolean failed = false;
         boolean failFastTriggered = false;
         for (BlockIndexEntry block : selected) {
@@ -142,13 +157,42 @@ final class CheckAllCommandService {
                 false,
                 false,
                 block.name(),
-                BearCli.indexLocator(block)
+                BearCli.indexLocator(block),
+                rootContainmentRequiredBySelection.getOrDefault(block.projectRoot(), false)
             );
             BlockExecutionResult blockResult = BearCli.toCheckBlockResult(block, checkResult);
             blockResults.add(blockResult);
             if (blockResult.status() == BlockStatus.FAIL) {
                 failed = true;
             }
+        }
+
+        Map<String, Integer> firstPassIndexByRoot = new HashMap<>();
+        for (int i = 0; i < blockResults.size(); i++) {
+            BlockExecutionResult blockResult = blockResults.get(i);
+            if (blockResult.status() != BlockStatus.PASS) {
+                continue;
+            }
+            firstPassIndexByRoot.putIfAbsent(blockResult.project(), i);
+        }
+        for (Map.Entry<String, Boolean> entry : rootContainmentRequiredBySelection.entrySet()) {
+            if (entry.getValue()) {
+                continue;
+            }
+            Integer idx = firstPassIndexByRoot.get(entry.getKey());
+            if (idx == null) {
+                continue;
+            }
+            Path root = options.repoRoot().resolve(entry.getKey()).normalize();
+            String infoLine = CheckCommandService.containmentSkipInfoLine(entry.getKey(), root, false);
+            if (infoLine == null || infoLine.isBlank()) {
+                continue;
+            }
+            BlockExecutionResult base = blockResults.get(idx);
+            String mergedDetail = base.detail() == null || base.detail().isBlank()
+                ? infoLine
+                : base.detail() + " | " + infoLine;
+            blockResults.set(idx, withDetail(base, mergedDetail));
         }
 
         Map<String, List<Integer>> rootPassIndexes = new TreeMap<>();
@@ -488,5 +532,24 @@ final class CheckAllCommandService {
             return "Split generated-port adapters so each class implements one generated block package, or move the adapter under blocks/_shared and add `// BEAR:ALLOW_MULTI_BLOCK_PORT_IMPL` within 5 non-empty lines above the class declaration.";
         }
         return "Wire via generated entrypoints and declared effect ports; remove impl seam bypasses.";
+    }
+
+    private static BlockExecutionResult withDetail(BlockExecutionResult base, String detail) {
+        return new BlockExecutionResult(
+            base.name(),
+            base.ir(),
+            base.project(),
+            base.status(),
+            base.exitCode(),
+            base.category(),
+            base.blockCode(),
+            base.blockPath(),
+            detail,
+            base.blockRemediation(),
+            base.reason(),
+            base.classification(),
+            base.deltaLines(),
+            base.governanceLines()
+        );
     }
 }

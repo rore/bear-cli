@@ -18,6 +18,9 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 final class CheckCommandService {
     private static final String CHECK_BLOCKED_MARKER_RELATIVE = "build/bear/check.blocked.marker";
@@ -25,6 +28,8 @@ final class CheckCommandService {
     private static final String CHECK_BLOCKED_REASON_BOOTSTRAP = "BOOTSTRAP_IO";
     private static final String GENERATED_BEAR_ROOT = "build/generated/bear";
     private static final String GENERATED_WIRING_PREFIX = GENERATED_BEAR_ROOT + "/wiring/";
+    private static final String CONTAINMENT_REQUIRED_PATH = "build/generated/bear/config/containment-required.json";
+    private static final String CONTAINMENT_SKIP_REASON = "no_selected_blocks_with_impl_allowedDeps";
     private static final int WIRING_DETAIL_LIMIT = 20;
     private static final String RUNTIME_LEGACY_PREFIX = "runtime/src/main/java/com/bear/generated/runtime/";
     private static final String RUNTIME_CANONICAL_PREFIX = "src/main/java/com/bear/generated/runtime/";
@@ -48,6 +53,26 @@ final class CheckCommandService {
         String expectedBlockKey,
         String expectedBlockLocator
     ) {
+        return executeCheck(
+            irFile,
+            projectRoot,
+            runReachAndTests,
+            strictHygiene,
+            expectedBlockKey,
+            expectedBlockLocator,
+            null
+        );
+    }
+
+    static CheckResult executeCheck(
+        Path irFile,
+        Path projectRoot,
+        boolean runReachAndTests,
+        boolean strictHygiene,
+        String expectedBlockKey,
+        String expectedBlockLocator,
+        Boolean considerContainmentSurfacesOverride
+    ) {
         Path baselineRoot = projectRoot.resolve("build").resolve("generated").resolve("bear");
         Path tempRoot = null;
         try {
@@ -60,6 +85,9 @@ final class CheckCommandService {
             BearIr ir = parser.parse(irFile);
             validator.validate(ir);
             BearIr normalized = normalizer.normalize(ir);
+            boolean considerContainmentSurfaces = considerContainmentSurfacesOverride != null
+                ? considerContainmentSurfacesOverride
+                : hasAllowedDeps(normalized);
             BlockIdentityResolution identity = expectedBlockKey == null
                 ? BlockIdentityResolver.resolveSingleCommandIdentity(irFile, projectRoot, normalized.block().name())
                 : BlockIdentityResolver.resolveIndexIdentity(
@@ -121,6 +149,11 @@ final class CheckCommandService {
             applyCandidateManifestTestMode(candidateManifestPath);
 
             List<String> diagnostics = new ArrayList<>();
+            String containmentSkipInfo = maybeContainmentSkipInfo(
+                projectRoot.toString().replace('\\', '/'),
+                projectRoot,
+                considerContainmentSurfaces
+            );
             BoundaryManifest baselineManifest = null;
             if (!Files.isRegularFile(baselineManifestPath)) {
                 diagnostics.add("check: BASELINE_MANIFEST_MISSING: " + baselineManifestPath);
@@ -311,7 +344,7 @@ final class CheckCommandService {
                 );
             }
 
-            CheckResult containmentFailure = verifyContainmentIfRequired(normalized, projectRoot, diagnostics);
+            CheckResult containmentFailure = verifyContainmentIfRequired(projectRoot, diagnostics, considerContainmentSurfaces);
             if (containmentFailure != null) {
                 return containmentFailure;
             }
@@ -493,7 +526,12 @@ final class CheckCommandService {
             }
 
             clearCheckBlockedMarker(projectRoot);
-            return new CheckResult(CliCodes.EXIT_OK, List.of("check: OK"), List.of(), null, null, null, null, null);
+            ArrayList<String> successLines = new ArrayList<>();
+            if (containmentSkipInfo != null) {
+                successLines.add(containmentSkipInfo);
+            }
+            successLines.add("check: OK");
+            return new CheckResult(CliCodes.EXIT_OK, List.copyOf(successLines), List.of(), null, null, null, null, null);
         } catch (BearIrValidationException e) {
             return checkFailure(
                 CliCodes.EXIT_VALIDATION,
@@ -597,8 +635,12 @@ final class CheckCommandService {
         return summary;
     }
 
-    private static CheckResult verifyContainmentIfRequired(BearIr ir, Path projectRoot, List<String> diagnostics) throws IOException {
-        if (!hasAllowedDeps(ir)) {
+    private static CheckResult verifyContainmentIfRequired(
+        Path projectRoot,
+        List<String> diagnostics,
+        boolean considerContainmentSurfaces
+    ) throws IOException {
+        if (!considerContainmentSurfaces) {
             return null;
         }
         Path gradlew = projectRoot.resolve("gradlew");
@@ -620,30 +662,46 @@ final class CheckCommandService {
 
         Path entrypoint = projectRoot.resolve("build/generated/bear/gradle/bear-containment.gradle");
         if (!Files.isRegularFile(entrypoint)) {
-            String line = "check: CONTAINMENT_REQUIRED: SCRIPT_MISSING: build/generated/bear/gradle/bear-containment.gradle";
+            String line = "drift: MISSING_BASELINE: build/generated/bear/gradle/bear-containment.gradle";
             diagnostics.add(line);
             return checkFailure(
-                CliCodes.EXIT_IO,
+                CliCodes.EXIT_DRIFT,
                 diagnostics,
-                "CONTAINMENT",
-                CliCodes.CONTAINMENT_NOT_VERIFIED,
+                "DRIFT",
+                CliCodes.DRIFT_MISSING_BASELINE,
                 "build/generated/bear/gradle/bear-containment.gradle",
-                "Run `bear compile <ir-file> --project <path>`, ensure Gradle applies the generated containment script, then rerun `bear check`.",
+                "Run `bear compile <ir-file> --project <path>`, then rerun `bear check <ir-file> --project <path>`.",
                 line
             );
         }
 
-        Path required = projectRoot.resolve("build/generated/bear/config/containment-required.json");
+        Path required = projectRoot.resolve(CONTAINMENT_REQUIRED_PATH);
         if (!Files.isRegularFile(required)) {
-            String line = "check: CONTAINMENT_REQUIRED: INDEX_MISSING: build/generated/bear/config/containment-required.json";
+            String line = "drift: MISSING_BASELINE: " + CONTAINMENT_REQUIRED_PATH;
             diagnostics.add(line);
             return checkFailure(
-                CliCodes.EXIT_IO,
+                CliCodes.EXIT_DRIFT,
                 diagnostics,
-                "CONTAINMENT",
-                CliCodes.CONTAINMENT_NOT_VERIFIED,
-                "build/generated/bear/config/containment-required.json",
-                "Run `bear compile <ir-file> --project <path>`, then rerun `bear check`.",
+                "DRIFT",
+                CliCodes.DRIFT_MISSING_BASELINE,
+                CONTAINMENT_REQUIRED_PATH,
+                "Run `bear compile <ir-file> --project <path>`, then rerun `bear check <ir-file> --project <path>`.",
+                line
+            );
+        }
+        ContainmentRequiredIndex requiredIndex;
+        try {
+            requiredIndex = parseContainmentRequiredIndex(required);
+        } catch (ManifestParseException e) {
+            String line = "drift: CHANGED: " + CONTAINMENT_REQUIRED_PATH;
+            diagnostics.add(line);
+            return checkFailure(
+                CliCodes.EXIT_DRIFT,
+                diagnostics,
+                "DRIFT",
+                CliCodes.DRIFT_DETECTED,
+                CONTAINMENT_REQUIRED_PATH,
+                "Run `bear compile <ir-file> --project <path>`, then rerun `bear check <ir-file> --project <path>`.",
                 line
             );
         }
@@ -658,14 +716,16 @@ final class CheckCommandService {
                 "CONTAINMENT",
                 CliCodes.CONTAINMENT_NOT_VERIFIED,
                 "build/bear/containment/applied.marker",
-                "Run Gradle build once so BEAR containment compile tasks write markers, then rerun `bear check`.",
+                "Run Gradle build once so BEAR containment marker tasks write markers, then rerun `bear check`.",
                 line
             );
         }
 
         String expectedHash = sha256Hex(Files.readAllBytes(required));
         String markerHash = readMarkerHash(marker);
-        if (markerHash == null || !markerHash.equals(expectedHash)) {
+        List<String> markerBlocks = readMarkerBlocks(marker);
+        List<String> expectedBlocks = requiredIndex.blockKeys();
+        if (markerHash == null || !markerHash.equals(expectedHash) || markerBlocks == null || !markerBlocks.equals(expectedBlocks)) {
             String line = "check: CONTAINMENT_REQUIRED: MARKER_STALE: build/bear/containment/applied.marker";
             diagnostics.add(line);
             return checkFailure(
@@ -688,6 +748,46 @@ final class CheckCommandService {
             && !ir.block().impl().allowedDeps().isEmpty();
     }
 
+    static boolean blockDeclaresAllowedDeps(Path irFile) {
+        try {
+            BearIrParser parser = new BearIrParser();
+            BearIrValidator validator = new BearIrValidator();
+            BearIrNormalizer normalizer = new BearIrNormalizer();
+            BearIr ir = parser.parse(irFile);
+            validator.validate(ir);
+            BearIr normalized = normalizer.normalize(ir);
+            return hasAllowedDeps(normalized);
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    static String containmentSkipInfoLine(String projectRootLabel, Path projectRoot, boolean considerContainmentSurfaces) {
+        return maybeContainmentSkipInfo(projectRootLabel, projectRoot, considerContainmentSurfaces);
+    }
+
+    private static String maybeContainmentSkipInfo(String projectRootLabel, Path projectRoot, boolean considerContainmentSurfaces) {
+        if (considerContainmentSurfaces) {
+            return null;
+        }
+        Path required = projectRoot.resolve(CONTAINMENT_REQUIRED_PATH);
+        if (!Files.isRegularFile(required)) {
+            return null;
+        }
+        try {
+            ContainmentRequiredIndex index = parseContainmentRequiredIndex(required);
+            if (index.blockKeys().isEmpty()) {
+                return null;
+            }
+            return "check: INFO: CONTAINMENT_SURFACES_SKIPPED_FOR_SELECTION: projectRoot="
+                + projectRootLabel
+                + ": reason="
+                + CONTAINMENT_SKIP_REASON;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
     private static String readMarkerHash(Path markerFile) throws IOException {
         String content = CliText.normalizeLf(Files.readString(markerFile, StandardCharsets.UTF_8));
         for (String line : content.lines().toList()) {
@@ -697,6 +797,53 @@ final class CheckCommandService {
             }
         }
         return null;
+    }
+
+    private static List<String> readMarkerBlocks(Path markerFile) throws IOException {
+        String content = CliText.normalizeLf(Files.readString(markerFile, StandardCharsets.UTF_8));
+        for (String line : content.lines().toList()) {
+            if (!line.startsWith("blocks=")) {
+                continue;
+            }
+            String raw = line.substring("blocks=".length()).trim();
+            if (raw.isEmpty()) {
+                return List.of();
+            }
+            TreeSet<String> blocks = new TreeSet<>();
+            for (String token : raw.split(",")) {
+                String value = token.trim();
+                if (value.isEmpty()) {
+                    return null;
+                }
+                blocks.add(value);
+            }
+            return List.copyOf(blocks);
+        }
+        return null;
+    }
+
+    private static ContainmentRequiredIndex parseContainmentRequiredIndex(Path requiredFile) throws IOException, ManifestParseException {
+        String json = Files.readString(requiredFile, StandardCharsets.UTF_8).trim();
+        if (json.isEmpty() || !json.startsWith("{") || !json.endsWith("}")) {
+            throw new ManifestParseException("MALFORMED_JSON");
+        }
+        String blocksPayload = ManifestParsers.extractRequiredArrayPayload(json, "blocks");
+        TreeSet<String> blockKeys = new TreeSet<>();
+        if (!blocksPayload.isBlank()) {
+            Matcher matcher = Pattern
+                .compile("\\{\\\"blockKey\\\":\\\"((?:\\\\.|[^\\\\\\\"])*)\\\"")
+                .matcher(blocksPayload);
+            while (matcher.find()) {
+                blockKeys.add(ManifestParsers.jsonUnescape(matcher.group(1)));
+            }
+            if (blockKeys.isEmpty()) {
+                throw new ManifestParseException("INVALID_CONTAINMENT_REQUIRED_BLOCKS");
+            }
+        }
+        return new ContainmentRequiredIndex(List.copyOf(blockKeys));
+    }
+
+    private record ContainmentRequiredIndex(List<String> blockKeys) {
     }
 
     private static void applyCandidateManifestTestMode(Path candidateManifestPath) throws IOException {

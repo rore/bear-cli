@@ -57,6 +57,8 @@ Key line formats:
 - `check: UNDECLARED_REACH: <relative/path>: <surface>`
 - `check: BOUNDARY_BYPASS: RULE=<rule>: <relative/path>: <detail>`
 - `check: HYGIENE_UNEXPECTED_PATHS: <relative/path>`
+- informational skip signal (selection does not include allowedDeps blocks, but containment-required set is non-empty):
+  - `check: INFO: CONTAINMENT_SURFACES_SKIPPED_FOR_SELECTION: projectRoot=<root>: reason=no_selected_blocks_with_impl_allowedDeps`
 
 `BOUNDARY_BYPASS` seam coverage for governed logic includes:
 - direct governed impl usage in Java source (`src/main/**`)
@@ -114,6 +116,7 @@ Troubleshooting guardrail:
 - do not patch `build.gradle` manually as first response to lock/bootstrap failures; first use BEAR retry/fallback flow and BEAR-owned generated wiring (`build/generated/bear/gradle/bear-containment.gradle` where applicable).
 
 `--all` mode renders deterministic block sections and summary fields.
+- pass sections may include contextual `DETAIL: ...` lines when non-failure informational signals apply.
 
 ## Exit codes emitted
 
