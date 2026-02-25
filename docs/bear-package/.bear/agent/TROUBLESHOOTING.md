@@ -16,7 +16,7 @@ Purpose:
 8. IO/git/runtime environment (`74`) -> resolve repo/path/lock/bootstrap and rerun.
 9. Schema/path mismatch or missing routed docs -> suspect stale package sync, re-sync package, verify `.bear/agent/**` tree parity, rerun.
 10. `SPEC_POLICY_CONFLICT` -> apply conflict checklist and escalate if criteria hold.
-11. `CONTAINMENT_METADATA_MISMATCH` -> apply bounded compile-once repair flow, then escalate if still inconsistent.
+11. `CONTAINMENT_METADATA_MISMATCH` -> apply bounded compile-once repair flow only for failing `check` with containment/classpath signatures.
 12. Internal failure (`70`) -> capture output and report tool defect.
 
 ## Deterministic Remediation by Failure Class
@@ -55,9 +55,10 @@ Purpose:
 - do not patch harness/policy/runtime files unless explicitly instructed.
 
 8. `CONTAINMENT_METADATA_MISMATCH`:
-- inspect containment metadata against intended mode evidence.
+- trigger this diagnosis only when `bear check` fails with containment/classpath signatures.
+- inspect containment metadata for diagnostic evidence.
 - run exactly one deterministic repair: `bear compile --all --project <repoRoot>`.
-- re-check; if still mismatched, escalate with evidence.
+- rerun the same `bear check`; if the same containment/classpath signature persists, escalate with evidence.
 
 ## SPEC_POLICY_CONFLICT
 
@@ -73,13 +74,14 @@ Interpretation:
 ## CONTAINMENT_METADATA_MISMATCH
 
 Decision checklist:
-1. Collect intended mode evidence (single-block vs index-managed multi-block).
-2. Inspect `build/generated/bear/config/containment-required.json` for consistency with intended mode.
-3. If unexpected, run one repair only: `bear compile --all --project <repoRoot>`, then re-check.
+1. Confirm `bear check` is failing with containment/classpath signatures (for example `CONTAINMENT_REQUIRED`, containment compile lane/classpath errors).
+2. Inspect `build/generated/bear/config/containment-required.json` as diagnostic evidence.
+3. Run one repair only: `bear compile --all --project <repoRoot>`.
+4. Rerun the same `bear check` command.
 
 Escalation threshold:
-1. Escalate only if mismatch remains after the single deterministic repair.
-2. Include intended mode evidence + pre/post containment snapshots in escalation.
+1. Escalate only if the same containment/classpath failure signature remains after the single deterministic repair.
+2. Include pre/post `bear check` outputs and pre/post containment snapshots in escalation.
 
 ## Forbidden Actions
 
@@ -98,6 +100,8 @@ Success criteria:
 2. Confirm classification matches intentional IR/implementation delta.
 3. Report classification as expected or unintended in completion report with rationale.
 4. Do not "eliminate" an intentional boundary expansion by hiding or reverting valid contract changes.
+5. Do not use `bear unblock` for intentional boundary expansion.
+6. If boundary expansion is expected, report `BLOCKED` with required governance next action.
 
 ## Lock/IO Environment Branch
 
@@ -117,3 +121,4 @@ When lock signatures appear (for example `.zip.lck`, `Access is denied`, generat
 2. Continue fixing root cause; do not treat marker as completion evidence.
 3. Use `bear unblock --project <repoRoot>` only to clear stale marker state.
 4. For containment markers, rerun `compile` then `check` after fixing stale/missing marker causes.
+5. Do not use `bear unblock` to force expected boundary expansion green.

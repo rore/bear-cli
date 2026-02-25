@@ -103,13 +103,17 @@ class BearPackageDocsConsistencyTest {
                 "build.gradle",
                 "gradlew",
                 "containment-required.json",
-                "run exactly one repair",
+                "Do not interpret containment metadata preemptively.",
+                "containment/classpath signatures",
                 "bear compile --all --project <repoRoot>",
-                "if still inconsistent, stop and escalate",
+                "CONTAINMENT_METADATA_MISMATCH",
                 "moving impl seams",
                 "duplicate shim copies in `_shared`",
                 "_shared` must not depend on app packages",
                 "app packages must not implement generated ports",
+                "Never leave generated placeholder returns before real logic",
+                "For expected `BOUNDARY_EXPANSION_DETECTED`, do not attempt to force green",
+                "mark run `BLOCKED` with required governance next action.",
                 "2 failed retries"
         );
 
@@ -121,6 +125,8 @@ class BearPackageDocsConsistencyTest {
                 "Positive examples",
                 "Non-examples",
                 "Do not edit `build.gradle`",
+                "No action/command multiplexer rule does not imply multi-block by itself.",
+                "IR v1 supports one `logic` block per IR file.",
                 "_shared` MUST NOT import or depend on app packages",
                 "App packages MUST NOT implement generated `com.bear.generated.*Port` interfaces"
         );
@@ -128,13 +134,18 @@ class BearPackageDocsConsistencyTest {
 
         assertContainsTokens(reporting,
                 "Copy this count from the `pr-check` output of that exact completion run; do not infer.",
+                "Run outcome: COMPLETE|BLOCKED",
+                "Required next action: <...>",
                 "PR base used: <ref>",
                 "PR base rationale:",
                 "PR classification interpretation:",
                 "Constraint conflicts encountered: none|<list>",
                 "Escalation decision: none|<reason>",
                 "Containment sanity check: pass|fail|n/a - <evidence>",
-                "Infra edits: none|<list>"
+                "Infra edits: none|<list>",
+                "Unblock used: no|yes - <reason>",
+                "Gate policy acknowledged: yes|no",
+                "`pr-check` exit is non-zero -> `Run outcome` MUST be `BLOCKED`."
         );
         assertFalse(reporting.contains("--base HEAD"));
 
@@ -145,11 +156,16 @@ class BearPackageDocsConsistencyTest {
                 "`--base HEAD` can misclassify or hide intended delta unless explicitly instructed.",
                 "## SPEC_POLICY_CONFLICT",
                 "## CONTAINMENT_METADATA_MISMATCH",
-                "run one repair only: `bear compile --all --project <repoRoot>`",
+                "containment/classpath signatures",
+                "run exactly one deterministic repair: `bear compile --all --project <repoRoot>`",
+                "Rerun the same `bear check` command.",
                 "## Forbidden Actions",
                 "Do not edit `build.gradle`",
                 "Do not move impl seams",
                 "Do not override containment excludes",
+                "Do not use `bear unblock` for intentional boundary expansion.",
+                "report `BLOCKED` with required governance next action.",
+                "Do not use `bear unblock` to force expected boundary expansion green.",
                 "Retry budget is max 2 failed retries."
         );
 

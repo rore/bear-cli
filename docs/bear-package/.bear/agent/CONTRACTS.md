@@ -30,7 +30,7 @@ Rule:
 ## Decomposition Signals (Normative)
 
 Default decomposition:
-1. One block is the default when no explicit split signal is present in spec intent.
+1. One block is the default when the spec defines one externally visible operation and no explicit split signal is present in spec intent.
 
 Explicit split signals:
 1. Lifecycle split: independently deployable or independently evolving lifecycle boundaries are declared.
@@ -40,11 +40,18 @@ Explicit split signals:
 
 Rule:
 1. Add a new block only when at least one explicit split signal is present in spec evidence.
+2. If spec defines multiple externally visible operations without an explicit command-router contract, IR v1 structural constraints require one IR block per operation.
+
+IR v1 capability fact:
+1. IR v1 supports one `logic` block per IR file.
+2. This is a structural capability constraint, not a decomposition-signal heuristic.
 
 ## Contract Modeling Anti-Patterns (Normative)
 
 1. MUST NOT encode multiple externally visible operations as an action/command enum multiplexer inside one request unless the spec explicitly defines that command-router contract.
-2. When multiple external operations are required and no explicit command-router contract exists, model them as distinct operations/contracts (or distinct blocks when decomposition signals require it).
+2. No action/command multiplexer rule does not imply multi-block by itself.
+3. When multiple external operations are required and no explicit command-router contract exists, model them as distinct operations/contracts.
+4. Because IR v1 is one `logic` block per IR file, multiple externally visible operations map to multiple IR blocks unless the spec explicitly defines a command-router contract.
 
 ## Canonical Wiring Recipe
 

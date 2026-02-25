@@ -1,12 +1,12 @@
 # REPORTING.md
 
 Purpose:
-- Canonical completion report schema.
+- Canonical run report schema.
 - Mechanically checkable governance-signal disposition contract.
 
 ## Required Fields
 
-Completion report MUST include:
+Run report MUST include:
 1. `Request summary: <one line>`
 2. `Block decision: updated=<...> added=<...>`
 3. `Decomposition evidence: <single-block rationale OR per-block spec citations>`
@@ -16,17 +16,29 @@ Completion report MUST include:
 7. `Gate results:`
 8. `- bear check --all --project <repoRoot> => <exit>`
 9. `- bear pr-check --all --project <repoRoot> --base <ref> => <exit>`
-10. `PR base used: <ref>`
-11. `PR base rationale: <merge-base against target branch OR user-provided base SHA>`
-12. `PR classification interpretation: <expected|unintended> - <brief rationale>`
-13. `Constraint conflicts encountered: none|<list>`
-14. `Escalation decision: none|<reason>`
-15. `Containment sanity check: pass|fail|n/a - <evidence>`
-16. `Infra edits: none|<list>`
-17. `GOVERNANCE_SIGNAL_DISPOSITION`
-18. `MULTI_BLOCK_PORT_IMPL_ALLOWED: none|<count>`
-19. `JUSTIFICATION: <required when count > 0>`
-20. `TRADEOFF: <required when count > 0>`
+10. `Run outcome: COMPLETE|BLOCKED`
+11. `Required next action: <...>` (required when `Run outcome: BLOCKED`)
+12. `PR base used: <ref>`
+13. `PR base rationale: <merge-base against target branch OR user-provided base SHA>`
+14. `PR classification interpretation: <expected|unintended> - <brief rationale>`
+15. `Constraint conflicts encountered: none|<list>`
+16. `Escalation decision: none|<reason>`
+17. `Containment sanity check: pass|fail|n/a - <evidence>`
+18. `Infra edits: none|<list>`
+19. `Unblock used: no|yes - <reason>`
+20. `Gate policy acknowledged: yes|no`
+21. `GOVERNANCE_SIGNAL_DISPOSITION`
+22. `MULTI_BLOCK_PORT_IMPL_ALLOWED: none|<count>`
+23. `JUSTIFICATION: <required when count > 0>`
+24. `TRADEOFF: <required when count > 0>`
+
+## Outcome Rules
+
+1. `pr-check` exit is non-zero -> `Run outcome` MUST be `BLOCKED`.
+2. If `Run outcome` is `BLOCKED`, `Required next action` is mandatory.
+3. Both gate exits are `0` -> `Run outcome` MUST be `COMPLETE`.
+4. Do not present `BLOCKED` runs as completion.
+5. Gate policy acknowledged must reflect: completion requires both repo-level gates green.
 
 ## Governance-Signal Disposition Rules
 
@@ -35,7 +47,7 @@ Completion report MUST include:
 3. Missing disposition block, mismatched count, or missing required fields means report is incomplete.
 4. `PR base used` and `PR base rationale` are mandatory; defaulting to `HEAD` without explicit instruction is invalid.
 5. `PR classification interpretation` is mandatory and must state whether the classification is expected or unintended for this change.
-6. `Constraint conflicts encountered`, `Escalation decision`, `Containment sanity check`, and `Infra edits` are mandatory.
+6. `Constraint conflicts encountered`, `Escalation decision`, `Containment sanity check`, `Infra edits`, `Unblock used`, and `Gate policy acknowledged` are mandatory.
 
 ## Count Rule (Frozen)
 
@@ -45,7 +57,7 @@ Completion report MUST include:
 - for the exact completion run being reported.
 - Copy this count from the `pr-check` output of that exact completion run; do not infer.
 
-## Minimal Valid Example
+## Minimal COMPLETE Example
 
 ```text
 Request summary: Add transfer fee invariants to existing withdrawal flow
@@ -57,13 +69,43 @@ Tests delta: src/test/java/blocks/withdraw/WithdrawImplTest.java
 Gate results:
 - bear check --all --project . => 0
 - bear pr-check --all --project . --base origin/main => 0
+Run outcome: COMPLETE
 PR base used: origin/main
 PR base rationale: target branch merge-base reference for this completion run
 PR classification interpretation: expected - new boundary declarations were intentional and match IR delta
 Constraint conflicts encountered: none
 Escalation decision: none
-Containment sanity check: pass - metadata matches intended index-managed mode after completion compile
+Containment sanity check: pass - containment diagnostics were not needed for this run
 Infra edits: none
+Unblock used: no - not needed
+Gate policy acknowledged: yes
+GOVERNANCE_SIGNAL_DISPOSITION
+MULTI_BLOCK_PORT_IMPL_ALLOWED: none
+```
+
+## Minimal BLOCKED Example
+
+```text
+Request summary: Add new block in greenfield repo
+Block decision: updated=none added=wallet
+Decomposition evidence: new externally visible operation required by spec
+IR delta: spec/wallet.bear.yaml, bear.blocks.yaml
+Implementation delta: src/main/java/blocks/wallet/impl/WalletImpl.java
+Tests delta: src/test/java/blocks/wallet/WalletImplTest.java
+Gate results:
+- bear check --all --project . => 0
+- bear pr-check --all --project . --base origin/main => 5
+Run outcome: BLOCKED
+Required next action: governance review/approval for expected boundary expansion
+PR base used: origin/main
+PR base rationale: target branch merge-base reference for this completion run
+PR classification interpretation: expected - intentional boundary expansion for new block
+Constraint conflicts encountered: none
+Escalation decision: required - boundary expansion governance review pending
+Containment sanity check: n/a - no containment/classpath failure signature in check output
+Infra edits: none
+Unblock used: no - unblock is stale-marker-only and not valid for intentional expansion
+Gate policy acknowledged: yes
 GOVERNANCE_SIGNAL_DISPOSITION
 MULTI_BLOCK_PORT_IMPL_ALLOWED: none
 ```

@@ -13,11 +13,12 @@ Long-form historical notes are archived in `docs/context/archive/archive-state-h
 P2 stabilization and context-governance cleanup:
 - keep deterministic governance behavior stable while reducing context boot cost
 - maintain strict dual-gate completion evidence in docs/workflows
+- harden agent package guardrails for behavioral containment diagnosis and BLOCKED run reporting
 - ensure context docs follow no-loss mapping contract
 
 ## Next Concrete Task
 
-1. Run stabilization bake period for structural evidence signals and decide strict-mode default timing.
+1. Run stabilization bake period for updated agent-package guardrails in greenfield + boundary-expansion runs.
 2. Keep containment-lane smoke fixtures ready (`exit 3` drift lane vs `exit 74` verification lane).
 3. Keep `:kernel:test`, `:app:test`, and root `test` green after each incremental update.
 
@@ -33,3 +34,7 @@ P2 stabilization and context-governance cleanup:
   - `.bear/agent/ref/IR_REFERENCE.md` canonical IR package reference
 - Demo sync path remains deterministic:
   - `scripts/sync-bear-demo.ps1` replaces `.bear/agent` tree to prevent stale files.
+- Guardrails refinement v2 landed in package docs + consistency test:
+  - containment metadata is interpreted only for failing `check` containment/classpath signatures
+  - expected `pr-check` boundary expansion is reported as `BLOCKED` with required next action
+  - decomposition contract now states IR v1 one-logic-block-per-IR-file capability fact

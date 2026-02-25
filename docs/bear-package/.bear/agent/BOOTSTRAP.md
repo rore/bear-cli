@@ -26,10 +26,11 @@ Bootstrap guardrails:
 9. Completion requires both gates green:
 - `bear check --all --project <repoRoot>`
 - `bear pr-check --all --project <repoRoot> --base <ref>`
-10. If a spec requirement conflicts with an explicit repo enforcement rule or BEAR contract rule, stop and escalate unless the spec explicitly authorizes changing that rule.
-11. Do not self-edit build/policy/runtime harness files unless explicitly instructed:
+10. For expected `BOUNDARY_EXPANSION_DETECTED`, do not attempt to force green; report `BLOCKED` with required next action.
+11. If a spec requirement conflicts with an explicit repo enforcement rule or BEAR contract rule, stop and escalate unless the spec explicitly authorizes changing that rule.
+12. Do not self-edit build/policy/runtime harness files unless explicitly instructed:
 - `build.gradle`, `settings.gradle`, `gradlew`, `gradlew.bat`, `.bear/**`, `bin/bear*`
-12. Completion output must follow `.bear/agent/REPORTING.md`.
+13. Completion output must follow `.bear/agent/REPORTING.md`.
 
 ## Routing Map
 
@@ -65,6 +66,7 @@ Read on demand:
 7. Before gates, run scaffold and boundary quick checks:
 - `rg -n "TODO: replace this entire method body|Do not append logic below this placeholder return" src/main/java/blocks`
 - `rg -n "implements\\s+.*Port" src/main/java`
+- never leave a generated placeholder return before real logic; replace generated stub body fully
 - all generated-port implementations must remain under governed roots (`src/main/java/blocks/**`)
 - `_shared` must not import app packages; app packages must not implement generated ports
 
@@ -79,17 +81,17 @@ Read on demand:
 5. Validate and compile IR before implementation:
 - `bear validate <ir-file>`
 - `bear compile <ir-file> --project <repoRoot>` or `bear compile --all --project <repoRoot>`
-6. Containment sanity check (deterministic, bounded):
-- inspect `build/generated/bear/config/containment-required.json`
-- if containment metadata is unexpected for intended mode, run exactly one repair: `bear compile --all --project <repoRoot>`
-- re-check containment metadata
-- if still inconsistent, stop and escalate with evidence (do not patch harness/build scripts)
-7. If generated artifacts drift, repair deterministically:
+6. If generated artifacts drift, repair deterministically:
 - `bear fix <ir-file> --project <repoRoot>` or `bear fix --all --project <repoRoot>`
-8. Implement only in user-owned sources/tests.
-9. Run completion gates:
+7. Implement only in user-owned sources/tests.
+8. Run completion gates:
 - `bear check --all --project <repoRoot>`
 - `bear pr-check --all --project <repoRoot> --base <ref>`
+9. Containment metadata diagnosis trigger (deterministic, bounded):
+- Do not interpret containment metadata preemptively.
+- Inspect `build/generated/bear/config/containment-required.json` only when `bear check` fails with containment/classpath signatures.
+- Run one repair compile: `bear compile --all --project <repoRoot>`, then rerun the same `bear check`.
+- If `bear check` still fails with the same containment/classpath signature, classify `CONTAINMENT_METADATA_MISMATCH`, escalate, and stop (no harness/build edits).
 10. Report results using `.bear/agent/REPORTING.md`.
 
 ## Always-On Rules
@@ -106,7 +108,7 @@ Read on demand:
 10. Multi-block repos must keep `bear.blocks.yaml`; no bypass by deletion.
 11. Use deterministic BEAR commands; do not replace with ad-hoc scripts.
 12. `pr-check` base must be merge-base/target-base SHA, not `HEAD` unless explicitly instructed.
-13. Remove generated scaffold placeholder returns before gates.
+13. Never leave generated placeholder returns before real logic; replace generated stub bodies fully before gates.
 14. Do not self-edit build/policy/runtime harness files unless explicitly instructed (`build.gradle`, `settings.gradle`, `gradlew`, `gradlew.bat`, `.bear/**`, `bin/bear*`).
 15. Do not bypass containment by moving impl seams to alternate roots, creating duplicate shim copies in `_shared`, or overriding containment excludes.
 16. `_shared` must not depend on app packages, and app packages must not implement generated ports.
@@ -114,6 +116,7 @@ Read on demand:
 18. If gates fail, fix root cause and rerun; do not bypass with alternate architecture.
 19. Use `bear fix` for generated drift repair only; never for test or IO failures.
 20. Do not claim done without both repo-level gates green.
+21. For expected `BOUNDARY_EXPANSION_DETECTED`, do not attempt to force green; mark run `BLOCKED` with required governance next action.
 
 ## Done Gate Contract
 
