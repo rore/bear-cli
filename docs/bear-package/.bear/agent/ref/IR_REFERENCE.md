@@ -1,7 +1,13 @@
-# IR_QUICKREF.md
+# IR_REFERENCE.md
 
 Purpose:
-- Fast, authoritative reference for valid BEAR IR v1.2.
+- Single authoritative BEAR IR reference.
+- Consolidates schema quickref and minimal examples.
+
+Authority rule:
+- This file is the canonical IR contract for the package.
+- Do not reverse engineer binaries to infer missing IR behavior.
+- If a shape/rule is not declared here, do not assume it.
 
 ## Required Root Shape
 
@@ -116,7 +122,7 @@ Rules:
 - kind/type compatibility is enforced
 - kind-specific params are strict
 
-## Impl allowed deps (Optional)
+## Impl Allowed Deps (Optional)
 
 ```yaml
 impl:
@@ -131,37 +137,82 @@ Rules:
 - duplicate GA invalid
 
 ## Key v1.2 Enforcement Notes
+
 - Idempotency and invariants are wrapper-owned semantics.
 - Idempotent logic signatures exclude idempotency port.
 - IR-declared semantics must be enforceable by target; otherwise `check` fails.
 
-Selection rule (why these semantics):
-- BEAR enforces semantics only when they are deterministic and wrapper-enforceable from declared inputs/outputs/ports.
-- Idempotency qualifies because key material, effect boundary, and replay payload are all explicitly declared.
-- Invariants are limited to structural output checks for the same reason.
-- Semantics requiring hidden context are out of scope.
+Selection rule:
+- enforce only semantics that are wrapper-enforceable from declared inputs/outputs/ports
+- require no hidden context unless explicitly declared
+- require deterministic target implementation
+- require frozen, testable contracts
 
-Canonical details:
-- BEAR package canonical rule (self-contained):
-  - enforce only semantics that are wrapper-enforceable from declared inputs/outputs/ports
-  - require no hidden context unless explicitly declared
-  - require deterministic target implementation
-  - require frozen, testable contracts
+## Minimal Examples
+
+### Example A: Minimal Single Block
+
+`spec/process-task.bear.yaml`
+
+```yaml
+version: v1
+block:
+  name: ProcessTask
+  kind: logic
+  contract:
+    inputs:
+      - name: requestId
+        type: string
+      - name: workloadUnits
+        type: decimal
+    outputs:
+      - name: processed
+        type: bool
+      - name: remainingQuota
+        type: decimal
+  effects:
+    allow:
+      - port: quotaStore
+        ops: [read, write]
+      - port: idempotency
+        ops: [get, put]
+  idempotency:
+    key: requestId
+    store:
+      port: idempotency
+      getOp: get
+      putOp: put
+  invariants:
+    - kind: non_negative
+      scope: result
+      field: remainingQuota
+      params: {}
+```
+
+### Example B: Minimal Multi-Block (Indexed)
+
+`bear.blocks.yaml`
+
+```yaml
+version: v0
+blocks:
+  - name: execution-core
+    ir: spec/execution-core.bear.yaml
+    projectRoot: .
+  - name: activity-log
+    ir: spec/activity-log.bear.yaml
+    projectRoot: .
+```
 
 ## Commands
+
 For each changed IR:
 1. `bear validate <ir-file>`
 2. `bear compile <ir-file> --project <repoRoot>`
-   - or `bear compile --all --project <repoRoot>` when index-managed multi-block
+- or `bear compile --all --project <repoRoot>` when index-managed multi-block
 3. `bear fix <ir-file> --project <repoRoot>` (or `fix --all`)
 4. `bear check <ir-file> --project <repoRoot> [--strict-hygiene]` (or `check --all [--strict-hygiene]`)
 
 Policy files used by `check`:
-- `.bear/policy/reflection-allowlist.txt`
-- `.bear/policy/hygiene-allowlist.txt`
-
-Generated wiring note:
-- logic wrappers expose `Wrapper.of(<ports...>)` for default production wiring.
-- keep constructor `(ports..., Logic)` for tests/advanced injection only.
-- governed impl execute-body logic must remain inside manifest `governedSourceRoots` (block root first, reserved `_shared` second); no delegation to non-governed external packages.
-- implementations of generated `com.bear.generated.*Port` interfaces must also remain inside governed roots (block root or `_shared`).
+1. `.bear/policy/reflection-allowlist.txt`
+2. `.bear/policy/hygiene-allowlist.txt`

@@ -6,7 +6,7 @@ This runbook defines a reproducible evaluation where an agent implements demo sp
 
 Validate agent behavior quality, not just CLI gate output:
 - IR-first workflow discipline
-- BEAR contract adherence (`.bear/agent/BEAR_AGENT.md`, `WORKFLOW.md`)
+- BEAR contract adherence (`.bear/agent/BOOTSTRAP.md`, routed refs)
 - deterministic gate evidence (`check --all`, `pr-check --all`)
 - decomposition choices consistent with current BEAR policy (no endpoint-per-block mandate)
 
@@ -74,8 +74,7 @@ In the fresh session rooted at `..\bear-account-demo`, provide this initial inst
 You are running an isolated BEAR demo evaluation.
 Use only repository-local context in this demo repo.
 Read and follow:
-1) .bear/agent/BEAR_AGENT.md
-2) .bear/agent/WORKFLOW.md
+1) .bear/agent/BOOTSTRAP.md
 Then implement the project spec when asked.
 Do not assume endpoint-per-block decomposition.
 Completion requires both gates with explicit evidence:
@@ -100,7 +99,7 @@ Then confirm it matches `simulationBranch` metadata before starting implementati
 ## Required evidence to capture
 
 Capture the full run transcript, including:
-1. bootstrap file reads (`BEAR_AGENT.md`, `WORKFLOW.md`)
+1. bootstrap file reads (`BOOTSTRAP.md` and routed reference files)
 2. baseline status check
 3. IR creation/validation/compile actions
 4. implementation edits
@@ -140,7 +139,7 @@ Pass (behavioral):
 5. Outputs/remediation align with BEAR contracts.
 
 Fail (behavioral):
-1. Agent skips BEAR bootstrap/workflow files.
+1. Agent skips BEAR bootstrap or required routed contract/reference files.
 2. Agent treats one-gate evidence as done.
 3. Agent forces decomposition style not required by BEAR policy.
 4. Agent bypasses deterministic BEAR flow (manual patching to avoid compile/check flow).
@@ -256,3 +255,5 @@ After agent finishes, evaluator may re-run:
 ```
 
 to confirm reproducibility of reported outcomes.
+
+

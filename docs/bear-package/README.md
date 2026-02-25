@@ -1,8 +1,8 @@
-# BEAR Agent Package (Portable v0.2)
+# BEAR Agent Package (Portable v0.3)
 
 This directory is the source of truth for BEAR-distributed package files copied into adopter repos.
 
-This package is generic and domain-neutral. It provides BEAR operating rules, IR guidance, and deterministic gate usage. It must not include app-specific solution hints.
+This package is generic and domain-neutral. It provides BEAR operating contracts, IR guidance, deterministic gate usage, and failure routing without app-specific hints.
 
 Canonical source rule:
 - `docs/bear-package/.bear/` is the only canonical distributable bundle.
@@ -10,15 +10,24 @@ Canonical source rule:
 
 Self-contained reference rule:
 - package files must reference only paths that exist inside the distributed package (`.bear/agent/**`) plus project-local BEAR artifacts/IR files.
-- do not point agents to repo docs that are not shipped in the package.
+- do not point agents to non-shipped repo docs.
+
+Compatibility note (hard cutover):
+- replaced `.bear/agent/BEAR_AGENT.md` with `.bear/agent/BOOTSTRAP.md`
+- replaced `.bear/agent/WORKFLOW.md` with split docs:
+  - `.bear/agent/CONTRACTS.md`
+  - `.bear/agent/TROUBLESHOOTING.md`
+  - `.bear/agent/REPORTING.md`
+- replaced `.bear/agent/doc/IR_QUICKREF.md` + `.bear/agent/doc/IR_EXAMPLES.md` with `.bear/agent/ref/IR_REFERENCE.md`
 
 Minimum agent context carried by the package:
-- startup contract (`.bear/agent/BEAR_AGENT.md`)
-- deterministic operating loop (`.bear/agent/WORKFLOW.md`)
-- IR schema/rules (`.bear/agent/doc/IR_QUICKREF.md`)
-- IR minimal patterns (`.bear/agent/doc/IR_EXAMPLES.md`)
-- index rules (`.bear/agent/doc/BLOCK_INDEX_QUICKREF.md`)
-- conceptual framing (`.bear/agent/doc/BEAR_PRIMER.md`)
+- startup contract and routing (`.bear/agent/BOOTSTRAP.md`)
+- normative policy/wiring contracts (`.bear/agent/CONTRACTS.md`)
+- deterministic failure routing (`.bear/agent/TROUBLESHOOTING.md`)
+- completion schema contract (`.bear/agent/REPORTING.md`)
+- IR authority (`.bear/agent/ref/IR_REFERENCE.md`)
+- index rules (`.bear/agent/ref/BLOCK_INDEX_QUICKREF.md`)
+- conceptual framing (`.bear/agent/ref/BEAR_PRIMER.md`)
 - required project-local inspection targets (`spec/*.bear.yaml`, `bear.blocks.yaml`, `build/generated/bear/**` when present)
 - vendored CLI runtime (`.bear/tools/bear-cli/**`)
 
@@ -29,57 +38,12 @@ Canonical command surface expected by the package:
 - `bear check`
 - `bear pr-check`
 
-Runtime distribution note:
-- package includes a vendored CLI runtime under `.bear/tools/bear-cli/`
-- adopters copy the full `.bear/` bundle from this directory into `<repoRoot>/.bear/`
-- commands are invoked via vendored path (for example `.bear/tools/bear-cli/bin/bear(.bat) ...`)
-- generated runtime support classes are canonical under `build/generated/bear/src/main/java/com/bear/generated/runtime` (legacy `build/generated/bear/runtime/**` is unsupported)
-- generated logic wrappers expose `Wrapper.of(<ports...>)` as the sanctioned default wiring path in user production code
-- governed logic interface -> governed impl bindings in `META-INF/services` / `module-info.java` are blocked by `bear check` seam rules
-- governed impl containment is always on: execute-body logic must stay inside manifest `governedSourceRoots`
-- `governedSourceRoots` is deterministic: block root first, reserved `src/main/java/blocks/_shared` second
-- `pr-check` also enforces generated-port adapter containment: implementations of `com.bear.generated.*Port` must live under governed roots (block root or `_shared`)
-- `check`/`pr-check` also enforce multi-block adapter isolation:
-  - one class implementing generated ports from multiple generated block packages fails by default
-  - explicit opt-in exists only under `_shared` with exact marker `// BEAR:ALLOW_MULTI_BLOCK_PORT_IMPL` within 5 non-empty lines above class declaration
-  - when opt-in is valid, `pr-check` may emit informational governance signal `MULTI_BLOCK_PORT_IMPL_ALLOWED` (non-failing) for explicit review
-- canonical adapter-shape guidance lives only in `.bear/agent/BEAR_AGENT.md` (`Canonical Wiring Recipe (Normative)`); `WORKFLOW.md` and this README reference it and do not restate recipe details.
-
-Containment note (v1 preview):
-- containment verification is active per `projectRoot` when any is true:
-  - selected blocks include at least one `impl.allowedDeps` block
-  - `spec/_shared.policy.yaml` exists
-  - `src/main/java/blocks/_shared/**` contains `.java` sources
-- when verification is active, `bear check` auto-injects generated containment wiring into project tests:
-  - `--no-daemon -I build/generated/bear/gradle/bear-containment.gradle test`
-- for `check --all`, containment preflight/tests/marker verification execute once per `projectRoot` and fan out deterministically to blocks in that root.
-- no manual `build.gradle` containment patching is required for `check`.
-- `_shared` policy is path-scoped at `spec/_shared.policy.yaml`; if missing while `_shared` is in scope, default allowlist is JDK-only (`allowedDeps=[]`).
-- when verification is active, `bear check` requires:
-  - aggregate marker `build/bear/containment/applied.marker` with matching `hash=` and canonical `blocks=` set.
-  - per-block marker `build/bear/containment/<blockKey>.applied.marker` for each required block key (`block=` + `hash=` must match).
-- marker verification runs after successful project tests.
-- `_shared` allowlist mismatches are reported as containment-not-verified and remediate by updating `spec/_shared.policy.yaml` (pinned dep) or removing external `_shared` dependency usage.
-
-Structural evidence note (v1 preview):
-- generated structural tests emit deterministic evidence lines:
-  - `BEAR_STRUCTURAL_SIGNAL|blockKey=<blockKey>|test=<Direction|Reach>|kind=<KIND>|detail=<detail>`
-- default mode is evidence-only (non-failing).
-- strict mode is opt-in with JVM property:
-  - `-Dbear.structural.tests.strict=true`
-
-Semantic context included in package docs:
-- enforcement-by-construction (wrapper-owned idempotency + invariants)
-- explicit selection rule (enforceability + determinism)
-- explicit non-goals (no business-rule inference, no transaction framework semantics)
-
 ## Package Contract
 
 1. BEAR package is a copyable bundle dropped into any backend project.
 2. Package content is limited to:
 - BEAR operating instructions
-- BEAR IR quick reference
-- minimal generic IR examples
+- BEAR IR reference and examples
 - canonical gate usage and failure triage
 3. Package content explicitly excludes:
 - project/domain specs
@@ -91,14 +55,15 @@ Semantic context included in package docs:
 
 Canonical layout in adopter repos:
 
-```
+```text
 <repoRoot>/.bear/agent/
-  BEAR_AGENT.md
-  WORKFLOW.md
-  doc/BEAR_PRIMER.md
-  doc/IR_QUICKREF.md
-  doc/IR_EXAMPLES.md
-  doc/BLOCK_INDEX_QUICKREF.md
+  BOOTSTRAP.md
+  CONTRACTS.md
+  TROUBLESHOOTING.md
+  REPORTING.md
+  ref/BEAR_PRIMER.md
+  ref/IR_REFERENCE.md
+  ref/BLOCK_INDEX_QUICKREF.md
 <repoRoot>/.bear/policy/
   reflection-allowlist.txt
   hygiene-allowlist.txt
@@ -108,7 +73,7 @@ Canonical layout in adopter repos:
 ```
 
 Bootstrap entrypoint at repo root:
-- `AGENTS.md` (project-owned or template) points to `.bear/agent/BEAR_AGENT.md`
+- `AGENTS.md` (project-owned or template) points to `.bear/agent/BOOTSTRAP.md`
 
 Bundle source path in this repository:
 - [`docs/bear-package/.bear/`](.bear/)
@@ -116,12 +81,13 @@ Bundle source path in this repository:
 ## Distributed File Set
 
 Required package files:
-- `.bear/agent/BEAR_AGENT.md`
-- `.bear/agent/WORKFLOW.md`
-- `.bear/agent/doc/BEAR_PRIMER.md`
-- `.bear/agent/doc/IR_QUICKREF.md`
-- `.bear/agent/doc/IR_EXAMPLES.md`
-- `.bear/agent/doc/BLOCK_INDEX_QUICKREF.md`
+- `.bear/agent/BOOTSTRAP.md`
+- `.bear/agent/CONTRACTS.md`
+- `.bear/agent/TROUBLESHOOTING.md`
+- `.bear/agent/REPORTING.md`
+- `.bear/agent/ref/BEAR_PRIMER.md`
+- `.bear/agent/ref/IR_REFERENCE.md`
+- `.bear/agent/ref/BLOCK_INDEX_QUICKREF.md`
 - `.bear/policy/reflection-allowlist.txt`
 - `.bear/policy/hygiene-allowlist.txt`
 - `.bear/tools/bear-cli/bin/bear` / `.bear/tools/bear-cli/bin/bear.bat`
@@ -131,10 +97,6 @@ Required package files:
 Optional package file:
 - `AGENTS.md` (template only; use when project has no existing root `AGENTS.md`)
 
-Wrapper scripts are policy-dependent:
-- `bin/bear-all.*` and `bin/pr-gate.*` may be shipped by adopter/project policy
-- when present, agents should use them as canonical done gates
-
 ## Multi-Block Governance Requirement
 
 When a project has multiple governed BEAR blocks:
@@ -142,20 +104,13 @@ When a project has multiple governed BEAR blocks:
 2. Canonical gates must run `--all` variants (`check --all` / `pr-check --all`).
 3. Removing index files to bypass `--all` governance is invalid workflow.
 4. Canonical agent done-gate evidence requires both:
-   - `bear check --all --project <repoRoot>`
-   - `bear pr-check --all --project <repoRoot> --base <ref>`
-5. Completion report must include:
-   - `GOVERNANCE_SIGNAL_DISPOSITION`
-   - `MULTI_BLOCK_PORT_IMPL_ALLOWED: none` or `MULTI_BLOCK_PORT_IMPL_ALLOWED: <count>`
-   - when `<count> > 0`, include both `JUSTIFICATION:` and `TRADEOFF:`.
-   - `<count>` is the number of `MULTI_BLOCK_PORT_IMPL_ALLOWED` governance lines emitted by `pr-check --all` in that run.
+- `bear check --all --project <repoRoot>`
+- `bear pr-check --all --project <repoRoot> --base <ref>`
+5. Completion report must include governance-signal disposition fields from `.bear/agent/REPORTING.md`.
 
 ## Integration Rule: Existing `AGENTS.md`
-
-Many projects already own a root `AGENTS.md`.
 
 When `AGENTS.md` already exists:
 1. Do not replace project-owned `AGENTS.md`.
 2. Append the one-line pointer from `AGENTS_SHIM.md`.
 3. Add BEAR package files under `.bear/agent/*`.
-

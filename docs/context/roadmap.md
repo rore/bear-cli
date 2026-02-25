@@ -1,4 +1,4 @@
-﻿# BEAR Roadmap
+# BEAR Roadmap
 
 This file is the single canonical roadmap.
 It defines milestone contracts, done criteria, and post-preview priorities.
@@ -35,7 +35,7 @@ Goal:
 - prove isolated BEAR-aware agent workflow in the demo repo
 
 Deliver:
-- demo-local BEAR workflow assets (`BEAR_PRIMER.md`, `AGENTS.md`, `BEAR_AGENT.md`, `WORKFLOW.md`)
+- demo-local BEAR workflow assets (`BEAR_PRIMER.md`, `AGENTS.md`, `BOOTSTRAP.md`, `CONTRACTS.md`, `TROUBLESHOOTING.md`, `REPORTING.md`)
 - canonical gate scripts and wrapper scripts
 - realistic scenario branches (`scenario/01-agent-greenfield-implementation`, `scenario/02-feature-extension-scheduled-transfers`)
 - no demo answer-key hints
@@ -92,7 +92,7 @@ Preview demo scope:
 - small banking slice with 2-3 blocks
 - canonical gate command as definition of done
 - undeclared-reach guard in verification path
-- packaged agent workflow docs in repo (`AGENTS.md`, `BEAR_AGENT.md`, `WORKFLOW.md`)
+- packaged agent workflow docs in repo (`AGENTS.md`, `BOOTSTRAP.md`, `CONTRACTS.md`, `TROUBLESHOOTING.md`, `REPORTING.md`)
 - repo-level block index mapping block to IR/project/test roots
 
 Preview definition of done:
@@ -152,4 +152,5 @@ Priority ordering is strict and maps to `docs/context/invariant-charter.md`.
 - full formal behavioral verification
 - workflow orchestration platforms
 - business-logic DSL expansion
+
 

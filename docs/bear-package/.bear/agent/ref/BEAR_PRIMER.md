@@ -26,8 +26,7 @@ You declare structure in IR, generate deterministic artifacts, implement only us
 
 ## Source of Truth for IR
 
-- Use `.bear/agent/doc/IR_QUICKREF.md` for schema/capability rules.
-- Use `.bear/agent/doc/IR_EXAMPLES.md` for minimal valid examples.
+- Use `.bear/agent/ref/IR_REFERENCE.md` for schema/rules/examples.
 - Do not infer IR by reverse engineering CLI binaries.
 
 ## Semantics Decision Rule (v1.2)

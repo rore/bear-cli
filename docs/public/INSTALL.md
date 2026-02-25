@@ -8,12 +8,13 @@ Target repo expected layout:
 
 ```text
 <repoRoot>/.bear/agent/
-  BEAR_AGENT.md
-  WORKFLOW.md
-  doc/BEAR_PRIMER.md
-  doc/IR_QUICKREF.md
-  doc/IR_EXAMPLES.md
-  doc/BLOCK_INDEX_QUICKREF.md
+  BOOTSTRAP.md
+  CONTRACTS.md
+  TROUBLESHOOTING.md
+  REPORTING.md
+  ref/BEAR_PRIMER.md
+  ref/IR_REFERENCE.md
+  ref/BLOCK_INDEX_QUICKREF.md
 
 <repoRoot>/.bear/tools/bear-cli/
   bin/bear(.bat)
@@ -38,7 +39,7 @@ mkdir -p ./.bear
 cp -R ../bear-cli/docs/bear-package/.bear/. ./.bear/
 ```
 
-2. Ensure project root `AGENTS.md` points to `.bear/agent/BEAR_AGENT.md`.
+2. Ensure project root `AGENTS.md` points to `.bear/agent/BOOTSTRAP.md`.
 
 If `AGENTS.md` already exists, append the one-line pointer from [`../bear-package/AGENTS_SHIM.md`](../bear-package/AGENTS_SHIM.md).
 

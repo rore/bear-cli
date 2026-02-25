@@ -49,7 +49,7 @@ function Find-PackagedCli([string]$repoRoot) {
 
 function Resolve-PackagedAgentRoot([string]$repoRoot) {
     $agentRoot = Join-Path $repoRoot "docs\bear-package\.bear\agent"
-    if (-not (Test-Path (Join-Path $agentRoot "BEAR_AGENT.md"))) {
+    if (-not (Test-Path (Join-Path $agentRoot "BOOTSTRAP.md"))) {
         throw "Missing packaged agent bundle at $agentRoot. Expected docs/bear-package/.bear/agent/*."
     }
     return (Resolve-Path $agentRoot).Path
@@ -135,6 +135,17 @@ function Ensure-GitIgnoreEntry([string]$gitIgnorePath, [string]$entry, [switch]$
     return $true
 }
 
+function Get-TreeHashes([string]$root) {
+    $fullRoot = (Resolve-Path -LiteralPath $root).Path
+    $entries = @{}
+    $files = Get-ChildItem -LiteralPath $fullRoot -File -Recurse | Sort-Object FullName
+    foreach ($file in $files) {
+        $relative = $file.FullName.Substring($fullRoot.Length).TrimStart('\') -replace '\\', '/'
+        $entries[$relative] = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash
+    }
+    return $entries
+}
+
 $repoRoot = Resolve-RepoRoot
 $demoRoot = Resolve-Absolute $DemoRepoPath
 if (-not (Test-Path (Join-Path $demoRoot ".git"))) {
@@ -186,19 +197,16 @@ $installRoot = if ($CliInstallPath) {
 $dstCliRoot = Join-Path $demoRoot ".bear\tools\bear-cli"
 $dstCliBin = Join-Path $dstCliRoot "bin"
 $dstCliLib = Join-Path $dstCliRoot "lib"
+$dstAgentRoot = Join-Path $demoRoot ".bear\agent"
 
 $runtimeOperations = @(
     @{ type = "replaceDir"; source = (Join-Path $installRoot "bin"); destination = $dstCliBin },
     @{ type = "replaceDir"; source = (Join-Path $installRoot "lib"); destination = $dstCliLib }
 )
 
-$docMappings = @(
-    @{ source = (Join-Path $packagedAgentRoot "BEAR_AGENT.md"); destination = (Join-Path $demoRoot ".bear\agent\BEAR_AGENT.md") },
-    @{ source = (Join-Path $packagedAgentRoot "WORKFLOW.md"); destination = (Join-Path $demoRoot ".bear\agent\WORKFLOW.md") },
-    @{ source = (Join-Path $packagedAgentRoot "doc\BEAR_PRIMER.md"); destination = (Join-Path $demoRoot ".bear\agent\doc\BEAR_PRIMER.md") },
-    @{ source = (Join-Path $packagedAgentRoot "doc\IR_EXAMPLES.md"); destination = (Join-Path $demoRoot ".bear\agent\doc\IR_EXAMPLES.md") },
-    @{ source = (Join-Path $packagedAgentRoot "doc\IR_QUICKREF.md"); destination = (Join-Path $demoRoot ".bear\agent\doc\IR_QUICKREF.md") },
-    @{ source = (Join-Path $packagedAgentRoot "doc\BLOCK_INDEX_QUICKREF.md"); destination = (Join-Path $demoRoot ".bear\agent\doc\BLOCK_INDEX_QUICKREF.md") },
+$agentOperation = @{ source = $packagedAgentRoot; destination = $dstAgentRoot }
+
+$policyMappings = @(
     @{ source = (Join-Path $repoRoot "docs\bear-package\.bear\policy\reflection-allowlist.txt"); destination = (Join-Path $demoRoot ".bear\policy\reflection-allowlist.txt") },
     @{ source = (Join-Path $repoRoot "docs\bear-package\.bear\policy\hygiene-allowlist.txt"); destination = (Join-Path $demoRoot ".bear\policy\hygiene-allowlist.txt") }
 )
@@ -210,8 +218,10 @@ Write-Output " - Replace runtime directories:"
 foreach ($op in $runtimeOperations) {
     Write-Output ("   - {0}" -f (Assert-Inside $demoRoot $op.destination))
 }
-Write-Output " - Copy agent package files:"
-foreach ($map in $docMappings) {
+Write-Output " - Replace agent directory:"
+Write-Output ("   - {0}" -f (Assert-Inside $demoRoot $agentOperation.destination))
+Write-Output " - Copy policy files:"
+foreach ($map in $policyMappings) {
     Write-Output ("   - {0}" -f (Assert-Inside $demoRoot $map.destination))
 }
 
@@ -241,7 +251,19 @@ foreach ($op in $runtimeOperations) {
     Write-Output ("Synced runtime dir: {0}" -f $dst)
 }
 
-foreach ($map in $docMappings) {
+$src = Resolve-Absolute $agentOperation.source
+$dst = Assert-Inside $demoRoot $agentOperation.destination
+$parent = Split-Path -Parent $dst
+if (-not (Test-Path $parent)) {
+    New-Item -ItemType Directory -Path $parent -Force | Out-Null
+}
+if (Test-Path $dst) {
+    Remove-Item -LiteralPath $dst -Recurse -Force
+}
+Copy-Item -LiteralPath $src -Destination $dst -Recurse -Force
+Write-Output ("Synced agent dir: {0}" -f $dst)
+
+foreach ($map in $policyMappings) {
     $src = Resolve-Absolute $map.source
     $dst = Assert-Inside $demoRoot $map.destination
     $parent = Split-Path -Parent $dst
@@ -276,7 +298,7 @@ if ($srcAppHash -ne $dstAppHash -or $srcKernelHash -ne $dstKernelHash) {
 }
 
 $mismatch = @()
-foreach ($map in $docMappings) {
+foreach ($map in $policyMappings) {
     $srcHash = (Get-FileHash $map.source -Algorithm SHA256).Hash
     $dstHash = (Get-FileHash $map.destination -Algorithm SHA256).Hash
     if ($srcHash -ne $dstHash) {
@@ -284,7 +306,31 @@ foreach ($map in $docMappings) {
     }
 }
 if ($mismatch.Count -gt 0) {
-    throw ("Post-sync hash mismatch detected for package files: " + ($mismatch -join ", "))
+    throw ("Post-sync hash mismatch detected for policy files: " + ($mismatch -join ", "))
+}
+
+$srcAgentHashes = Get-TreeHashes $packagedAgentRoot
+$dstAgentHashes = Get-TreeHashes $dstAgentRoot
+$treeMismatch = @()
+
+foreach ($key in $srcAgentHashes.Keys) {
+    if (-not $dstAgentHashes.ContainsKey($key)) {
+        $treeMismatch += ("missing-dst:" + $key)
+        continue
+    }
+    if ($srcAgentHashes[$key] -ne $dstAgentHashes[$key]) {
+        $treeMismatch += ("hash-mismatch:" + $key)
+    }
+}
+
+foreach ($key in $dstAgentHashes.Keys) {
+    if (-not $srcAgentHashes.ContainsKey($key)) {
+        $treeMismatch += ("unexpected-dst:" + $key)
+    }
+}
+
+if ($treeMismatch.Count -gt 0) {
+    throw ("Post-sync hash mismatch detected for agent tree: " + ($treeMismatch -join ", "))
 }
 
 Write-Output "Sync complete."

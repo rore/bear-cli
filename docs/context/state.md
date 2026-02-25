@@ -11,6 +11,7 @@ For milestone status and backlog ordering, use `docs/context/program-board.md`.
 
 P2 feature delivery:
 - active milestone is `P2`
+- complete BEAR package drift-barrier hard cutover (`BOOTSTRAP` + routed references)
 - post-hard-break follow-through with explicit dual-gate agent completion evidence
 - preserve structural governance focus (no endpoint-per-block policy, no style policing)
 - declared deps containment strict marker semantics are now implemented with selection gating
@@ -28,6 +29,14 @@ next feature sequence (one-by-one):
 
 ## Session Notes
 
+- Implemented BEAR package drift-barrier hard cutover:
+  - replaced package entrypoint with `.bear/agent/BOOTSTRAP.md`
+  - split package contracts into `.bear/agent/CONTRACTS.md`, `.bear/agent/TROUBLESHOOTING.md`, `.bear/agent/REPORTING.md`
+  - replaced IR split docs with `.bear/agent/ref/IR_REFERENCE.md`
+  - switched package reference folder to canonical `.bear/agent/ref/*`
+  - removed legacy package files (legacy package file set)
+  - updated active docs/scripts/tests and added exact package file-set checks in `BearPackageDocsConsistencyTest`
+  - updated `scripts/sync-bear-demo.ps1` to replace `.bear/agent` directory atomically and verify recursive tree hashes
 - Operationalized governance signal accounting in run completion contracts:
   - added mechanically-checkable completion block requirement:
     - `GOVERNANCE_SIGNAL_DISPOSITION`
@@ -36,8 +45,8 @@ next feature sequence (one-by-one):
   - froze `<count>` definition as number of `MULTI_BLOCK_PORT_IMPL_ALLOWED` lines emitted by `pr-check --all` in that run.
   - applied to all agent-run evaluations (not demo-only).
 - Canonical wiring recipe source-of-truth lock:
-  - full normative adapter-shape recipe now lives in `docs/bear-package/.bear/agent/BEAR_AGENT.md` only.
-  - `WORKFLOW.md` and `docs/bear-package/README.md` now reference that section instead of duplicating recipe prose.
+  - full normative adapter-shape recipe now lives in `docs/bear-package/.bear/agent/CONTRACTS.md` only.
+  - `docs/bear-package/.bear/agent/BOOTSTRAP.md` and `docs/bear-package/README.md` now reference that section instead of duplicating recipe prose.
 
 - Grading policy normalization:
   - run-grading rubric in `docs/context/demo-agent-simulation.md` is now canonical for all BEAR run evaluations (not simulation-only).
@@ -103,8 +112,8 @@ next feature sequence (one-by-one):
     - `docs/public/troubleshooting.md`
     - `docs/context/user-guide.md`
     - `docs/bear-package/README.md`
-    - `docs/bear-package/.bear/agent/BEAR_AGENT.md`
-    - `docs/bear-package/.bear/agent/WORKFLOW.md`
+    - `docs/bear-package/.bear/agent/BOOTSTRAP.md`
+    - `docs/bear-package/.bear/agent/CONTRACTS.md`
 
 - Implemented Slice 1 containment auto-wiring + post-test marker verification:
   - `ProjectTestRunner` now supports deterministic optional init-script injection and fixed arg order.
@@ -146,8 +155,8 @@ next feature sequence (one-by-one):
     - `docs/public/troubleshooting.md`
     - `docs/context/user-guide.md`
     - `docs/bear-package/README.md`
-    - `docs/bear-package/.bear/agent/BEAR_AGENT.md`
-    - `docs/bear-package/.bear/agent/WORKFLOW.md`
+    - `docs/bear-package/.bear/agent/BOOTSTRAP.md`
+    - `docs/bear-package/.bear/agent/CONTRACTS.md`
     - `docs/context/program-board.md`
     - `docs/context/state.md`
   - verification in-session:
@@ -336,18 +345,18 @@ next feature sequence (one-by-one):
 
 - Adjusted package guidance to allow practical history use in real projects:
   - replaced strict no-history rule with: history/branches/stashes may be used as auxiliary context, but BEAR decisions must be grounded in current working tree + current IR/index contracts.
-  - updated `docs/bear-package/.bear/agent/BEAR_AGENT.md` and `docs/bear-package/.bear/agent/WORKFLOW.md` accordingly.
+  - updated `docs/bear-package/.bear/agent/BOOTSTRAP.md` and `docs/bear-package/.bear/agent/CONTRACTS.md` accordingly.
   - updated invalid-pattern wording to forbid history-based outputs that conflict with current state/contracts (instead of forbidding history lookup itself).
   - verified with `.\gradlew.bat --no-daemon :app:test --tests com.bear.app.BearPackageDocsConsistencyTest`.
 
 - Clarified packaged agent policy semantics in one place:
-  - added `Policy Contract (Check)` section to `docs/bear-package/.bear/agent/BEAR_AGENT.md` covering strict hygiene mode, optional policy files, exact-path allowlist format, and `POLICY_INVALID` / `HYGIENE_UNEXPECTED_PATHS` behavior.
+  - added `Policy Contract (Check)` section to `docs/bear-package/.bear/agent/BOOTSTRAP.md` covering strict hygiene mode, optional policy files, exact-path allowlist format, and `POLICY_INVALID` / `HYGIENE_UNEXPECTED_PATHS` behavior.
   - linked to `.bear/policy/*.txt` header comments for concrete syntax examples.
   - verified with `.\gradlew.bat --no-daemon :app:test --tests com.bear.app.BearPackageDocsConsistencyTest`.
 
 - Synced BEAR package bundle with CLI hardening updates:
   - added package policy templates under `docs/bear-package/.bear/policy/` (`reflection-allowlist.txt`, `hygiene-allowlist.txt`)
-  - updated packaged agent docs (`BEAR_AGENT.md`, `WORKFLOW.md`, `IR_QUICKREF.md`) for `check [--strict-hygiene]` and policy/hardening semantics
+  - updated packaged agent docs (`BOOTSTRAP.md`, `CONTRACTS.md`, `ref/IR_REFERENCE.md`) for `check [--strict-hygiene]` and policy/hardening semantics
   - updated `docs/bear-package/README.md` package layout/distributed-file set and canonical runtime path note
   - updated `scripts/sync-bear-demo.ps1` so demo sync copies `.bear/policy/*` templates from package source
   - verified with `.\gradlew.bat --no-daemon :app:test --tests com.bear.app.BearPackageDocsConsistencyTest`
@@ -404,9 +413,9 @@ next feature sequence (one-by-one):
   - new `docs/public/ENFORCEMENT.md` summarizing what `check` enforces and what `pr-check` alerts on.
   - linked the new page from `README.md`, `docs/public/INDEX.md`, `docs/public/FOUNDATIONS.md`, and `docs/public/MODEL.md`.
 - Clarified BEAR package structure and removed legacy duplication:
-  - deleted root-level duplicate package docs from `docs/bear-package/` (`BEAR_AGENT.md`, `WORKFLOW.md`, `BEAR_PRIMER.md`, `IR_*`, `BLOCK_INDEX_QUICKREF.md`).
+  - deleted root-level duplicate package docs from `docs/bear-package/` (`BOOTSTRAP.md`, `CONTRACTS.md`, `BEAR_PRIMER.md`, `IR_*`, `BLOCK_INDEX_QUICKREF.md`).
   - `.bear/agent/*` is now the only canonical location for distributed agent docs.
-  - updated `BearPackageDocsConsistencyTest` to validate files under `docs/bear-package/.bear/agent/doc/*`.
+  - updated `BearPackageDocsConsistencyTest` to validate files under `docs/bear-package/.bear/agent/ref/*`.
   - updated `docs/context/start-here.md` package navigation to `docs/bear-package/.bear/agent/`.
 - Refined README opening definition of BEAR to emphasize agent-first execution and PR/CI governance visibility in one concrete sentence.
 - Normalized package installation to single-bundle copy semantics:
@@ -419,7 +428,7 @@ next feature sequence (one-by-one):
   - updated `docs/public/MODEL.md` to split agent execution model from developer visibility model.
 - Updated public onboarding docs to package-first runtime usage:
   - README and `docs/public/QUICKSTART.md` now use vendored CLI invocation (`.bear/tools/bear-cli/bin/bear(.bat)`) for demo flows instead of assuming global `bear` on PATH.
-  - Added `docs/public/INSTALL.md` for non-demo projects (copy package bundle into `.bear/`, point root `AGENTS.md` to `.bear/agent/BEAR_AGENT.md`).
+  - Added `docs/public/INSTALL.md` for non-demo projects (copy package bundle into `.bear/`, point root `AGENTS.md` to `.bear/agent/BOOTSTRAP.md`).
   - Improved `docs/public/INDEX.md` integration path to include install guidance.
 - Packaged CLI runtime is now checked in under `docs/bear-package/.bear/tools/bear-cli/` (`bin/` + `lib/` from installDist output).
 - Updated `scripts/sync-bear-demo.ps1`:
@@ -482,10 +491,10 @@ next feature sequence (one-by-one):
 - Updated stale demo references in `docs/context/architecture.md` and `docs/context/roadmap.md` to the new scenario naming/model.
 - Hardened `JvmTarget` generated-file sync: fallback to in-place rewrite when replace fails on writable existing targets under lock-like conditions.
 - Added kernel regression test `compileReplaceLockFallsBackToInPlaceRewrite` and retained deterministic lock-failure behavior for unrecoverable cases.
-- Tightened BEAR package lock policy (`docs/bear-package/BEAR_AGENT.md`) and user/demo docs to forbid IR/ACL workaround mutations after lock failures.
+- Tightened BEAR package lock policy (`docs/bear-package/.bear/agent/BOOTSTRAP.md`) and user/demo docs to forbid IR/ACL workaround mutations after lock failures.
 - Tightened BEAR package decomposition policy to reduce single-vs-many block variability: explicit split reasons, mandatory spec-citation evidence for multi-block decomposition, anti-router rule, and workflow/reporting updates.
 - Improved `bear check` project-test classification so Gradle wrapper bootstrap/unzip failures map to `IO_ERROR` (including `check --all` root-level detail enrichment with first failing line and short tail context).
-- Updated BEAR package docs for v1 IR clarity (`docs/bear-package/IR_EXAMPLES.md`, `docs/bear-package/BEAR_PRIMER.md`) and added doc consistency test coverage (`BearPackageDocsConsistencyTest`).
+- Updated BEAR package docs for v1 IR clarity (`docs/bear-package/.bear/agent/ref/IR_REFERENCE.md`, `docs/bear-package/.bear/agent/ref/BEAR_PRIMER.md`) and added doc consistency test coverage (`BearPackageDocsConsistencyTest`).
 - Added safe cleanup utility `scripts/safe-clean-bear-generated.ps1` with dry-run mode and optional greenfield reset scope.
 - Added end-to-end demo sync utility `scripts/sync-bear-demo.ps1` to build CLI, sync vendored demo runtime (`.bear/tools/bear-cli`), and sync `.bear/agent` package files with hash verification.
 - Extended `scripts/safe-clean-bear-generated.ps1` to remove full `build/` outputs so BEAR-generated classfiles under `build/classes/**/com/bear/generated` are fully cleaned in demo resets.
@@ -534,7 +543,8 @@ next feature sequence (one-by-one):
   - index-resolved canonical mismatch now fails deterministically at `block.name` with index locator detail
   - all-mode services now pass explicit index locator context and parse index with strict duplicate-tuple guard
   - expanded tests for canonicalization, tuple matching, ambiguity, mismatch, and strict parser duplicate tuple guard
-  - updated spec/docs: `docs/public/commands-compile.md`, `docs/public/commands-check.md`, `docs/context/user-guide.md`, `docs/bear-package/WORKFLOW.md`
+  - updated spec/docs: `docs/public/commands-compile.md`, `docs/public/commands-check.md`, `docs/context/user-guide.md`, `docs/bear-package/.bear/agent/CONTRACTS.md`
+
 
 
 

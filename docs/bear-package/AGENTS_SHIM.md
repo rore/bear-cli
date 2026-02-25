@@ -1,1 +1,1 @@
-BEAR workflow: read ./.bear/agent/BEAR_AGENT.md and follow it for all boundary-governed implementation tasks.
+BEAR workflow: read ./.bear/agent/BOOTSTRAP.md and follow it for all boundary-governed implementation tasks.

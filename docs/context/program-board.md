@@ -1,4 +1,4 @@
-﻿# BEAR Program Board
+# BEAR Program Board
 
 ## Last Updated
 
@@ -185,8 +185,10 @@ Docs/package updates required:
 - `docs/public/commands-check.md`
 - `docs/public/commands-pr-check.md`
 - `docs/context/user-guide.md`
-- `docs/bear-package/.bear/agent/BEAR_AGENT.md`
-- `docs/bear-package/.bear/agent/WORKFLOW.md`
+- `docs/bear-package/.bear/agent/BOOTSTRAP.md`
+- `docs/bear-package/.bear/agent/CONTRACTS.md`
+- `docs/bear-package/.bear/agent/TROUBLESHOOTING.md`
+- `docs/bear-package/.bear/agent/REPORTING.md`
 
 ### 3) Wiring drift diagnostics (`P2` completed)
 
@@ -226,6 +228,7 @@ Direction lock:
 - Risk: historical references still pointing to `docs/context/roadmap-v0.md` can reintroduce drift if not cleaned.
 - Direction lock: BEAR semantic scope follows enforceability + determinism (wrapper-owned where possible), not domain-specific rule coverage.
 - Decision lock: do not enforce endpoint-per-block decomposition; preserve structural governance focus over style/location policing.
+
 
 
 
