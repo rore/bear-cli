@@ -426,6 +426,9 @@ Why both:
 
 Use `docs/context/demo-agent-simulation.md` for canonical isolated-agent simulation instructions (fresh session, demo-only context, branch-under-test metadata, mandatory BEAR analysis, and run grading/readiness rubric).
 
+Run-evaluation policy:
+- the BEAR run grading model in `docs/context/demo-agent-simulation.md` is also the default rubric for any run review (including non-simulated runs and user-provided transcripts).
+
 `scripts/run-demo-simulated.ps1` is prep/smoke automation only:
 - clean demo
 - sync demo runtime/package

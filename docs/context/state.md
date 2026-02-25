@@ -28,6 +28,10 @@ next feature sequence (one-by-one):
 
 ## Session Notes
 
+- Grading policy normalization:
+  - run-grading rubric in `docs/context/demo-agent-simulation.md` is now canonical for all BEAR run evaluations (not simulation-only).
+  - `docs/context/user-guide.md` now explicitly points non-simulated/user-provided run reviews to the same grading rubric.
+
 - Extended isolated simulation contract with mandatory post-run BEAR analysis + grading:
   - `docs/context/demo-agent-simulation.md` now requires:
     - went well / did not go well / lessons / BEAR improvements sections

@@ -154,6 +154,15 @@ Minimum analysis expectations:
 
 ## Run grading model (mandatory)
 
+This grading model is canonical for **all BEAR run evaluations**, not only isolated simulations.
+Use it for:
+1. isolated simulation runs from this runbook
+2. non-isolated local runs
+3. externally provided run transcripts/logs submitted for BEAR evaluation
+
+Rule:
+- whenever a run is evaluated from a BEAR perspective, include this grade block.
+
 Score each dimension `0..5`:
 
 1. Workflow compliance (`20%`)
