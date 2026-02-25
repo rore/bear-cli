@@ -5,7 +5,7 @@ For milestone status and backlog ordering, use `docs/context/program-board.md`.
 
 ## Last Updated
 
-2026-02-24
+2026-02-25
 
 ## Current Focus
 
@@ -16,16 +16,42 @@ P2 feature delivery:
 - declared deps containment strict marker semantics are now implemented with selection gating
 - `_shared` allowedDeps policy contract is now implemented and stabilized
 - Slice 1 containment auto-wiring in `check` is implemented and validated
+- generated structural tests are now implemented as evidence-first with strict opt-in
 - keep deterministic diagnostics high-signal and directly actionable
 
 ## Next Concrete Task
 
 next feature sequence (one-by-one):
-1. execute remaining P2 follow-up: generated structural tests + cross-target parity
-2. keep containment-lane smoke fixtures handy for future regressions (`exit 3` drift lane vs `exit 74` verification lane)
+1. run stabilization bake period for structural evidence signals and decide strict-mode default timing
+2. keep containment-lane smoke fixtures handy for regressions (`exit 3` drift lane vs `exit 74` verification lane)
 3. keep full `:kernel:test` + `:app:test` + root `test` green after each incremental update
 
 ## Session Notes
+
+- Implemented P2 next slice: generated structural tests + minimal parity lock.
+  - `JvmTarget` now emits:
+    - `<BlockName>StructuralDirectionTest`
+    - `<BlockName>StructuralReachTest`
+  - generated structural line format is frozen:
+    - `BEAR_STRUCTURAL_SIGNAL|blockKey=<blockKey>|test=<Direction|Reach>|kind=<KIND>|detail=<detail>`
+  - detail formatting is stable and grep-friendly:
+    - single line
+    - no absolute paths
+    - method signature shape uses `<InterfaceSimple>#<methodName>(<paramSimpleCsv>)`
+  - generated tests embed expected ordered metadata from generator canonical ordering.
+  - generated tests sort mismatches internally; strict mode is opt-in with:
+    - `-Dbear.structural.tests.strict=true`
+    - single aggregated fail per structural test class.
+  - no impl-path policing in structural tests (generated-surface-only checks).
+  - parity lock added in CLI tests for unsupported containment preflight between single `check` and `check --all`.
+  - docs/package sync updated:
+    - `docs/public/commands-check.md`
+    - `docs/public/output-format.md`
+    - `docs/public/troubleshooting.md`
+    - `docs/context/user-guide.md`
+    - `docs/bear-package/README.md`
+    - `docs/bear-package/.bear/agent/BEAR_AGENT.md`
+    - `docs/bear-package/.bear/agent/WORKFLOW.md`
 
 - Implemented Slice 1 containment auto-wiring + post-test marker verification:
   - `ProjectTestRunner` now supports deterministic optional init-script injection and fixed arg order.

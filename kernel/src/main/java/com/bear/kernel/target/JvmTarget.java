@@ -119,11 +119,15 @@ public final class JvmTarget implements Target {
             write(stagingMain.resolve(port.interfaceName + ".java"), renderPort(packageName, port));
         }
 
-        if (ir.block().idempotency() != null) {
-            write(stagingTest.resolve(blockName + "IdempotencyTest.java"), renderIdempotencyTest(packageName, blockName));
-        }
-        if (ir.block().invariants() != null && !ir.block().invariants().isEmpty()) {
-            write(stagingTest.resolve(blockName + "InvariantNonNegativeTest.java"), renderInvariantTest(packageName, blockName));
+        if (ir.block().kind() == BearIr.BlockKind.LOGIC) {
+            write(
+                stagingTest.resolve(blockName + "StructuralDirectionTest.java"),
+                renderStructuralDirectionTest(packageName, blockName, effectiveBlockKey, ports, logicPorts)
+            );
+            write(
+                stagingTest.resolve(blockName + "StructuralReachTest.java"),
+                renderStructuralReachTest(packageName, blockName, effectiveBlockKey, ports)
+            );
         }
 
         write(stagingSurfaceMarker, renderSurfaceManifest(ir));
@@ -600,30 +604,312 @@ public final class JvmTarget implements Target {
         return s.toString();
     }
 
-    private String renderIdempotencyTest(String packageName, String blockName) {
+    private String renderStructuralDirectionTest(
+        String packageName,
+        String blockName,
+        String blockKey,
+        List<PortModel> ports,
+        List<PortModel> logicPorts
+    ) {
+        List<String> expectedOfParams = new ArrayList<>();
+        for (PortModel port : ports) {
+            expectedOfParams.add(port.interfaceName);
+        }
+        List<String> expectedLogicExecuteParams = new ArrayList<>();
+        expectedLogicExecuteParams.add(blockName + "Request");
+        for (PortModel port : logicPorts) {
+            expectedLogicExecuteParams.add(port.interfaceName);
+        }
+
         return GENERATED_HEADER
             + "package " + packageName + ";\n\n"
+            + "import java.lang.reflect.Method;\n"
+            + "import java.lang.reflect.Modifier;\n"
+            + "import java.util.ArrayList;\n"
+            + "import java.util.Collections;\n"
+            + "import java.util.List;\n"
             + "import org.junit.jupiter.api.Test;\n"
-            + "import static org.junit.jupiter.api.Assertions.assertTrue;\n\n"
-            + "final class " + blockName + "IdempotencyTest {\n"
+            + "import static org.junit.jupiter.api.Assertions.fail;\n\n"
+            + "final class " + blockName + "StructuralDirectionTest {\n"
+            + "    private static final String BLOCK_KEY = " + javaString(blockKey) + ";\n"
+            + "    private static final boolean STRICT = Boolean.getBoolean(\"bear.structural.tests.strict\");\n"
+            + "    private static final String TEST_NAME = \"Direction\";\n"
+            + "    private static final List<String> EXPECTED_OF_PARAMS = " + javaStringListLiteral(expectedOfParams) + ";\n"
+            + "    private static final List<String> EXPECTED_LOGIC_EXECUTE_PARAMS = " + javaStringListLiteral(expectedLogicExecuteParams) + ";\n\n"
             + "    @Test\n"
-            + "    void templateCompiles() {\n"
-            + "        assertTrue(true);\n"
+            + "    void structuralDirectionEvidence() {\n"
+            + "        List<String> mismatches = new ArrayList<>();\n"
+            + "        expectSimpleName(" + blockName + ".class, " + javaString(blockName) + ", \"WRAPPER_CLASS_MISMATCH\", mismatches);\n"
+            + "        expectSimpleName(" + blockName + "Request.class, " + javaString(blockName + "Request") + ", \"REQUEST_CLASS_MISMATCH\", mismatches);\n"
+            + "        expectSimpleName(" + blockName + "Result.class, " + javaString(blockName + "Result") + ", \"RESULT_CLASS_MISMATCH\", mismatches);\n"
+            + "        expectSimpleName(" + blockName + "Logic.class, " + javaString(blockName + "Logic") + ", \"LOGIC_CLASS_MISMATCH\", mismatches);\n"
+            + "        Method ofMethod = findStaticMethod(" + blockName + ".class, \"of\", mismatches, \"WRAPPER_OF_MISSING\");\n"
+            + "        if (ofMethod != null) {\n"
+            + "            List<String> actualOfParams = parameterSimpleNames(ofMethod);\n"
+            + "            if (!actualOfParams.equals(EXPECTED_OF_PARAMS)) {\n"
+            + "                addMismatch(\n"
+            + "                    mismatches,\n"
+            + "                    \"WRAPPER_OF_PARAMS_MISMATCH\",\n"
+            + "                    \"expected=\" + joinCsv(EXPECTED_OF_PARAMS) + \";actual=\" + joinCsv(actualOfParams)\n"
+            + "                );\n"
+            + "            }\n"
+            + "            String actualReturnType = ofMethod.getReturnType().getSimpleName();\n"
+            + "            if (!actualReturnType.equals(" + javaString(blockName) + ")) {\n"
+            + "                addMismatch(\n"
+            + "                    mismatches,\n"
+            + "                    \"WRAPPER_OF_RETURN_MISMATCH\",\n"
+            + "                    \"expected=" + blockName + ";actual=\" + actualReturnType\n"
+            + "                );\n"
+            + "            }\n"
+            + "        }\n"
+            + "        Method logicExecute = findMethodByName(" + blockName + "Logic.class, \"execute\", mismatches, \"LOGIC_EXECUTE_MISSING\");\n"
+            + "        if (logicExecute != null) {\n"
+            + "            List<String> actualExecuteParams = parameterSimpleNames(logicExecute);\n"
+            + "            if (!actualExecuteParams.equals(EXPECTED_LOGIC_EXECUTE_PARAMS)) {\n"
+            + "                addMismatch(\n"
+            + "                    mismatches,\n"
+            + "                    \"LOGIC_EXECUTE_PARAMS_MISMATCH\",\n"
+            + "                    \"expected=\" + joinCsv(EXPECTED_LOGIC_EXECUTE_PARAMS) + \";actual=\" + joinCsv(actualExecuteParams)\n"
+            + "                );\n"
+            + "            }\n"
+            + "            String actualResultType = logicExecute.getReturnType().getSimpleName();\n"
+            + "            if (!actualResultType.equals(" + javaString(blockName + "Result") + ")) {\n"
+            + "                addMismatch(\n"
+            + "                    mismatches,\n"
+            + "                    \"LOGIC_EXECUTE_RETURN_MISMATCH\",\n"
+            + "                    \"expected=" + blockName + "Result;actual=\" + actualResultType\n"
+            + "                );\n"
+            + "            }\n"
+            + "        }\n"
+            + "        emitAndMaybeFail(mismatches);\n"
+            + "    }\n\n"
+            + "    private static Method findStaticMethod(Class<?> type, String methodName, List<String> mismatches, String missingKind) {\n"
+            + "        List<Method> candidates = new ArrayList<>();\n"
+            + "        for (Method method : type.getDeclaredMethods()) {\n"
+            + "            if (method.getName().equals(methodName) && Modifier.isStatic(method.getModifiers())) {\n"
+            + "                candidates.add(method);\n"
+            + "            }\n"
+            + "        }\n"
+            + "        if (candidates.isEmpty()) {\n"
+            + "            addMismatch(mismatches, missingKind, type.getSimpleName() + \"#\" + methodName + \"()\");\n"
+            + "            return null;\n"
+            + "        }\n"
+            + "        candidates.sort((left, right) -> methodSignature(left).compareTo(methodSignature(right)));\n"
+            + "        if (candidates.size() > 1) {\n"
+            + "            addMismatch(mismatches, \"WRAPPER_OF_MULTIPLE\", \"count=\" + candidates.size());\n"
+            + "        }\n"
+            + "        return candidates.get(0);\n"
+            + "    }\n\n"
+            + "    private static Method findMethodByName(Class<?> type, String methodName, List<String> mismatches, String missingKind) {\n"
+            + "        List<Method> candidates = new ArrayList<>();\n"
+            + "        for (Method method : type.getDeclaredMethods()) {\n"
+            + "            if (method.getName().equals(methodName)) {\n"
+            + "                candidates.add(method);\n"
+            + "            }\n"
+            + "        }\n"
+            + "        if (candidates.isEmpty()) {\n"
+            + "            addMismatch(mismatches, missingKind, type.getSimpleName() + \"#\" + methodName + \"()\");\n"
+            + "            return null;\n"
+            + "        }\n"
+            + "        candidates.sort((left, right) -> methodSignature(left).compareTo(methodSignature(right)));\n"
+            + "        if (candidates.size() > 1) {\n"
+            + "            addMismatch(mismatches, \"LOGIC_EXECUTE_MULTIPLE\", \"count=\" + candidates.size());\n"
+            + "        }\n"
+            + "        return candidates.get(0);\n"
+            + "    }\n\n"
+            + "    private static void expectSimpleName(Class<?> type, String expectedSimpleName, String kind, List<String> mismatches) {\n"
+            + "        String actualSimpleName = type.getSimpleName();\n"
+            + "        if (!expectedSimpleName.equals(actualSimpleName)) {\n"
+            + "            addMismatch(\n"
+            + "                mismatches,\n"
+            + "                kind,\n"
+            + "                \"class=\" + type.getName() + \";expected=\" + expectedSimpleName + \";actual=\" + actualSimpleName\n"
+            + "            );\n"
+            + "        }\n"
+            + "    }\n\n"
+            + "    private static List<String> parameterSimpleNames(Method method) {\n"
+            + "        ArrayList<String> names = new ArrayList<>();\n"
+            + "        for (Class<?> parameterType : method.getParameterTypes()) {\n"
+            + "            names.add(parameterType.getSimpleName());\n"
+            + "        }\n"
+            + "        return names;\n"
+            + "    }\n\n"
+            + "    private static String methodSignature(Method method) {\n"
+            + "        return method.getDeclaringClass().getSimpleName()\n"
+            + "            + \"#\"\n"
+            + "            + method.getName()\n"
+            + "            + \"(\"\n"
+            + "            + joinCsv(parameterSimpleNames(method))\n"
+            + "            + \")\";\n"
+            + "    }\n\n"
+            + "    private static void addMismatch(List<String> mismatches, String kind, String detail) {\n"
+            + "        String normalizedDetail = detail == null ? \"\" : detail.replace(\"\\r\", \"\").replace(\"\\n\", \"\");\n"
+            + "        mismatches.add(kind + \"|\" + normalizedDetail);\n"
+            + "    }\n\n"
+            + "    private static String joinCsv(List<String> values) {\n"
+            + "        return String.join(\",\", values);\n"
+            + "    }\n\n"
+            + "    private static void emitAndMaybeFail(List<String> mismatches) {\n"
+            + "        Collections.sort(mismatches);\n"
+            + "        for (String mismatch : mismatches) {\n"
+            + "            int sep = mismatch.indexOf('|');\n"
+            + "            String kind = sep < 0 ? \"UNKNOWN\" : mismatch.substring(0, sep);\n"
+            + "            String detail = sep < 0 ? \"\" : mismatch.substring(sep + 1);\n"
+            + "            System.out.println(\n"
+            + "                \"BEAR_STRUCTURAL_SIGNAL|blockKey=\"\n"
+            + "                    + BLOCK_KEY\n"
+            + "                    + \"|test=\"\n"
+            + "                    + TEST_NAME\n"
+            + "                    + \"|kind=\"\n"
+            + "                    + kind\n"
+            + "                    + \"|detail=\"\n"
+            + "                    + detail\n"
+            + "            );\n"
+            + "        }\n"
+            + "        if (STRICT && !mismatches.isEmpty()) {\n"
+            + "            fail(\"BEAR_STRUCTURAL_STRICT_FAILURE|\" + TEST_NAME + \"|\" + String.join(\"\\n\", mismatches));\n"
+            + "        }\n"
             + "    }\n"
             + "}\n";
     }
 
-    private String renderInvariantTest(String packageName, String blockName) {
+    private String renderStructuralReachTest(
+        String packageName,
+        String blockName,
+        String blockKey,
+        List<PortModel> ports
+    ) {
+        StringBuilder expectedMap = new StringBuilder();
+        for (int i = 0; i < ports.size(); i++) {
+            PortModel port = ports.get(i);
+            expectedMap.append("        expected.put(")
+                .append(javaString(port.interfaceName))
+                .append(", ")
+                .append(javaStringListLiteral(portMethodSignatures(port)))
+                .append(");\n");
+        }
+
         return GENERATED_HEADER
             + "package " + packageName + ";\n\n"
+            + "import java.lang.reflect.Method;\n"
+            + "import java.util.ArrayList;\n"
+            + "import java.util.Collections;\n"
+            + "import java.util.LinkedHashMap;\n"
+            + "import java.util.List;\n"
+            + "import java.util.Map;\n"
             + "import org.junit.jupiter.api.Test;\n"
-            + "import static org.junit.jupiter.api.Assertions.assertTrue;\n\n"
-            + "final class " + blockName + "InvariantNonNegativeTest {\n"
+            + "import static org.junit.jupiter.api.Assertions.fail;\n\n"
+            + "final class " + blockName + "StructuralReachTest {\n"
+            + "    private static final String BLOCK_KEY = " + javaString(blockKey) + ";\n"
+            + "    private static final boolean STRICT = Boolean.getBoolean(\"bear.structural.tests.strict\");\n"
+            + "    private static final String TEST_NAME = \"Reach\";\n\n"
             + "    @Test\n"
-            + "    void templateCompiles() {\n"
-            + "        assertTrue(true);\n"
+            + "    void structuralReachEvidence() {\n"
+            + "        List<String> mismatches = new ArrayList<>();\n"
+            + "        Map<String, List<String>> expected = expectedPortMethodSignatures();\n"
+            + "        for (Map.Entry<String, List<String>> entry : expected.entrySet()) {\n"
+            + "            String interfaceSimple = entry.getKey();\n"
+            + "            List<String> expectedMethods = entry.getValue();\n"
+            + "            Class<?> portClass;\n"
+            + "            try {\n"
+            + "                portClass = Class.forName(" + javaString(packageName + ".") + " + interfaceSimple);\n"
+            + "            } catch (ClassNotFoundException e) {\n"
+            + "                addMismatch(mismatches, \"PORT_INTERFACE_MISSING\", interfaceSimple);\n"
+            + "                continue;\n"
+            + "            }\n"
+            + "            if (!portClass.isInterface()) {\n"
+            + "                addMismatch(mismatches, \"PORT_INTERFACE_NOT_INTERFACE\", interfaceSimple);\n"
+            + "                continue;\n"
+            + "            }\n"
+            + "            List<String> actualMethods = declaredMethodSignatures(portClass);\n"
+            + "            if (!actualMethods.equals(expectedMethods)) {\n"
+            + "                addMismatch(\n"
+            + "                    mismatches,\n"
+            + "                    \"PORT_METHOD_SET_MISMATCH\",\n"
+            + "                    \"port=\" + interfaceSimple + \";expected=\" + joinCsv(expectedMethods) + \";actual=\" + joinCsv(actualMethods)\n"
+            + "                );\n"
+            + "            }\n"
+            + "        }\n"
+            + "        emitAndMaybeFail(mismatches);\n"
+            + "    }\n\n"
+            + "    private static Map<String, List<String>> expectedPortMethodSignatures() {\n"
+            + "        LinkedHashMap<String, List<String>> expected = new LinkedHashMap<>();\n"
+            + expectedMap
+            + "        return expected;\n"
+            + "    }\n\n"
+            + "    private static List<String> declaredMethodSignatures(Class<?> type) {\n"
+            + "        ArrayList<String> signatures = new ArrayList<>();\n"
+            + "        for (Method method : type.getDeclaredMethods()) {\n"
+            + "            signatures.add(methodSignature(method));\n"
+            + "        }\n"
+            + "        Collections.sort(signatures);\n"
+            + "        return signatures;\n"
+            + "    }\n\n"
+            + "    private static String methodSignature(Method method) {\n"
+            + "        ArrayList<String> paramSimpleNames = new ArrayList<>();\n"
+            + "        for (Class<?> parameterType : method.getParameterTypes()) {\n"
+            + "            paramSimpleNames.add(parameterType.getSimpleName());\n"
+            + "        }\n"
+            + "        return method.getDeclaringClass().getSimpleName()\n"
+            + "            + \"#\"\n"
+            + "            + method.getName()\n"
+            + "            + \"(\"\n"
+            + "            + joinCsv(paramSimpleNames)\n"
+            + "            + \")\";\n"
+            + "    }\n\n"
+            + "    private static void addMismatch(List<String> mismatches, String kind, String detail) {\n"
+            + "        String normalizedDetail = detail == null ? \"\" : detail.replace(\"\\r\", \"\").replace(\"\\n\", \"\");\n"
+            + "        mismatches.add(kind + \"|\" + normalizedDetail);\n"
+            + "    }\n\n"
+            + "    private static String joinCsv(List<String> values) {\n"
+            + "        return String.join(\",\", values);\n"
+            + "    }\n\n"
+            + "    private static void emitAndMaybeFail(List<String> mismatches) {\n"
+            + "        Collections.sort(mismatches);\n"
+            + "        for (String mismatch : mismatches) {\n"
+            + "            int sep = mismatch.indexOf('|');\n"
+            + "            String kind = sep < 0 ? \"UNKNOWN\" : mismatch.substring(0, sep);\n"
+            + "            String detail = sep < 0 ? \"\" : mismatch.substring(sep + 1);\n"
+            + "            System.out.println(\n"
+            + "                \"BEAR_STRUCTURAL_SIGNAL|blockKey=\"\n"
+            + "                    + BLOCK_KEY\n"
+            + "                    + \"|test=\"\n"
+            + "                    + TEST_NAME\n"
+            + "                    + \"|kind=\"\n"
+            + "                    + kind\n"
+            + "                    + \"|detail=\"\n"
+            + "                    + detail\n"
+            + "            );\n"
+            + "        }\n"
+            + "        if (STRICT && !mismatches.isEmpty()) {\n"
+            + "            fail(\"BEAR_STRUCTURAL_STRICT_FAILURE|\" + TEST_NAME + \"|\" + String.join(\"\\n\", mismatches));\n"
+            + "        }\n"
             + "    }\n"
             + "}\n";
+    }
+
+    private List<String> portMethodSignatures(PortModel port) {
+        ArrayList<String> signatures = new ArrayList<>();
+        for (String method : port.methods) {
+            signatures.add(port.interfaceName + "#" + method + "(BearValue)");
+        }
+        signatures.sort(String::compareTo);
+        return List.copyOf(signatures);
+    }
+
+    private String javaStringListLiteral(List<String> values) {
+        if (values == null || values.isEmpty()) {
+            return "java.util.List.of()";
+        }
+        StringBuilder literal = new StringBuilder("java.util.List.of(");
+        for (int i = 0; i < values.size(); i++) {
+            if (i > 0) {
+                literal.append(", ");
+            }
+            literal.append(javaString(values.get(i)));
+        }
+        literal.append(")");
+        return literal.toString();
     }
 
     private String defaultLiteral(String javaType) {

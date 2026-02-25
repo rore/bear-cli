@@ -188,6 +188,10 @@ Behavior:
   - `governedSourceRoots` order is deterministic: block root first, mandatory reserved `src/main/java/blocks/_shared` second
   - wrapper-owned semantic ports must not overlap logic-required ports
 - runs project tests only after no-drift result
+- generated structural tests provide deterministic structural evidence on generated surface shape:
+  - output line format: `BEAR_STRUCTURAL_SIGNAL|blockKey=<blockKey>|test=<Direction|Reach>|kind=<KIND>|detail=<detail>`
+  - default mode is evidence-only (non-failing)
+  - opt-in strict mode: `-Dbear.structural.tests.strict=true` (fails once per structural test class with aggregated sorted mismatch output)
 - invariant marker-first classification:
   - test output marker `BEAR_INVARIANT_VIOLATION|block=...|kind=...|field=...|observed=...|rule=...`
   - deterministic `CODE=INVARIANT_VIOLATION` in test-failure bucket

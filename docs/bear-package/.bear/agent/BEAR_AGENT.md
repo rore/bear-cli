@@ -58,6 +58,7 @@ Purpose:
     - `bear check --all --project <repoRoot>`
     - `bear pr-check --all --project <repoRoot> --base <ref>`
     - Do not report done if either command is missing or non-zero.
+37. Treat `BEAR_STRUCTURAL_SIGNAL|...` lines as structural evidence by default (non-failing); only treat as gate failure when strict mode is explicitly enabled (`-Dbear.structural.tests.strict=true`).
 
 ## Policy Contract (Check)
 

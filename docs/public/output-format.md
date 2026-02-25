@@ -51,6 +51,12 @@ Contract:
 
 - `pr-check: GOVERNANCE: MULTI_BLOCK_PORT_IMPL_ALLOWED: <relative/path>: <implClassFqcn> -> <sortedGeneratedPackageCsv>`
 
+Generated structural evidence lines (project-test output):
+
+- `BEAR_STRUCTURAL_SIGNAL|blockKey=<blockKey>|test=<Direction|Reach>|kind=<KIND>|detail=<detail>`
+- key order is fixed and contains no spaces.
+- `detail` is single-line deterministic text with stable custom formatting (no default JVM reflection `toString()` output).
+
 `pr-check --all` repo-level shared-policy section:
 
 - `REPO DELTA:`
@@ -82,6 +88,7 @@ Common `check` policy lines:
 `pr-check` port-impl containment findings are deterministically sorted by `path`, then `rule`, then `detail`.
 `pr-check` governance signal lines are deterministically sorted by `path`, then `implClassFqcn`, then `sortedGeneratedPackageCsv`.
 `pr-check --all` `REPO DELTA:` lines are deterministically sorted lexicographically and rendered once per repo aggregation.
+`BEAR_STRUCTURAL_SIGNAL` lines are sorted within each generated structural test class; consumers must treat inter-test ordering as non-contractual.
 
 Wiring drift diagnostics:
 - one line per `(reason, path)` for wiring files (no duplicate path variants).

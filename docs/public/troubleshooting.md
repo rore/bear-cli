@@ -234,6 +234,25 @@ Fix:
 1. Fix failing test or invariant cause.
 2. Re-run `bear check`.
 
+## `BEAR_STRUCTURAL_SIGNAL` (informational by default)
+
+Symptom: project test output includes lines:
+- `BEAR_STRUCTURAL_SIGNAL|blockKey=...|test=Direction|kind=...|detail=...`
+- `BEAR_STRUCTURAL_SIGNAL|blockKey=...|test=Reach|kind=...|detail=...`
+
+Meaning:
+- generated structural tests detected a generated-surface mismatch and emitted deterministic evidence.
+- default mode is evidence-only (non-failing).
+
+Strict mode:
+1. If JVM property `-Dbear.structural.tests.strict=true` is enabled, structural mismatches fail tests.
+2. Failure is a single aggregated strict message per structural test class.
+
+Action:
+1. Review mismatch `kind` and `detail`.
+2. Regenerate with `bear compile ...` if generator/IR drift is suspected.
+3. If strict mode is enabled, fix mismatch before rerunning `bear check`.
+
 ## `MANIFEST_INVALID`
 
 Symptom: wiring semantic inconsistency with exit `2`.

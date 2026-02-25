@@ -828,6 +828,49 @@ class BearCliTest {
     }
 
     @Test
+    void checkAllAllowedDepsWithoutWrapperMatchesSingleCheckUnsupportedTarget(@TempDir Path tempDir) throws Exception {
+        Path specDir = tempDir.resolve("spec");
+        Files.createDirectories(specDir);
+        Path ir = specDir.resolve("withdraw-allowedDeps.bear.yaml");
+        Files.writeString(ir, fixtureIrWithAllowedDep("com.fasterxml.jackson.core:jackson-databind", "2.17.2"));
+
+        CliRunResult compile = runCli(new String[] { "compile", ir.toString(), "--project", tempDir.toString() });
+        assertEquals(0, compile.exitCode);
+        writeWorkingWithdrawImpl(tempDir);
+
+        CliRunResult single = runCli(new String[] { "check", ir.toString(), "--project", tempDir.toString() });
+        assertEquals(74, single.exitCode);
+        assertTrue(normalizeLf(single.stderr).contains("check: CONTAINMENT_REQUIRED: UNSUPPORTED_TARGET: missing Gradle wrapper"));
+        assertFailureEnvelope(
+            single.stderr,
+            "CONTAINMENT_UNSUPPORTED_TARGET",
+            "project.root",
+            "Containment enforcement in P2 requires Java+Gradle with wrapper at project root; remove `impl.allowedDeps`/`spec/_shared.policy.yaml` scope usage or use supported target, then rerun `bear check`."
+        );
+
+        writeBlockIndex(tempDir, ""
+            + "version: v0\n"
+            + "blocks:\n"
+            + "  - name: withdraw\n"
+            + "    ir: spec/withdraw-allowedDeps.bear.yaml\n"
+            + "    projectRoot: .\n");
+
+        CliRunResult all = runCli(new String[] { "check", "--all", "--project", tempDir.toString() });
+        assertEquals(74, all.exitCode);
+        String stderr = normalizeLf(all.stderr);
+        assertTrue(stderr.contains("BLOCK: withdraw"));
+        assertTrue(stderr.contains("BLOCK_CODE: CONTAINMENT_UNSUPPORTED_TARGET"));
+        assertTrue(stderr.contains("BLOCK_PATH: project.root"));
+        assertTrue(stderr.contains("DETAIL: check: CONTAINMENT_REQUIRED: UNSUPPORTED_TARGET: missing Gradle wrapper"));
+        assertFailureEnvelope(
+            all.stderr,
+            "REPO_MULTI_BLOCK_FAILED",
+            "bear.blocks.yaml",
+            "Review per-block results above and fix failing blocks, then rerun the command."
+        );
+    }
+
+    @Test
     void checkAllowedDepsMissingMarkerFailsDeterministically(@TempDir Path tempDir) throws Exception {
         Path ir = tempDir.resolve("withdraw-allowedDeps.bear.yaml");
         Files.writeString(ir, fixtureIrWithAllowedDep("com.fasterxml.jackson.core:jackson-databind", "2.17.2"));

@@ -60,6 +60,13 @@ Containment note (v1 preview):
 - marker verification runs after successful project tests.
 - `_shared` allowlist mismatches are reported as containment-not-verified and remediate by updating `spec/_shared.policy.yaml` (pinned dep) or removing external `_shared` dependency usage.
 
+Structural evidence note (v1 preview):
+- generated structural tests emit deterministic evidence lines:
+  - `BEAR_STRUCTURAL_SIGNAL|blockKey=<blockKey>|test=<Direction|Reach>|kind=<KIND>|detail=<detail>`
+- default mode is evidence-only (non-failing).
+- strict mode is opt-in with JVM property:
+  - `-Dbear.structural.tests.strict=true`
+
 Semantic context included in package docs:
 - enforcement-by-construction (wrapper-owned idempotency + invariants)
 - explicit selection rule (enforceability + determinism)

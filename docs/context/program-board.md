@@ -2,7 +2,7 @@
 
 ## Last Updated
 
-2026-02-24
+2026-02-25
 
 ## Current Milestone
 
@@ -54,11 +54,25 @@ Preview standing note:
 
 ## Ready Queue (Ordered, Execution Work Items)
 
-1. Generated structural tests and cross-target parity follow-up
+1. P2 stabilization: structural-test evidence bake period + strict-mode rollout decision
+2. P3 prep: Maven allowed-deps containment parity
 
 ## Recently Completed (P2)
 
-1. `check` containment auto-wiring + post-test marker verification (Slice 1)
+1. `Generated structural tests + minimal parity follow-up`
+   - JVM compile now emits generated structural evidence tests:
+     - `<BlockName>StructuralDirectionTest`
+     - `<BlockName>StructuralReachTest`
+   - placeholder generated tests (`*IdempotencyTest`, `*InvariantNonNegativeTest`) were replaced in generator output.
+   - generated structural signal contract frozen:
+     - `BEAR_STRUCTURAL_SIGNAL|blockKey=<blockKey>|test=<Direction|Reach>|kind=<KIND>|detail=<detail>`
+     - fixed key order, no spaces, single-line detail, stable custom formatting.
+   - expectations are embedded from generator canonical ordering (ports/ops), with runtime normalization before compare.
+   - default mode is evidence-only; strict mode is opt-in via `-Dbear.structural.tests.strict=true` and fails once per test class with aggregated sorted mismatches.
+   - unsupported-target containment parity lock added between single `check` and `check --all` for missing-wrapper scope-enabled path.
+   - docs and package guidance updated for structural evidence semantics and strict-mode toggle.
+
+2. `check` containment auto-wiring + post-test marker verification (Slice 1)
    - `ProjectTestRunner` now supports deterministic optional init-script injection (`-I build/generated/bear/gradle/bear-containment.gradle`).
    - `check`/`check --all` apply init-script injection only when containment scope is active per root.
    - containment preflight remains scope-gated and runs before tests only for containment-enabled roots.
@@ -72,7 +86,7 @@ Preview standing note:
      - containment-disabled no-preflight/no-injection behavior
      - root-level one-invocation behavior in `check --all`.
 
-2. `_shared` allowedDeps policy (path-scoped, containment-enforced, no IR schema changes)
+3. `_shared` allowedDeps policy (path-scoped, containment-enforced, no IR schema changes)
    - added strict kernel-owned parser for `spec/_shared.policy.yaml` (`version: v1`, `scope: shared`, deterministic normalized deps).
    - `_shared` containment scope is active per `projectRoot` when policy exists or `_shared` Java sources exist (in addition to selected `impl.allowedDeps` blocks).
    - missing `_shared` policy in-scope defaults to JDK-only allowlist.
@@ -83,7 +97,7 @@ Preview standing note:
    - `pr-check --all` renders shared-policy deltas once in repo-level `REPO DELTA:` section before `SUMMARY`.
    - shared containment compile violations are mapped to containment lane (`exit 74`, `CODE=CONTAINMENT_NOT_VERIFIED`) with shared-policy-specific remediation.
 
-3. `Wiring drift diagnostics` (deterministic canonical wiring paths + bounded detail)
+4. `Wiring drift diagnostics` (deterministic canonical wiring paths + bounded detail)
    - wiring drift now reports canonical repo-relative paths:
      - `build/generated/bear/wiring/<blockKey>.wiring.json`
    - drift output no longer emits duplicate wiring path variants.
@@ -91,12 +105,12 @@ Preview standing note:
    - wiring drift detail ordering is frozen (`MISSING_BASELINE > REMOVED > CHANGED > ADDED`) and capped to 20 entries with deterministic overflow suffix.
    - exit taxonomy/envelopes/CLI surface unchanged.
 
-4. `General agent done-gate hardening` (`check --all` + `pr-check --all --base <ref>`)
+5. `General agent done-gate hardening` (`check --all` + `pr-check --all --base <ref>`)
    - package agent workflow now requires dual-gate completion evidence before reporting done.
    - public command/context docs aligned to require both local gates as completion evidence.
    - CI remains authoritative remote `pr-check`; local `pr-check` required for fast governance feedback.
 
-5. `Multi-block port implementer guard` (`MULTI_BLOCK_PORT_IMPL_FORBIDDEN`)
+6. `Multi-block port implementer guard` (`MULTI_BLOCK_PORT_IMPL_FORBIDDEN`)
    - added structural bypass rule for classes implementing generated `*Port` interfaces across multiple generated block packages.
    - marker exception contract finalized:
      - exact marker line `// BEAR:ALLOW_MULTI_BLOCK_PORT_IMPL`
@@ -106,7 +120,7 @@ Preview standing note:
    - dedupe lock: when `PORT_IMPL_OUTSIDE_GOVERNED_ROOT` exists for a file, multi-block findings for that file are suppressed.
    - enforced via `check`/`check --all`/`pr-check` in bypass lane (`exit=7`, `CODE=BOUNDARY_BYPASS`).
 
-6. `Declared allowed deps containment strict marker semantics` (selection-gated)
+7. `Declared allowed deps containment strict marker semantics` (selection-gated)
    - baseline selection-gated containment semantics shipped first; later extended by `_shared` policy/source scope in item `1` above.
    - skip mode is non-failing for containment artifacts/markers and emits deterministic info only when required index exists+parses+non-empty.
    - aggregate marker strictness:

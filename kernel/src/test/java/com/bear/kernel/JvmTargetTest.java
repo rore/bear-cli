@@ -48,6 +48,29 @@ class JvmTargetTest {
         assertTrue(withdrawJava.contains("public static Withdraw of(IdempotencyPort idempotencyPort, LedgerPort ledgerPort)"));
         assertTrue(withdrawJava.contains("return new Withdraw(idempotencyPort, ledgerPort, new blocks.withdraw.impl.WithdrawImpl());"));
         assertTrue(withdrawJava.contains("idempotency replay payload missing field: result.balance"));
+        assertFalse(first.containsKey("src/test/java/com/bear/generated/withdraw/WithdrawIdempotencyTest.java"));
+        assertFalse(first.containsKey("src/test/java/com/bear/generated/withdraw/WithdrawInvariantNonNegativeTest.java"));
+        String directionTest = first.get("src/test/java/com/bear/generated/withdraw/WithdrawStructuralDirectionTest.java");
+        assertTrue(directionTest.contains("\"BEAR_STRUCTURAL_SIGNAL|blockKey=\""));
+        assertTrue(directionTest.contains("+ BLOCK_KEY"));
+        assertTrue(directionTest.contains("+ \"|test=\""));
+        assertTrue(directionTest.contains("+ TEST_NAME"));
+        assertTrue(directionTest.contains("+ \"|kind=\""));
+        assertTrue(directionTest.contains("Boolean.getBoolean(\"bear.structural.tests.strict\")"));
+        assertTrue(directionTest.contains("Collections.sort(mismatches);"));
+        assertTrue(directionTest.contains("fail(\"BEAR_STRUCTURAL_STRICT_FAILURE|\" + TEST_NAME + \"|\" + String.join(\"\\n\", mismatches));"));
+        assertFalse(directionTest.contains("blocks.withdraw.impl.WithdrawImpl"));
+        String reachTest = first.get("src/test/java/com/bear/generated/withdraw/WithdrawStructuralReachTest.java");
+        assertTrue(reachTest.contains("\"BEAR_STRUCTURAL_SIGNAL|blockKey=\""));
+        assertTrue(reachTest.contains("+ BLOCK_KEY"));
+        assertTrue(reachTest.contains("+ \"|test=\""));
+        assertTrue(reachTest.contains("+ TEST_NAME"));
+        assertTrue(reachTest.contains("+ \"|kind=\""));
+        assertTrue(reachTest.contains("Boolean.getBoolean(\"bear.structural.tests.strict\")"));
+        assertTrue(reachTest.contains("Collections.sort(mismatches);"));
+        assertTrue(reachTest.contains("fail(\"BEAR_STRUCTURAL_STRICT_FAILURE|\" + TEST_NAME + \"|\" + String.join(\"\\n\", mismatches));"));
+        assertTrue(reachTest.contains("IdempotencyPort#get(BearValue)"));
+        assertTrue(reachTest.contains("LedgerPort#getBalance(BearValue)"));
         String manifest = first.get("surfaces/withdraw.surface.json");
         assertTrue(manifest.contains("\"schemaVersion\":\"v1\""));
         assertTrue(manifest.contains("\"surfaceVersion\":3"));
@@ -614,6 +637,10 @@ class JvmTargetTest {
                 .forEach(path -> {
                     String rel = root.relativize(path).toString().replace('\\', '/');
                     if (rel.startsWith(".staging/")) {
+                        return;
+                    }
+                    if (rel.endsWith("IdempotencyTest.java") || rel.endsWith("InvariantNonNegativeTest.java")) {
+                        // Legacy golden placeholders are ignored after structural test replacement.
                         return;
                     }
                     try {

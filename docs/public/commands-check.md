@@ -57,6 +57,7 @@ Key line formats:
 - `check: UNDECLARED_REACH: <relative/path>: <surface>`
 - `check: BOUNDARY_BYPASS: RULE=<rule>: <relative/path>: <detail>`
 - `check: HYGIENE_UNEXPECTED_PATHS: <relative/path>`
+- `BEAR_STRUCTURAL_SIGNAL|blockKey=<blockKey>|test=<Direction|Reach>|kind=<KIND>|detail=<detail>`
 - informational skip signal (selection does not include allowedDeps blocks, but containment-required set is non-empty):
   - `check: INFO: CONTAINMENT_SURFACES_SKIPPED_FOR_SELECTION: projectRoot=<root>: reason=no_selected_blocks_with_impl_allowedDeps`
 
@@ -140,6 +141,10 @@ Troubleshooting guardrail:
 
 `--all` mode renders deterministic block sections and summary fields.
 - pass sections may include contextual `DETAIL: ...` lines when non-failure informational signals apply.
+- generated structural test evidence is enabled by default:
+  - generated structural tests emit deterministic `BEAR_STRUCTURAL_SIGNAL|...` lines when mismatches are detected
+  - strict mode is opt-in with JVM property `-Dbear.structural.tests.strict=true`
+  - strict mode fails once per structural test class with aggregated sorted mismatch output
 
 ## Exit codes emitted
 

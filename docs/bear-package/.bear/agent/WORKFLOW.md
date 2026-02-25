@@ -186,6 +186,7 @@ Canonical rule:
 6. `4` project tests failed:
 - fix implementation/tests
 - if `CODE=INVARIANT_VIOLATION`, treat marker details as authoritative semantic failure from wrapper checks (fresh/replay)
+- `BEAR_STRUCTURAL_SIGNAL|...` lines are evidence by default; only fail on structural mismatch when strict mode is enabled (`-Dbear.structural.tests.strict=true`)
 - if compiler reports unreachable code in `*Impl.java`, replace the generated stub body entirely (do not append logic below placeholder return/throw)
 - verify `*Impl.java` stays in `src/main/java/blocks/<pkg-segment>/impl/` (package `blocks.<pkg-segment>.impl`) unless BEAR compile regenerated a different path
 
