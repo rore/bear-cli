@@ -1,6 +1,6 @@
-﻿# BEAR Project Bootstrap (For Non-Codex Sessions)
+# BEAR Project Bootstrap (For Non-Codex Sessions)
 
-Use this when starting a chat session that does not have repo file access (for example ChatGPT).
+Use this when starting a chat session without repo file access (for example ChatGPT).
 Paste the SHORT block first. Paste LONG only if needed.
 
 ---
@@ -10,70 +10,46 @@ Paste the SHORT block first. Paste LONG only if needed.
 We are building BEAR (Block Enforcement & Representation), a deterministic boundary-governance layer for backend blocks in agentic development.
 
 Core purpose:
-- Agent-generated code is non-deterministic.
-- Boundary expansion can happen silently.
-- Production systems need deterministic, independent enforcement gates.
+- agent-generated code is non-deterministic
+- boundary expansion can happen silently
+- production systems need deterministic independent enforcement gates
 
 What BEAR does:
-- Takes BEAR IR (strict intermediate representation for one logic block).
-- Deterministically validates and normalizes IR.
-- Deterministically compiles IR into:
-  - non-editable skeletons
-  - structured capability port interfaces
-  - deterministic tests
-- Enforces with one gate: `bear check` (validate + compile + test + drift detection).
+- takes BEAR IR (`version: v1`)
+- deterministically validates and normalizes IR
+- deterministically compiles BEAR-owned artifacts
+- enforces via deterministic gates (`check`, `pr-check`)
 
-Governance litmus:
-- BEAR is valuable only if new external interaction capability cannot be introduced silently.
-- IR changes are classified as `ordinary` or `boundary-expanding`.
-- Boundary-expanding changes must be explicitly visible/signaled in deterministic output.
+Current scope (preview lock):
+- JVM/Java target path is primary
+- IR contract and semantics are canonical in `docs/context/ir-spec.md`
+- governance classification contract is canonical in `docs/context/governance.md`
 
-v0 scope (locked):
-- JVM/Java only.
-- One logic block per IR file.
-- Effects are structured ports (`effects.allow` with `port` + `ops[]`).
-- Idempotency uses `key` plus store ops (`store.port/getOp/putOp`).
-- Invariants: only `kind: non_negative` on output fields.
+Current guarantees (preview):
+- deterministic structural boundary contracts
+- deterministic generated-artifact drift checks
+- deterministic governance signaling and failure envelopes
 
-v0 guarantees:
-- Structural contract enforcement.
-- Structural effect-boundary enforcement via generated ports.
-- Deterministic invariant/idempotency test gating.
-- Drift detection for generated artifacts.
+Current non-goals (preview):
+- business-policy inference beyond declared contracts
+- generic runtime policy engine behavior
+- full formal behavioral verification
 
-v0 non-guarantees:
-- Business correctness beyond declared invariants.
-- Real DB/concurrency/transaction semantics.
-- Runtime enforcement beyond test harness.
-- Concurrency-safe duplicate handling (v0 idempotency is deterministic replay safety only).
-- Full static isolation of arbitrary impl-side calls (post-v0 hardening unless delivered).
+Session placeholders:
+- Current phase: [UPDATE]
+- Session goal: [STATE ONE TASK]
+- Done criteria: [STATE 1-2 CHECKS]
 
-Demo proof target:
-- Naive Withdraw fails `bear check`.
-- Corrected Withdraw passes `bear check`.
-
-Current Phase:
-[UPDATE EACH SESSION]
-
-Session Goal:
-[STATE SINGLE TASK]
-
-Done Criteria (optional):
-[STATE 1-2 CHECKS]
-
-Constraints for this session:
-- Do not add features beyond v0 scope.
-- Do not expand IR expressiveness.
-- Keep behavior deterministic.
-- Preserve governance semantics from `docs/context/governance.md`.
-
-Continue from here.
+Session constraints:
+- stay within current preview scope
+- keep contracts deterministic
+- keep governance semantics aligned with `docs/context/governance.md`
 
 Reference split:
-- `docs/context/north-star.md`: broad motivation and long-horizon success criteria.
-- `docs/context/architecture.md`: current v0 guarantees/non-guarantees.
-- `docs/context/roadmap.md`: roadmap definitions, milestones, and post-preview priorities.
-- `docs/context/program-board.md`: live milestone status, evidence, and queue (repo sessions only).
+- `docs/context/architecture.md`: scope guarantees and non-guarantees
+- `docs/context/roadmap.md`: milestone definitions and done criteria
+- `docs/context/program-board.md`: live status and queue (repo sessions)
+- `docs/context/ir-spec.md`: canonical IR contract
 
 ---
 
@@ -84,42 +60,20 @@ BEAR is not:
 - a behavior DSL
 - infrastructure simulation
 - a replacement for developers
-- a spec-refinement assistant as its primary role
 
-BEAR IR v0 canonical model:
-- root: `version: v0`, `block`
-- `block.kind` must be `logic`
-- `contract.inputs` and `contract.outputs` are typed fields
-- `effects.allow` is a list of ports; each port has ops
-- `idempotency.key` references an input
-- `idempotency.store.port/getOp/putOp` reference declared effects
-- `invariants` supports only:
-  - `kind: non_negative`
-  - `field` referencing an output
-- unknown keys or invalid references must fail validation
-
-Deterministic normalization requirements:
-- canonical key ordering
-- sorted inputs/outputs by name
-- sorted ports by name
-- sorted ops within each port
-- deterministic invariant ordering
-
-Two-file enforcement model:
-- generated skeleton is non-editable
-- implementation file is editable
-- regeneration must not allow silent drift
+BEAR IR canonical model (preview):
+- root uses `version: v1`
+- strict `block` contract/effects/idempotency/invariants semantics
+- deterministic normalization and strict validation
+- wrapper-owned enforceable semantics only
 
 Agent-default workflow:
-- prompt -> exploration -> IR update -> deterministic gates -> boundary summary
+1. understand task intent
+2. discover current IR/index state
+3. apply IR-first changes when boundaries shift
+4. run deterministic gates
+5. report explicit gate evidence and governance outcome
 
-Demo IR shape (canonical intent):
-- one Withdraw logic block
-- inputs: `accountId`, `amount`, `currency`, `txId`
-- output: `balance`
-- ports:
-  - `ledger`: `getBalance`, `setBalance`
-  - `idempotency`: `get`, `put`
-- idempotency key: `txId`
-- invariant: non-negative `balance`
-
+Canonical done-gate expectation:
+- `bear check --all --project <repoRoot>`
+- `bear pr-check --all --project <repoRoot> --base <ref>`
