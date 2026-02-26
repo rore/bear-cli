@@ -132,8 +132,18 @@ Preview standing note:
      - `build/bear/containment/<blockKey>.applied.marker` required for every canonical required block key (`block=` and `hash=` must match).
    - deterministic per-block fail-fast uses lexicographic canonical required block order.
    - lane/remediation split remains locked:
-     - generated containment artifacts -> drift lane (`exit 3`, compile remediation)
-     - handshake marker issues -> containment-not-verified lane (`exit 74`, marker refresh remediation)
+   - generated containment artifacts -> drift lane (`exit 3`, compile remediation)
+   - handshake marker issues -> containment-not-verified lane (`exit 74`, marker refresh remediation)
+
+8. `Guardrails v2.2.1: pure/shared state lane enforcement`:
+   - `check`/`check --all` now enforce lane package/purity rules for:
+     - `_shared/pure` purity + static-final constant constraints
+     - `impl` purity and `_shared.state` dependency ban
+     - scoped import policy by lane
+     - `_shared` layout split (`pure` vs `state`)
+   - new optional immutable-type allowlist contract:
+     - `.bear/policy/pure-shared-immutable-types.txt` (FQCN-only, sorted, unique, comments/blank lines allowed)
+   - docs package and consistency tests updated to keep enforcement deterministic and BEAR-generic.
 
 ## Next Feature Specs (Locked)
 

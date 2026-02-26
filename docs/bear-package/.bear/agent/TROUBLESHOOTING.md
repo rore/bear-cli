@@ -35,6 +35,11 @@ Purpose:
 - ensure generated entrypoint wiring uses non-null required ports.
 - ensure generated-port adapters live only under governed roots.
 - for cross-block adapters, either split by block package or use valid `_shared` marker contract.
+- for `SHARED_PURITY_VIOLATION`: remove mutable static shared state / `synchronized` from `_shared/pure`; move stateful code to adapter/state lanes.
+- for `IMPL_PURITY_VIOLATION`: remove mutable static shared state / `synchronized` from `impl`; route state through generated ports/adapters.
+- for `IMPL_STATE_DEPENDENCY_BYPASS`: remove `blocks._shared.state.*` dependencies from `impl`.
+- for `SCOPED_IMPORT_POLICY_BYPASS`: remove forbidden package usage from guarded lane and move integration code to adapter/state lanes.
+- for `SHARED_LAYOUT_POLICY_VIOLATION`: move `_shared` Java files under `blocks/_shared/pure/**` or `blocks/_shared/state/**`.
 
 4. Test failure lane (`exit 4`):
 - fix business/test logic.
@@ -88,6 +93,12 @@ Escalation threshold:
 1. Do not edit `build.gradle`, `settings.gradle`, `gradlew`, `gradlew.bat`, `.bear/**`, or `bin/bear*` unless explicitly instructed.
 2. Do not move impl seams to alternate roots or create duplicate shim copies in `_shared`.
 3. Do not override containment excludes to force checks green.
+
+## Lane Purity/Import Notes
+
+1. Lane/package purity/import checks are deterministic token checks.
+2. In guarded lanes, forbidden package tokens in comments/strings can still trigger violations.
+3. If this happens, remove/rename the token text in guarded-lane comments/strings or move the text out of guarded lanes.
 
 ## BOUNDARY_EXPANSION_DETECTED
 

@@ -613,6 +613,21 @@ final class CheckAllCommandService {
         if ("MULTI_BLOCK_PORT_IMPL_FORBIDDEN".equals(rule)) {
             return "Split generated-port adapters so each class implements one generated block package, or move the adapter under blocks/_shared and add `// BEAR:ALLOW_MULTI_BLOCK_PORT_IMPL` within 5 non-empty lines above the class declaration.";
         }
+        if ("SHARED_PURITY_VIOLATION".equals(rule)) {
+            return "Keep `_shared.pure` deterministic: remove mutable static state/synchronized usage, move stateful code to `blocks/**/adapter/**` or `blocks/_shared/state/**`, and use allowlisted immutable constants only.";
+        }
+        if ("IMPL_PURITY_VIOLATION".equals(rule)) {
+            return "Keep impl lane pure: remove mutable static state and synchronized usage from `blocks/**/impl/**`; route cross-call state through generated ports and adapter/state lanes.";
+        }
+        if ("IMPL_STATE_DEPENDENCY_BYPASS".equals(rule)) {
+            return "Remove `blocks._shared.state.*` dependencies from impl lane and access state through generated port adapters.";
+        }
+        if ("SCOPED_IMPORT_POLICY_BYPASS".equals(rule)) {
+            return "Remove forbidden package usage from guarded lane (`impl` or `_shared.pure`) and move IO/network/filesystem/concurrency integration into adapter/state lanes.";
+        }
+        if ("SHARED_LAYOUT_POLICY_VIOLATION".equals(rule)) {
+            return "Move shared Java files under `src/main/java/blocks/_shared/pure/**` or `src/main/java/blocks/_shared/state/**`; root-level `_shared` Java files are not allowed.";
+        }
         return "Wire via generated entrypoints and declared effect ports; remove impl seam bypasses.";
     }
 

@@ -69,4 +69,49 @@ class PolicyAllowlistParserTest {
         );
         assertTrue(wildcardEx.getMessage().contains("wildcard"));
     }
+
+    @Test
+    void fqcnAllowlistMissingFileReturnsEmptySet(@TempDir Path tempDir) throws Exception {
+        Set<String> parsed = PolicyAllowlistParser.parseFqcnAllowlist(
+            tempDir,
+            PolicyAllowlistParser.PURE_SHARED_IMMUTABLE_TYPES_ALLOWLIST_PATH
+        );
+        assertEquals(Set.of(), parsed);
+    }
+
+    @Test
+    void fqcnAllowlistRejectsSimpleName(@TempDir Path tempDir) throws Exception {
+        Path file = tempDir.resolve(PolicyAllowlistParser.PURE_SHARED_IMMUTABLE_TYPES_ALLOWLIST_PATH);
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, "String\n", StandardCharsets.UTF_8);
+
+        PolicyValidationException ex = assertThrows(
+            PolicyValidationException.class,
+            () -> PolicyAllowlistParser.parseFqcnAllowlist(
+                tempDir,
+                PolicyAllowlistParser.PURE_SHARED_IMMUTABLE_TYPES_ALLOWLIST_PATH
+            )
+        );
+        assertTrue(ex.getMessage().contains("fully-qualified class name"));
+    }
+
+    @Test
+    void fqcnAllowlistParsesSortedUniqueWithComments(@TempDir Path tempDir) throws Exception {
+        Path file = tempDir.resolve(PolicyAllowlistParser.PURE_SHARED_IMMUTABLE_TYPES_ALLOWLIST_PATH);
+        Files.createDirectories(file.getParent());
+        Files.writeString(
+            file,
+            "# immutable types\n"
+                + "\n"
+                + "java.time.Clock\n"
+                + "java.time.Instant\n",
+            StandardCharsets.UTF_8
+        );
+
+        Set<String> parsed = PolicyAllowlistParser.parseFqcnAllowlist(
+            tempDir,
+            PolicyAllowlistParser.PURE_SHARED_IMMUTABLE_TYPES_ALLOWLIST_PATH
+        );
+        assertEquals(Set.of("java.time.Clock", "java.time.Instant"), parsed);
+    }
 }

@@ -115,6 +115,40 @@ Forbidden autonomous infrastructure edits:
 2. App packages MUST NOT implement generated `com.bear.generated.*Port` interfaces.
 3. Generated port implementations MUST remain under governed roots.
 
+## Lane Role and Purity Invariants
+
+Path-role contract:
+1. `src/main/java/blocks/**/impl/**` is logic lane only.
+2. `src/main/java/blocks/**/adapter/**` is adapter lane (state/integration allowed).
+3. `src/main/java/blocks/_shared/pure/**` is pure helper lane.
+4. `src/main/java/blocks/_shared/state/**` is shared state lane.
+5. Java files directly under `src/main/java/blocks/_shared/**` outside `pure`/`state` are invalid.
+
+Purity invariants:
+1. `impl` and `_shared/pure` MUST NOT declare mutable static shared state.
+2. `impl` and `_shared/pure` MUST NOT use `synchronized`.
+3. `impl` MUST NOT import/reference `blocks._shared.state.*`.
+
+Scoped import invariants:
+1. `impl` and `_shared/pure` MUST NOT import/reference `java.io.*`, `java.net.*`, `java.nio.file.*`.
+2. `impl` MUST NOT import/reference `java.util.concurrent.*`.
+
+`_shared/pure` static-final constants:
+1. Allowed by default: primitives, boxed primitives, `java.lang.String`, enum constants.
+2. Additional immutable types require FQCN allowlist entry in `.bear/policy/pure-shared-immutable-types.txt`.
+3. `static final` with `new ...` initializer in `_shared/pure` is forbidden unless declared/constructed type is allowlisted immutable.
+
+Immutable allowlist format (`.bear/policy/pure-shared-immutable-types.txt`):
+1. UTF-8 text file.
+2. FQCN entries only (no simple names).
+3. Sorted lexicographically.
+4. Unique entries.
+5. Blank lines and `#` comments are allowed and ignored.
+
+Enforcement boundary:
+1. Lane/package purity/import checks are structural token checks for deterministic governance.
+2. These checks enforce layout/usage constraints; they do not prove full semantic correctness of IR/effects behavior.
+
 ## Semantics Policy (wrapper-owned)
 
 Selection rule:

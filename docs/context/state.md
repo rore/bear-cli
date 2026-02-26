@@ -6,7 +6,7 @@ Long-form historical notes are archived in `docs/context/archive/archive-state-h
 
 ## Last Updated
 
-2026-02-25
+2026-02-26
 
 ## Current Focus
 
@@ -25,6 +25,18 @@ P2 stabilization and context-governance cleanup:
 
 ## Session Notes
 
+- Implemented BEAR guardrails v2.2.1 (docs + CLI `check` enforcement + tests):
+  - new lane contract: `blocks/**/impl/**`, `blocks/**/adapter/**`, `_shared/pure`, `_shared/state`
+  - new boundary bypass rules:
+    - `SHARED_PURITY_VIOLATION`
+    - `IMPL_PURITY_VIOLATION`
+    - `IMPL_STATE_DEPENDENCY_BYPASS`
+    - `SCOPED_IMPORT_POLICY_BYPASS`
+    - `SHARED_LAYOUT_POLICY_VIOLATION`
+  - `_shared/pure` immutable type allowlist added (`.bear/policy/pure-shared-immutable-types.txt`, FQCN-only contract)
+  - check/remediation text updated in `CheckCommandService` and `CheckAllCommandService`
+  - updated package docs (`BOOTSTRAP`, `CONTRACTS`, `TROUBLESHOOTING`, `IR_REFERENCE`) and docs consistency assertions
+  - added/updated scanner, CLI, and allowlist parser tests; requested regression suite passed
 - Refined `docs/public/VISION.md` to remove already-done/mis-scoped items and align with active BEAR direction (agent-first IR handling, boundary-usage visibility, side-effect taxonomy, operation-scoped contracts, cross-block modeling, deterministic extensibility, Node.js target candidate).
 - Rewrote `docs/public/VISION.md` to a reader-friendly narrative format (less checklist-style, clearer non-commitment framing, explicit Node.js future direction).
 - Added public directional vision page at `docs/public/VISION.md` (explicitly non-committed, no near-term queue content).

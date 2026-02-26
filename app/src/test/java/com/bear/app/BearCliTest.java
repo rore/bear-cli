@@ -1226,9 +1226,9 @@ class BearCliTest {
             "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
             "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
         );
-        Path sharedSource = tempDir.resolve("src/main/java/blocks/_shared/SharedOnly.java");
+        Path sharedSource = tempDir.resolve("src/main/java/blocks/_shared/state/SharedOnly.java");
         Files.createDirectories(sharedSource.getParent());
-        Files.writeString(sharedSource, "package blocks._shared;\npublic final class SharedOnly {}\n", StandardCharsets.UTF_8);
+        Files.writeString(sharedSource, "package blocks._shared.state;\npublic final class SharedOnly {}\n", StandardCharsets.UTF_8);
 
         CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
         assertEquals(74, check.exitCode);
@@ -1582,9 +1582,9 @@ class BearCliTest {
             "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
             "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
         );
-        Path sharedSource = projectRoot.resolve("src/main/java/blocks/_shared/SharedOnly.java");
+        Path sharedSource = projectRoot.resolve("src/main/java/blocks/_shared/state/SharedOnly.java");
         Files.createDirectories(sharedSource.getParent());
-        Files.writeString(sharedSource, "package blocks._shared;\npublic final class SharedOnly {}\n", StandardCharsets.UTF_8);
+        Files.writeString(sharedSource, "package blocks._shared.state;\npublic final class SharedOnly {}\n", StandardCharsets.UTF_8);
 
         writeBlockIndex(tempDir, ""
             + "version: v0\n"
@@ -2470,6 +2470,169 @@ class BearCliTest {
     }
 
     @Test
+    void checkBoundaryBypassImplPurityViolationFailsForStaticMutableState(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        Path impl = tempDir.resolve("src/main/java/blocks/withdraw/impl/WithdrawImpl.java");
+        Files.writeString(
+            impl,
+            "package blocks.withdraw.impl;\n"
+                + "import com.bear.generated.withdraw.BearValue;\n"
+                + "import com.bear.generated.withdraw.LedgerPort;\n"
+                + "import com.bear.generated.withdraw.WithdrawLogic;\n"
+                + "import com.bear.generated.withdraw.WithdrawRequest;\n"
+                + "import com.bear.generated.withdraw.WithdrawResult;\n"
+                + "public final class WithdrawImpl implements WithdrawLogic {\n"
+                + "  static int calls = 0;\n"
+                + "  public WithdrawResult execute(WithdrawRequest request, LedgerPort ledgerPort) {\n"
+                + "    ledgerPort.getBalance(BearValue.empty());\n"
+                + "    return new WithdrawResult(java.math.BigDecimal.ZERO);\n"
+                + "  }\n"
+                + "}\n",
+            StandardCharsets.UTF_8
+        );
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(7, check.exitCode);
+        String stderr = normalizeLf(check.stderr);
+        assertTrue(stderr.contains("check: BOUNDARY_BYPASS: RULE=IMPL_PURITY_VIOLATION: src/main/java/blocks/withdraw/impl/WithdrawImpl.java:"));
+        assertFailureEnvelope(
+            check.stderr,
+            "BOUNDARY_BYPASS",
+            "src/main/java/blocks/withdraw/impl/WithdrawImpl.java",
+            "Keep impl lane pure: remove mutable static state and synchronized usage from `blocks/**/impl/**`; route cross-call state through generated ports and adapter/state lanes."
+        );
+    }
+
+    @Test
+    void checkBoundaryBypassImplStateDependencyFails(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        Files.createDirectories(tempDir.resolve("src/main/java/blocks/_shared/state"));
+        Files.writeString(
+            tempDir.resolve("src/main/java/blocks/_shared/state/Store.java"),
+            "package blocks._shared.state;\npublic final class Store { public static Object fetch() { return null; } }\n",
+            StandardCharsets.UTF_8
+        );
+
+        Path impl = tempDir.resolve("src/main/java/blocks/withdraw/impl/WithdrawImpl.java");
+        Files.writeString(
+            impl,
+            "package blocks.withdraw.impl;\n"
+                + "import blocks._shared.state.Store;\n"
+                + "import com.bear.generated.withdraw.BearValue;\n"
+                + "import com.bear.generated.withdraw.LedgerPort;\n"
+                + "import com.bear.generated.withdraw.WithdrawLogic;\n"
+                + "import com.bear.generated.withdraw.WithdrawRequest;\n"
+                + "import com.bear.generated.withdraw.WithdrawResult;\n"
+                + "public final class WithdrawImpl implements WithdrawLogic {\n"
+                + "  public WithdrawResult execute(WithdrawRequest request, LedgerPort ledgerPort) {\n"
+                + "    Store.fetch();\n"
+                + "    ledgerPort.getBalance(BearValue.empty());\n"
+                + "    return new WithdrawResult(java.math.BigDecimal.ZERO);\n"
+                + "  }\n"
+                + "}\n",
+            StandardCharsets.UTF_8
+        );
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(7, check.exitCode);
+        String stderr = normalizeLf(check.stderr);
+        assertTrue(stderr.contains("check: BOUNDARY_BYPASS: RULE=IMPL_STATE_DEPENDENCY_BYPASS: src/main/java/blocks/withdraw/impl/WithdrawImpl.java:"));
+        assertFailureEnvelope(
+            check.stderr,
+            "BOUNDARY_BYPASS",
+            "src/main/java/blocks/withdraw/impl/WithdrawImpl.java",
+            "Remove `blocks._shared.state.*` dependencies from impl lane and access state through generated port adapters."
+        );
+    }
+
+    @Test
+    void checkBoundaryBypassScopedImportPolicyFailsForSharedPure(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+        writeWorkingWithdrawImpl(tempDir);
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        Path pure = tempDir.resolve("src/main/java/blocks/_shared/pure/NetHelper.java");
+        Files.createDirectories(pure.getParent());
+        Files.writeString(
+            pure,
+            "package blocks._shared.pure;\n"
+                + "import java.net.URI;\n"
+                + "public final class NetHelper { static final String X = URI.create(\"https://example.com\").toString(); }\n",
+            StandardCharsets.UTF_8
+        );
+        writeFreshContainmentMarkers(tempDir);
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(7, check.exitCode);
+        String stderr = normalizeLf(check.stderr);
+        assertTrue(stderr.contains("check: BOUNDARY_BYPASS: RULE=SCOPED_IMPORT_POLICY_BYPASS: src/main/java/blocks/_shared/pure/NetHelper.java:"));
+        assertFailureEnvelope(
+            check.stderr,
+            "BOUNDARY_BYPASS",
+            "src/main/java/blocks/_shared/pure/NetHelper.java",
+            "Remove forbidden package usage from guarded lane (`impl` or `_shared.pure`) and move IO/network/filesystem/concurrency integration into adapter/state lanes."
+        );
+    }
+
+    @Test
+    void checkBoundaryBypassSharedPureNewInitializerFailsWhenNotAllowlisted(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+        writeWorkingWithdrawImpl(tempDir);
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
+        );
+
+        Path pure = tempDir.resolve("src/main/java/blocks/_shared/pure/Factory.java");
+        Files.createDirectories(pure.getParent());
+        Files.writeString(
+            pure,
+            "package blocks._shared.pure;\n"
+                + "public final class Factory {\n"
+                + "  static final Object HOLDER = new Object();\n"
+                + "}\n",
+            StandardCharsets.UTF_8
+        );
+        writeFreshContainmentMarkers(tempDir);
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(7, check.exitCode);
+        String stderr = normalizeLf(check.stderr);
+        assertTrue(stderr.contains("check: BOUNDARY_BYPASS: RULE=SHARED_PURITY_VIOLATION: src/main/java/blocks/_shared/pure/Factory.java:"));
+        assertFailureEnvelope(
+            check.stderr,
+            "BOUNDARY_BYPASS",
+            "src/main/java/blocks/_shared/pure/Factory.java",
+            "Keep `_shared.pure` deterministic: remove mutable static state/synchronized usage, move stateful code to `blocks/**/adapter/**` or `blocks/_shared/state/**`, and use allowlisted immutable constants only."
+        );
+    }
+
+    @Test
     void checkBoundaryBypassIgnoresImplTextInCommentsAndStrings(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
         Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
@@ -2638,11 +2801,11 @@ class BearCliTest {
             "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
         );
 
-        Path adapter = tempDir.resolve("src/main/java/blocks/_shared/SharedPortAdapter.java");
+        Path adapter = tempDir.resolve("src/main/java/blocks/_shared/state/SharedPortAdapter.java");
         Files.createDirectories(adapter.getParent());
         Files.writeString(
             adapter,
-            "package blocks._shared;\n"
+            "package blocks._shared.state;\n"
                 + "import com.bear.generated.withdraw.LedgerPort;\n"
                 + "public final class SharedPortAdapter implements LedgerPort {\n"
                 + "}\n",

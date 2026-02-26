@@ -115,6 +115,14 @@ class BearPackageDocsConsistencyTest {
                 "duplicate shim copies in `_shared`",
                 "_shared` must not depend on app packages",
                 "app packages must not implement generated ports",
+                "`blocks/**/impl/**` logic only",
+                "`blocks/**/adapter/**` adapter state/integration",
+                "`_shared/pure` pure helpers",
+                "`_shared/state` state holders",
+                "impl` must not reference `blocks._shared.state.*`",
+                "Purity rules: `_shared/pure` and `impl` must not declare mutable static shared state or `synchronized` usage.",
+                "Scoped import policy: forbid `java.io.*`, `java.net.*`, `java.nio.file.*` in `impl` and `_shared/pure`; additionally forbid `java.util.concurrent.*` in `impl`.",
+                ".bear/policy/pure-shared-immutable-types.txt",
                 "Never leave generated placeholder returns before real logic",
                 "For expected `BOUNDARY_EXPANSION_DETECTED`, do not attempt to force green",
                 "mark run `BLOCKED` with required governance next action.",
@@ -133,7 +141,18 @@ class BearPackageDocsConsistencyTest {
                 "No action/command multiplexer rule does not imply multi-block by itself.",
                 "IR v1 supports one `logic` block per IR file.",
                 "_shared` MUST NOT import or depend on app packages",
-                "App packages MUST NOT implement generated `com.bear.generated.*Port` interfaces"
+                "App packages MUST NOT implement generated `com.bear.generated.*Port` interfaces",
+                "## Lane Role and Purity Invariants",
+                "src/main/java/blocks/_shared/pure/**",
+                "src/main/java/blocks/_shared/state/**",
+                "impl` MUST NOT import/reference `blocks._shared.state.*`",
+                "java.io.*",
+                "java.net.*",
+                "java.nio.file.*",
+                "java.util.concurrent.*",
+                ".bear/policy/pure-shared-immutable-types.txt",
+                "FQCN entries only",
+                "layout/usage constraints; they do not prove full semantic correctness"
         );
         assertFalse(contracts.contains("Completion is valid only with both gates evidenced green"));
 
@@ -177,13 +196,25 @@ class BearPackageDocsConsistencyTest {
                 "report `BLOCKED` with required governance next action.",
                 "Do not use `bear unblock` to force expected boundary expansion green.",
                 "Do not edit wrapper/build harness files as lock workaround",
-                "Retry budget is max 2 failed retries."
+                "Retry budget is max 2 failed retries.",
+                "SHARED_PURITY_VIOLATION",
+                "IMPL_PURITY_VIOLATION",
+                "IMPL_STATE_DEPENDENCY_BYPASS",
+                "SCOPED_IMPORT_POLICY_BYPASS",
+                "SHARED_LAYOUT_POLICY_VIOLATION",
+                "deterministic token checks"
         );
 
         assertContainsTokens(irReference,
                 "generated logic signatures exclude the idempotency store port",
                 "wrapper enforcement binds idempotency via IR-declared `idempotency.store`",
-                "Strict policy format contract: see `.bear/agent/CONTRACTS.md`."
+                "Strict policy format contract: see `.bear/agent/CONTRACTS.md`.",
+                "## State Modeling Guidance (Deterministic)",
+                "If state is required, declare state capabilities as ports in `effects.allow`.",
+                "Implement state access in adapter/state lanes",
+                "walletStore",
+                "statementStore",
+                "idempotency"
         );
 
         Path agentRoot = repoRoot.resolve("docs/bear-package/.bear/agent");

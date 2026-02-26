@@ -71,6 +71,7 @@ Read on demand:
 - `rg -n "implements\\s+.*Port" src/main/java`
 - never leave a generated placeholder return before real logic; replace generated stub body fully
 - all generated-port implementations must remain under governed roots (`src/main/java/blocks/**`)
+- package lanes: `blocks/**/impl/**` logic only, `blocks/**/adapter/**` adapter state/integration, `_shared/pure` pure helpers, `_shared/state` state holders
 - `_shared` must not import app packages; app packages must not implement generated ports
 
 ## Mandatory Operating Loop
@@ -121,11 +122,16 @@ Read on demand:
 17. Do not self-edit build/policy/runtime harness files unless explicitly instructed (`build.gradle`, `settings.gradle`, `gradlew`, `gradlew.bat`, `.bear/**`, `bin/bear*`).
 18. Do not bypass containment by moving impl seams to alternate roots, creating duplicate shim copies in `_shared`, or overriding containment excludes.
 19. `_shared` must not depend on app packages, and app packages must not implement generated ports.
-20. Lock/IO retries are bounded: perform only fixed retry actions and stop after 2 failed retries with escalation evidence.
-21. If gates fail, fix root cause and rerun; do not bypass with alternate architecture.
-22. Use `bear fix` for generated drift repair only; never for test or IO failures.
-23. Do not claim done without both repo-level gates green.
-24. For expected `BOUNDARY_EXPANSION_DETECTED`, do not attempt to force green; mark run `BLOCKED` with required governance next action.
+20. Enforced lane rules: `impl` must not reference `blocks._shared.state.*`; `_shared` Java files must live under `_shared/pure` or `_shared/state` (no root-level `_shared` Java files).
+21. Purity rules: `_shared/pure` and `impl` must not declare mutable static shared state or `synchronized` usage.
+22. Scoped import policy: forbid `java.io.*`, `java.net.*`, `java.nio.file.*` in `impl` and `_shared/pure`; additionally forbid `java.util.concurrent.*` in `impl`.
+23. `_shared/pure` static final constants are limited to primitives/boxed/String, enum constants, or FQCNs allowlisted in `.bear/policy/pure-shared-immutable-types.txt`.
+24. Lane/package checks are structural token checks (deterministic) and may flag forbidden package tokens even in comments/strings inside guarded lanes.
+25. Lock/IO retries are bounded: perform only fixed retry actions and stop after 2 failed retries with escalation evidence.
+26. If gates fail, fix root cause and rerun; do not bypass with alternate architecture.
+27. Use `bear fix` for generated drift repair only; never for test or IO failures.
+28. Do not claim done without both repo-level gates green.
+29. For expected `BOUNDARY_EXPANSION_DETECTED`, do not attempt to force green; mark run `BLOCKED` with required governance next action.
 
 ## Done Gate Contract
 

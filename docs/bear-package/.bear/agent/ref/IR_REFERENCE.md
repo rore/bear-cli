@@ -151,6 +151,32 @@ Selection rule:
 - require deterministic target implementation
 - require frozen, testable contracts
 
+## State Modeling Guidance (Deterministic)
+
+Rule:
+1. If state is required, declare state capabilities as ports in `effects.allow`.
+2. Implement state access in adapter/state lanes (for example `blocks/**/adapter/**` or `blocks/_shared/state/**`), not in logic lane.
+3. Keep `impl` logic deterministic and free of hidden shared mutable state.
+
+Tiny canonical pattern:
+
+```yaml
+effects:
+  allow:
+    - port: walletStore
+      ops: [read, put]
+    - port: statementStore
+      ops: [append, listSince]
+    - port: idempotency
+      ops: [get, put]
+idempotency:
+  keyFromInputs: [walletId, requestId]
+  store:
+    port: idempotency
+    getOp: get
+    putOp: put
+```
+
 ## Minimal Examples
 
 ### Example A: Minimal Single Block

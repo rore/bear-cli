@@ -233,7 +233,7 @@ class BoundaryBypassScannerTest {
         writeContainmentImpl(
             tempDir,
             "package blocks.withdraw.impl;\n"
-                + "import blocks._shared.SharedHelper;\n"
+                + "import blocks._shared.pure.SharedHelper;\n"
                 + "public final class WithdrawImpl {\n"
                 + "  Object execute(Object request) {\n"
                 + "    return SharedHelper.apply();\n"
@@ -242,8 +242,8 @@ class BoundaryBypassScannerTest {
         );
         writeJavaFile(
             tempDir,
-            "src/main/java/blocks/_shared/SharedHelper.java",
-            "package blocks._shared;\npublic final class SharedHelper { public static Object apply() { return null; } }\n"
+            "src/main/java/blocks/_shared/pure/SharedHelper.java",
+            "package blocks._shared.pure;\npublic final class SharedHelper { public static Object apply() { return null; } }\n"
         );
 
         List<BoundaryBypassFinding> findings = BoundaryBypassScanner.scanBoundaryBypass(tempDir, List.of(withdrawManifestWithSharedRoot()));
@@ -400,6 +400,206 @@ class BoundaryBypassScannerTest {
             .count();
         assertEquals(2L, outsideCount);
         assertTrue(findings.stream().noneMatch(f -> "MULTI_BLOCK_PORT_IMPL_FORBIDDEN".equals(f.rule())));
+    }
+
+    @Test
+    void scanBoundaryBypassFlagsSharedPureMutableStaticField(@TempDir Path tempDir) throws Exception {
+        writeWorkingWithdrawImpl(tempDir);
+        writeJavaFile(
+            tempDir,
+            "src/main/java/blocks/_shared/pure/MutableHolder.java",
+            "package blocks._shared.pure;\n"
+                + "public final class MutableHolder {\n"
+                + "  static int counter = 0;\n"
+                + "}\n"
+        );
+
+        List<BoundaryBypassFinding> findings = BoundaryBypassScanner.scanBoundaryBypass(tempDir, List.of(baseManifest()));
+        assertTrue(findings.stream().anyMatch(f ->
+            "SHARED_PURITY_VIOLATION".equals(f.rule()) && f.path().endsWith("MutableHolder.java")
+        ));
+    }
+
+    @Test
+    void scanBoundaryBypassFlagsSharedPureSynchronizedUsage(@TempDir Path tempDir) throws Exception {
+        writeWorkingWithdrawImpl(tempDir);
+        writeJavaFile(
+            tempDir,
+            "src/main/java/blocks/_shared/pure/SyncHelper.java",
+            "package blocks._shared.pure;\n"
+                + "public final class SyncHelper {\n"
+                + "  static synchronized int value() { return 1; }\n"
+                + "}\n"
+        );
+
+        List<BoundaryBypassFinding> findings = BoundaryBypassScanner.scanBoundaryBypass(tempDir, List.of(baseManifest()));
+        assertTrue(findings.stream().anyMatch(f ->
+            "SHARED_PURITY_VIOLATION".equals(f.rule())
+                && f.detail().contains("synchronized usage is forbidden")
+        ));
+    }
+
+    @Test
+    void scanBoundaryBypassAllowsSharedPurePrimitiveConstant(@TempDir Path tempDir) throws Exception {
+        writeWorkingWithdrawImpl(tempDir);
+        writeJavaFile(
+            tempDir,
+            "src/main/java/blocks/_shared/pure/Constants.java",
+            "package blocks._shared.pure;\n"
+                + "public final class Constants {\n"
+                + "  static final int MAX = 5;\n"
+                + "}\n"
+        );
+
+        List<BoundaryBypassFinding> findings = BoundaryBypassScanner.scanBoundaryBypass(tempDir, List.of(baseManifest()));
+        assertTrue(findings.stream().noneMatch(f ->
+            "SHARED_PURITY_VIOLATION".equals(f.rule()) && f.path().endsWith("Constants.java")
+        ));
+    }
+
+    @Test
+    void scanBoundaryBypassFlagsSharedPureStaticFinalNewWhenNotAllowlisted(@TempDir Path tempDir) throws Exception {
+        writeWorkingWithdrawImpl(tempDir);
+        writeJavaFile(
+            tempDir,
+            "src/main/java/blocks/_shared/pure/Factory.java",
+            "package blocks._shared.pure;\n"
+                + "public final class Factory {\n"
+                + "  static final Object HOLDER = new Object();\n"
+                + "}\n"
+        );
+
+        List<BoundaryBypassFinding> findings = BoundaryBypassScanner.scanBoundaryBypass(tempDir, List.of(baseManifest()));
+        assertTrue(findings.stream().anyMatch(f ->
+            "SHARED_PURITY_VIOLATION".equals(f.rule())
+                && f.detail().contains("static final `new` initializer is forbidden")
+        ));
+    }
+
+    @Test
+    void scanBoundaryBypassFlagsImplStaticMutableState(@TempDir Path tempDir) throws Exception {
+        writeContainmentImpl(
+            tempDir,
+            "package blocks.withdraw.impl;\n"
+                + "public final class WithdrawImpl {\n"
+                + "  static int calls = 0;\n"
+                + "  Object execute(Object request) { return null; }\n"
+                + "}\n"
+        );
+
+        List<BoundaryBypassFinding> findings = BoundaryBypassScanner.scanBoundaryBypass(tempDir, List.of(withdrawManifestWithoutRequiredPorts()));
+        assertTrue(findings.stream().anyMatch(f ->
+            "IMPL_PURITY_VIOLATION".equals(f.rule())
+                && f.detail().contains("mutable static field is forbidden")
+        ));
+    }
+
+    @Test
+    void scanBoundaryBypassFlagsImplSynchronizedUsage(@TempDir Path tempDir) throws Exception {
+        writeContainmentImpl(
+            tempDir,
+            "package blocks.withdraw.impl;\n"
+                + "public final class WithdrawImpl {\n"
+                + "  synchronized Object execute(Object request) { return null; }\n"
+                + "}\n"
+        );
+
+        List<BoundaryBypassFinding> findings = BoundaryBypassScanner.scanBoundaryBypass(tempDir, List.of(withdrawManifestWithoutRequiredPorts()));
+        assertTrue(findings.stream().anyMatch(f ->
+            "IMPL_PURITY_VIOLATION".equals(f.rule())
+                && f.detail().contains("synchronized usage is forbidden")
+        ));
+    }
+
+    @Test
+    void scanBoundaryBypassFlagsImplStateDependency(@TempDir Path tempDir) throws Exception {
+        writeContainmentImpl(
+            tempDir,
+            "package blocks.withdraw.impl;\n"
+                + "import blocks._shared.state.SessionStore;\n"
+                + "public final class WithdrawImpl {\n"
+                + "  Object execute(Object request) { return SessionStore.fetch(); }\n"
+                + "}\n"
+        );
+        writeJavaFile(
+            tempDir,
+            "src/main/java/blocks/_shared/state/SessionStore.java",
+            "package blocks._shared.state;\npublic final class SessionStore { public static Object fetch() { return null; } }\n"
+        );
+
+        List<BoundaryBypassFinding> findings = BoundaryBypassScanner.scanBoundaryBypass(tempDir, List.of(withdrawManifestWithoutRequiredPorts()));
+        assertTrue(findings.stream().anyMatch(f ->
+            "IMPL_STATE_DEPENDENCY_BYPASS".equals(f.rule())
+                && f.detail().contains("blocks._shared.state")
+        ));
+    }
+
+    @Test
+    void scanBoundaryBypassFlagsScopedImportPolicyInImpl(@TempDir Path tempDir) throws Exception {
+        writeContainmentImpl(
+            tempDir,
+            "package blocks.withdraw.impl;\n"
+                + "import java.net.URL;\n"
+                + "public final class WithdrawImpl {\n"
+                + "  Object execute(Object request) throws Exception { return new URL(\"https://example.com\"); }\n"
+                + "}\n"
+        );
+
+        List<BoundaryBypassFinding> findings = BoundaryBypassScanner.scanBoundaryBypass(tempDir, List.of(withdrawManifestWithoutRequiredPorts()));
+        assertTrue(findings.stream().anyMatch(f ->
+            "SCOPED_IMPORT_POLICY_BYPASS".equals(f.rule())
+                && f.detail().contains("java.net.")
+        ));
+    }
+
+    @Test
+    void scanBoundaryBypassFlagsScopedImportPolicyInSharedPure(@TempDir Path tempDir) throws Exception {
+        writeWorkingWithdrawImpl(tempDir);
+        writeJavaFile(
+            tempDir,
+            "src/main/java/blocks/_shared/pure/NetworkHelper.java",
+            "package blocks._shared.pure;\n"
+                + "import java.net.URI;\n"
+                + "public final class NetworkHelper { static final String X = URI.create(\"https://example.com\").toString(); }\n"
+        );
+
+        List<BoundaryBypassFinding> findings = BoundaryBypassScanner.scanBoundaryBypass(tempDir, List.of(baseManifest()));
+        assertTrue(findings.stream().anyMatch(f ->
+            "SCOPED_IMPORT_POLICY_BYPASS".equals(f.rule())
+                && f.path().endsWith("NetworkHelper.java")
+        ));
+    }
+
+    @Test
+    void scanBoundaryBypassAllowsConcurrentTokenInSharedPureWhenOtherwisePure(@TempDir Path tempDir) throws Exception {
+        writeWorkingWithdrawImpl(tempDir);
+        writeJavaFile(
+            tempDir,
+            "src/main/java/blocks/_shared/pure/ConcurrentMention.java",
+            "package blocks._shared.pure;\n"
+                + "import java.util.concurrent.atomic.AtomicInteger;\n"
+                + "public final class ConcurrentMention { static final int X = 1; }\n"
+        );
+
+        List<BoundaryBypassFinding> findings = BoundaryBypassScanner.scanBoundaryBypass(tempDir, List.of(baseManifest()));
+        assertTrue(findings.stream().noneMatch(f ->
+            "SCOPED_IMPORT_POLICY_BYPASS".equals(f.rule()) && f.path().endsWith("ConcurrentMention.java")
+        ));
+    }
+
+    @Test
+    void scanBoundaryBypassFlagsSharedLayoutViolationOutsidePureOrState(@TempDir Path tempDir) throws Exception {
+        writeWorkingWithdrawImpl(tempDir);
+        writeJavaFile(
+            tempDir,
+            "src/main/java/blocks/_shared/LegacyHelper.java",
+            "package blocks._shared;\npublic final class LegacyHelper { static final int X = 1; }\n"
+        );
+
+        List<BoundaryBypassFinding> findings = BoundaryBypassScanner.scanBoundaryBypass(tempDir, List.of(baseManifest()));
+        assertTrue(findings.stream().anyMatch(f ->
+            "SHARED_LAYOUT_POLICY_VIOLATION".equals(f.rule()) && f.path().endsWith("LegacyHelper.java")
+        ));
     }
 
     private static void writeWorkingWithdrawImpl(Path tempDir) throws Exception {

@@ -1392,7 +1392,7 @@ public final class BearCli {
     }
 
     private static List<BoundaryBypassFinding> scanBoundaryBypass(Path projectRoot, List<WiringManifest> manifests)
-        throws IOException, ManifestParseException {
+        throws IOException, ManifestParseException, PolicyValidationException {
         return BoundaryBypassScanner.scanBoundaryBypass(projectRoot, manifests);
     }
 
