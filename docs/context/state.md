@@ -40,3 +40,7 @@ Stability-first quality rollout (aggressive track):
   - migrated `BearCli` from local `ExitCode`/`FailureCode` classes to shared `CliCodes`.
   - added `RepoCodeQualityGuardsTest` for bounded core-class size ceilings and dedup guards (policy patterns + blocked marker literal centralization).
   - re-verified local gates: `:app:test`, `:kernel:test`, `compile/check/pr-check --all` (CI fixture index).
+- Continued refactor slice:
+  - extracted CLI command handlers to `BearCliCommandHandlers` for `validate`, `compile`, `fix`, `check`, `unblock`, and `pr-check`.
+  - reduced `BearCli.java` footprint to 1342 lines while preserving command contracts.
+  - validated behavior parity through full tests and dual BEAR gates (reran `check --all` alone after an initial parallel timeout caused by resource contention).
