@@ -160,6 +160,20 @@ Preview standing note:
    - scoped import-policy wording now explicitly states lane/path scope and app-layer non-global applicability unless separately constrained.
    - docs consistency tests now enforce these IO lock anchors and blocker-evidence tokens.
 
+10. `Guardrails v2.2.4 (lock candidate): pr-check envelope anomaly + narrow state misuse checks`:
+   - runtime `pr-check` envelope enforcement now fails deterministically when marker/exit disagree:
+     - if output contains `BOUNDARY_EXPANSION_DETECTED` but exit != `5`, classify as internal anomaly (`PR_CHECK_EXIT_ENVELOPE_ANOMALY`, `exit 70`, `INTERNAL_ERROR`).
+   - scanner rule additions:
+     - `STATE_STORE_OP_MISUSE` for adapter update-path/create-call co-occurrence (including rename-dodge via balance/update tokens).
+     - `STATE_STORE_NOOP_UPDATE` for silent missing-state returns in `_shared/state` update methods.
+   - check/check-all remediation mapping now covers both new scanner rule IDs.
+   - IR validation now blocks hidden-state under-spec:
+     - empty `effects.allow` permitted only for echo-safe pure blocks (no idempotency/invariants; output `name:type` tuples mirror inputs with order-independent canonical matching).
+   - docs/tests updates shipped:
+     - no-artifact-mining stated as contract rule (docs/test enforced, not claimed as runtime scanner proof),
+     - troubleshooting/reporting anomaly routing clarified,
+     - new `RepoArtifactPolicyTest` enforces no tracked `build[0-9]+/` paths and no stale build path tokens in tracked text sources.
+
 ## Next Feature Specs (Locked)
 
 Detailed locked spec text was moved to:

@@ -128,7 +128,9 @@ class BearPackageDocsConsistencyTest {
                 "For expected `BOUNDARY_EXPANSION_DETECTED`, do not attempt to force green",
                 "mark run `BLOCKED` with required governance next action.",
                 "Never create `*.bear.yaml` outside the canonical IR directory.",
-                "2 failed retries"
+                "2 failed retries",
+                "Do not mine stale `build*` artifacts",
+                "Do not mine stale `build*` artifacts or recover signatures via `javap` from prior builds."
         );
 
         assertContainsTokens(contracts,
@@ -179,7 +181,10 @@ class BearPackageDocsConsistencyTest {
                 "Stopped after blocker: yes|no",
                 "First failing command: <exact command line>",
                 "First failure signature: <one copied verbatim line>",
-                "`pr-check` exit is non-zero -> `Run outcome` MUST be `BLOCKED`."
+                "`pr-check` exit is non-zero -> `Run outcome` MUST be `BLOCKED`.",
+                "If `pr-check` prints `BOUNDARY_EXPANSION_DETECTED` but exit is not `5`, classify `Gate blocker` as `OTHER` and stop.",
+                "First failure signature",
+                "observed exit code"
         );
         assertFalse(reporting.contains("--base HEAD"));
 
@@ -210,11 +215,16 @@ class BearPackageDocsConsistencyTest {
                 "Do not change environment knobs (`GRADLE_USER_HOME`, `buildDir`, wrapper env tweaks) during `IO_LOCK` triage unless explicitly instructed by repo policy/user.",
                 "Stop after 2 retries and report `BLOCKED(IO_LOCK)` with evidence.",
                 "Retry budget is max 2 failed retries.",
+                "do not read stale `build*` outputs",
+                "## PR_CHECK_EXIT_ENVELOPE_ANOMALY",
+                "Gate blocker` as `OTHER`",
                 "SHARED_PURITY_VIOLATION",
                 "IMPL_PURITY_VIOLATION",
                 "IMPL_STATE_DEPENDENCY_BYPASS",
                 "SCOPED_IMPORT_POLICY_BYPASS",
                 "SHARED_LAYOUT_POLICY_VIOLATION",
+                "STATE_STORE_OP_MISUSE",
+                "STATE_STORE_NOOP_UPDATE",
                 "deterministic token checks"
         );
         assertOrderedTokens(
@@ -233,7 +243,11 @@ class BearPackageDocsConsistencyTest {
                 "Implement state access in adapter/state lanes",
                 "walletStore",
                 "statementStore",
-                "idempotency"
+                "idempotency",
+                "empty `allow` is valid only for echo-safe pure blocks",
+                "every output matches an input by exact `name+type`",
+                "update path: `walletStore.updateBalance`",
+                "read path: `walletStore.get` must return explicit found state (`found=true|false`)"
         );
 
         Path agentRoot = repoRoot.resolve("docs/bear-package/.bear/agent");

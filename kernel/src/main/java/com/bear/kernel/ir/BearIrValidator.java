@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 
 public final class BearIrValidator {
@@ -30,6 +31,8 @@ public final class BearIrValidator {
         if (block.invariants() != null) {
             validateInvariants(block);
         }
+
+        validateEmptyEffectsPolicy(block);
     }
 
     private void validateContract(BearIr.Contract contract) {
@@ -240,6 +243,40 @@ public final class BearIrValidator {
                 throw semantic(depPath + ".maven", BearIrValidationException.Code.DUPLICATE, "duplicate allowed dep: " + dep.maven());
             }
         }
+    }
+
+    private void validateEmptyEffectsPolicy(BearIr.Block block) {
+        if (block.effects().allow() == null || !block.effects().allow().isEmpty()) {
+            return;
+        }
+        if (isEchoSafeEmptyEffectsBlock(block)) {
+            return;
+        }
+        throw semantic(
+            "block.effects.allow",
+            BearIrValidationException.Code.INVALID_VALUE,
+            "empty effects.allow requires echo-safe block (no idempotency, no invariants, outputs must mirror input name:type pairs)"
+        );
+    }
+
+    private boolean isEchoSafeEmptyEffectsBlock(BearIr.Block block) {
+        if (block.idempotency() != null) {
+            return false;
+        }
+        if (block.invariants() != null && !block.invariants().isEmpty()) {
+            return false;
+        }
+        TreeSet<String> inputTuples = canonicalFieldTuples(block.contract().inputs());
+        TreeSet<String> outputTuples = canonicalFieldTuples(block.contract().outputs());
+        return inputTuples.containsAll(outputTuples);
+    }
+
+    private TreeSet<String> canonicalFieldTuples(List<BearIr.Field> fields) {
+        TreeSet<String> tuples = new TreeSet<>();
+        for (BearIr.Field field : fields) {
+            tuples.add(field.name() + ":" + field.type().name());
+        }
+        return tuples;
     }
 
     private Map<String, Set<String>> effectsMap(BearIr.Effects effects) {

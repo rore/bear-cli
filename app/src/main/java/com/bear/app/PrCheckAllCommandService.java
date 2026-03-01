@@ -145,6 +145,7 @@ final class PrCheckAllCommandService {
                 false,
                 block.projectRoot()
             );
+            prResult = BearCli.enforcePrCheckExitEnvelope(prResult, block.ir());
             blockResults.add(BearCli.toPrBlockResult(block, prResult));
         }
 

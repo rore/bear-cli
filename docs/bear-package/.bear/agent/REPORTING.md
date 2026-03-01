@@ -46,6 +46,8 @@ Run report MUST include:
 4. Do not present `BLOCKED` runs as completion.
 5. Gate policy acknowledged must reflect: completion requires both repo-level gates green.
 6. If `Gate blocker` is `IO_LOCK`, `Stopped after blocker` MUST be `yes`.
+7. If `pr-check` prints `BOUNDARY_EXPANSION_DETECTED` but exit is not `5`, classify `Gate blocker` as `OTHER` and stop.
+8. For this anomaly, `First failure signature` must include both marker text and observed exit code.
 
 ## Governance-Signal Disposition Rules
 

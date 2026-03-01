@@ -35,6 +35,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class BearCli {
+    private static final String PR_CHECK_BOUNDARY_MARKER = "pr-check: FAIL: BOUNDARY_EXPANSION_DETECTED";
+    private static final String PR_CHECK_EXIT_ENVELOPE_ANOMALY = "PR_CHECK_EXIT_ENVELOPE_ANOMALY";
+    private static final String PR_CHECK_ENVELOPE_PATH = "pr-check.envelope";
+    private static final String PR_CHECK_ENVELOPE_REMEDIATION =
+        "Capture stderr and file an issue against bear-cli (pr-check exit-envelope anomaly).";
+    private static final String PR_CHECK_BOUNDARY_EXIT_OVERRIDE_PROPERTY =
+        "bear.cli.test.expectedBoundaryExpansionExit.pr-check";
     private static final String CHECK_BLOCKED_MARKER_RELATIVE = "build/bear/check.blocked.marker";
     private static final String CHECK_BLOCKED_REASON_LOCK = "LOCK";
     private static final String CHECK_BLOCKED_REASON_BOOTSTRAP = "BOOTSTRAP_IO";
@@ -438,7 +445,7 @@ public final class BearCli {
             }
         }
         PrCheckResult result = executePrCheck(projectRoot, repoRelativePath, baseRef);
-        return emitPrCheckResult(result, out, err);
+        return emitPrCheckResult(enforcePrCheckExitEnvelope(result, repoRelativePath), out, err);
     }
 
     private static int runCheckAll(String[] args, PrintStream out, PrintStream err) {
@@ -676,6 +683,61 @@ public final class BearCli {
             expectedBlockKey,
             expectedBlockLocator
         );
+    }
+
+    static PrCheckResult enforcePrCheckExitEnvelope(PrCheckResult result, String pathLocator) {
+        if (!hasBoundaryExpansionMarker(result)) {
+            return result;
+        }
+        int expectedExit = expectedBoundaryExpansionExitCode();
+        if (result.exitCode() == expectedExit) {
+            return result;
+        }
+        String anomalyLine = "pr-check: INTERNAL_ERROR: " + PR_CHECK_EXIT_ENVELOPE_ANOMALY
+            + ": marker=" + PR_CHECK_BOUNDARY_MARKER
+            + "; observedExit=" + result.exitCode()
+            + "; expectedExit=" + expectedExit;
+        ArrayList<String> stderr = new ArrayList<>(result.stderrLines());
+        stderr.add(anomalyLine);
+        return new PrCheckResult(
+            ExitCode.INTERNAL,
+            result.stdoutLines(),
+            List.copyOf(stderr),
+            "INTERNAL_ERROR",
+            FailureCode.INTERNAL_ERROR,
+            PR_CHECK_ENVELOPE_PATH,
+            PR_CHECK_ENVELOPE_REMEDIATION,
+            anomalyLine,
+            result.deltaLines(),
+            result.hasBoundary(),
+            result.hasDeltas(),
+            result.governanceLines()
+        );
+    }
+
+    private static boolean hasBoundaryExpansionMarker(PrCheckResult result) {
+        return containsBoundaryMarker(result.stderrLines()) || containsBoundaryMarker(result.stdoutLines());
+    }
+
+    private static boolean containsBoundaryMarker(List<String> lines) {
+        for (String line : lines) {
+            if (line != null && line.contains(PR_CHECK_BOUNDARY_MARKER)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static int expectedBoundaryExpansionExitCode() {
+        String raw = System.getProperty(PR_CHECK_BOUNDARY_EXIT_OVERRIDE_PROPERTY);
+        if (raw == null || raw.isBlank()) {
+            return ExitCode.BOUNDARY_EXPANSION;
+        }
+        try {
+            return Integer.parseInt(raw.trim());
+        } catch (NumberFormatException ignored) {
+            return ExitCode.BOUNDARY_EXPANSION;
+        }
     }
 
     private static PrCheckResult executePrCheck(Path projectRoot, String repoRelativePath, String baseRef) {

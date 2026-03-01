@@ -40,6 +40,8 @@ Purpose:
 - for `IMPL_STATE_DEPENDENCY_BYPASS`: remove `blocks._shared.state.*` dependencies from `impl`.
 - for `SCOPED_IMPORT_POLICY_BYPASS`: remove forbidden package usage from guarded lane and move integration code to adapter/state lanes.
 - for `SHARED_LAYOUT_POLICY_VIOLATION`: move `_shared` Java files under `blocks/_shared/pure/**` or `blocks/_shared/state/**`.
+- for `STATE_STORE_OP_MISUSE`: in adapter lane, split update-path behavior from create calls (`createWallet`/`create*`) and keep explicit not-found semantics.
+- for `STATE_STORE_NOOP_UPDATE`: in `_shared/state`, replace silent missing-state returns with explicit not-found behavior.
 
 4. Test failure lane (`exit 4`):
 - fix business/test logic.
@@ -48,18 +50,24 @@ Purpose:
 5. Boundary expansion lane (`exit 5`, `pr-check`):
 - treat as governance review signal, not random failure.
 - verify `--base` selection first; `--base HEAD` can misclassify or hide intended delta unless explicitly instructed.
+- if output contains `BOUNDARY_EXPANSION_DETECTED` but exit is not boundary-expansion exit (`5`), classify as tool anomaly (`OTHER`) and stop.
 
-6. Schema/path mismatch or missing routed docs:
+6. Greenfield artifact-mining contract lane:
+- in greenfield, only trust current IR plus fresh generated contracts under `build/generated/bear/**` after compile.
+- do not read stale `build*` outputs, run `javap` on prior class dirs, or copy signatures from prior builds.
+- this is a hard agent contract rule and must be reported as a process violation if broken.
+
+7. Schema/path mismatch or missing routed docs:
 - rerun package sync from canonical source package.
 - verify destination `.bear/agent/**` tree exactly matches source package tree.
 - rerun the failing gate after parity is restored.
 
-7. `SPEC_POLICY_CONFLICT`:
+8. `SPEC_POLICY_CONFLICT`:
 - apply conflict checklist in this file.
 - if checklist confirms conflict, escalate and stop implementation edits.
 - do not patch harness/policy/runtime files unless explicitly instructed.
 
-8. `CONTAINMENT_METADATA_MISMATCH`:
+9. `CONTAINMENT_METADATA_MISMATCH`:
 - trigger this diagnosis only when `bear check` fails with containment/classpath signatures.
 - inspect containment metadata for diagnostic evidence.
 - run exactly one deterministic repair: `bear compile --all --project <repoRoot>`.
@@ -113,6 +121,17 @@ Success criteria:
 4. Do not "eliminate" an intentional boundary expansion by hiding or reverting valid contract changes.
 5. Do not use `bear unblock` for intentional boundary expansion.
 6. If boundary expansion is expected, report `BLOCKED` with required governance next action.
+
+## PR_CHECK_EXIT_ENVELOPE_ANOMALY
+
+Use this class when:
+1. `pr-check` output includes `pr-check: FAIL: BOUNDARY_EXPANSION_DETECTED`
+2. but command exit is not boundary-expansion exit `5`.
+
+Deterministic handling:
+1. classify `Gate blocker` as `OTHER` (tool anomaly).
+2. stop immediately; do not continue alternate `pr-check` variants.
+3. include both marker and observed exit in `First failure signature`.
 
 ## Lock/IO Environment Branch
 

@@ -602,6 +602,80 @@ class BoundaryBypassScannerTest {
         ));
     }
 
+    @Test
+    void scanBoundaryBypassFlagsStateStoreNoopUpdateInSharedState(@TempDir Path tempDir) throws Exception {
+        writeWorkingWithdrawImpl(tempDir);
+        writeJavaFile(
+            tempDir,
+            "src/main/java/blocks/_shared/state/WalletStateStore.java",
+            "package blocks._shared.state;\n"
+                + "public final class WalletStateStore {\n"
+                + "  void updateBalance(String walletId, int balanceCents) {\n"
+                + "    Object wallet = null;\n"
+                + "    if (wallet == null) { return; }\n"
+                + "  }\n"
+                + "}\n"
+        );
+
+        List<BoundaryBypassFinding> findings = BoundaryBypassScanner.scanBoundaryBypass(tempDir, List.of(baseManifest()));
+        assertTrue(findings.stream().anyMatch(f ->
+            "STATE_STORE_NOOP_UPDATE".equals(f.rule())
+                && f.path().endsWith("WalletStateStore.java")
+        ));
+    }
+
+    @Test
+    void scanBoundaryBypassFlagsAdapterStateStoreOpMisuseForUpdateMethod(@TempDir Path tempDir) throws Exception {
+        writeWorkingWithdrawImpl(tempDir);
+        writeJavaFile(
+            tempDir,
+            "src/main/java/blocks/withdraw/adapter/WithdrawPorts.java",
+            "package blocks.withdraw.adapter;\n"
+                + "public final class WithdrawPorts {\n"
+                + "  private final State state = new State();\n"
+                + "  void updateBalance(String walletId, int balanceCents) {\n"
+                + "    state.createWallet(walletId, \"owner\", \"ACTIVE\", balanceCents);\n"
+                + "  }\n"
+                + "  static final class State {\n"
+                + "    void createWallet(String walletId, String ownerId, String status, int balanceCents) {}\n"
+                + "  }\n"
+                + "}\n"
+        );
+
+        List<BoundaryBypassFinding> findings = BoundaryBypassScanner.scanBoundaryBypass(tempDir, List.of(baseManifest()));
+        assertTrue(findings.stream().anyMatch(f ->
+            "STATE_STORE_OP_MISUSE".equals(f.rule())
+                && f.path().endsWith("WithdrawPorts.java")
+                && f.detail().contains("update-path signals")
+        ));
+    }
+
+    @Test
+    void scanBoundaryBypassFlagsAdapterStateStoreOpMisuseForRenameDodge(@TempDir Path tempDir) throws Exception {
+        writeWorkingWithdrawImpl(tempDir);
+        writeJavaFile(
+            tempDir,
+            "src/main/java/blocks/withdraw/adapter/WalletPorts.java",
+            "package blocks.withdraw.adapter;\n"
+                + "public final class WalletPorts {\n"
+                + "  private final State state = new State();\n"
+                + "  void put(String walletId, String ownerId, String status, String balanceCents) {\n"
+                + "    int parsed = Integer.parseInt(balanceCents);\n"
+                + "    state.createWallet(walletId, ownerId, status, parsed);\n"
+                + "  }\n"
+                + "  static final class State {\n"
+                + "    void createWallet(String walletId, String ownerId, String status, int balanceCents) {}\n"
+                + "  }\n"
+                + "}\n"
+        );
+
+        List<BoundaryBypassFinding> findings = BoundaryBypassScanner.scanBoundaryBypass(tempDir, List.of(baseManifest()));
+        assertTrue(findings.stream().anyMatch(f ->
+            "STATE_STORE_OP_MISUSE".equals(f.rule())
+                && f.path().endsWith("WalletPorts.java")
+        ));
+    }
+
     private static void writeWorkingWithdrawImpl(Path tempDir) throws Exception {
         Path impl = tempDir.resolve("src/main/java/blocks/withdraw/impl/WithdrawImpl.java");
         Files.createDirectories(impl.getParent());

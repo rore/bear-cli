@@ -1193,6 +1193,12 @@ final class CheckCommandService {
         if ("SHARED_LAYOUT_POLICY_VIOLATION".equals(rule)) {
             return "Move shared Java files under `src/main/java/blocks/_shared/pure/**` or `src/main/java/blocks/_shared/state/**`; root-level `_shared` Java files are not allowed.";
         }
+        if ("STATE_STORE_OP_MISUSE".equals(rule)) {
+            return "In adapter lane, do not mix update-path logic with state-create calls in the same method; split create vs update semantics and preserve explicit not-found behavior.";
+        }
+        if ("STATE_STORE_NOOP_UPDATE".equals(rule)) {
+            return "In `_shared/state`, update-path methods must not silently return on missing state; raise explicit not-found behavior instead.";
+        }
         return "Wire via generated entrypoints and declared effect ports; remove impl seam bypasses.";
     }
 

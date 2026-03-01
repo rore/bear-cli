@@ -68,9 +68,13 @@ effects:
 ```
 
 Rules:
-- `allow` required (may be empty)
+- `allow` required
 - unique ports
 - unique ops per port
+- empty `allow` is valid only for echo-safe pure blocks:
+  - no `idempotency`
+  - no `invariants`
+  - every output matches an input by exact `name+type` (order-independent canonical tuple match)
 
 ## Idempotency (Optional)
 
@@ -176,6 +180,12 @@ idempotency:
     getOp: get
     putOp: put
 ```
+
+Concrete walletStore contract pattern:
+1. create path: `walletStore.put` used only for create semantics.
+2. update path: `walletStore.updateBalance` (or `walletStore.putBalance`) used only for update semantics.
+3. read path: `walletStore.get` must return explicit found state (`found=true|false`) and never rely on hidden state assumptions.
+4. avoid overloaded ambiguous update/create `put` behavior in adapters.
 
 ## Minimal Examples
 

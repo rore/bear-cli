@@ -134,6 +134,8 @@ Read on demand:
 28. Use `bear fix` for generated drift repair only; never for test or IO failures.
 29. Do not claim done without both repo-level gates green.
 30. For expected `BOUNDARY_EXPANSION_DETECTED`, do not attempt to force green; mark run `BLOCKED` with required governance next action.
+31. Greenfield contract source is current IR + freshly generated sources in `build/generated/bear/**` after compile. Do not mine stale `build*` artifacts or recover signatures via `javap` from prior builds.
+32. This "no artifact mining" rule is an agent contract rule (docs-enforced), not a runtime scanner guarantee.
 
 ## Done Gate Contract
 

@@ -567,6 +567,74 @@ class BearIrValidatorTest {
     }
 
     @Test
+    void acceptEchoSafeEmptyEffectsWithOrderIndependentTupleMatching(@TempDir Path tempDir) throws IOException {
+        String yaml = ""
+            + "version: v1\n"
+            + "block:\n"
+            + "  name: Echo\n"
+            + "  kind: logic\n"
+            + "  contract:\n"
+            + "    inputs:\n"
+            + "      - name: b\n"
+            + "        type: int\n"
+            + "      - name: a\n"
+            + "        type: string\n"
+            + "    outputs:\n"
+            + "      - name: a\n"
+            + "        type: string\n"
+            + "      - name: b\n"
+            + "        type: int\n"
+            + "  effects:\n"
+            + "    allow: []\n";
+
+        Path file = tempDir.resolve("echo.yaml");
+        Files.writeString(file, yaml);
+        BearIrParser parser = new BearIrParser();
+        BearIrValidator validator = new BearIrValidator();
+        BearIr ir = parser.parse(file);
+        validator.validate(ir);
+    }
+
+    @Test
+    void rejectEmptyEffectsWhenOutputDoesNotMirrorInputTuple(@TempDir Path tempDir) throws IOException {
+        String yaml = ""
+            + "version: v1\n"
+            + "block:\n"
+            + "  name: NonEcho\n"
+            + "  kind: logic\n"
+            + "  contract:\n"
+            + "    inputs: [{name: requestId, type: string}]\n"
+            + "    outputs: [{name: balanceCents, type: int}]\n"
+            + "  effects:\n"
+            + "    allow: []\n";
+
+        BearIrValidationException ex = assertSemanticError(tempDir, yaml);
+        assertEquals(BearIrValidationException.Code.INVALID_VALUE, ex.code());
+        assertEquals("block.effects.allow", ex.path());
+    }
+
+    @Test
+    void rejectEmptyEffectsWhenInvariantsPresentEvenIfOutputMirrorsInput(@TempDir Path tempDir) throws IOException {
+        String yaml = ""
+            + "version: v1\n"
+            + "block:\n"
+            + "  name: EchoInvariant\n"
+            + "  kind: logic\n"
+            + "  contract:\n"
+            + "    inputs: [{name: status, type: string}]\n"
+            + "    outputs: [{name: status, type: string}]\n"
+            + "  effects:\n"
+            + "    allow: []\n"
+            + "  invariants:\n"
+            + "    - kind: non_empty\n"
+            + "      field: status\n";
+
+        BearIrValidationException ex = assertSemanticError(tempDir, yaml);
+        assertEquals(BearIrValidationException.Code.INVALID_VALUE, ex.code());
+        assertEquals("block.effects.allow", ex.path());
+    }
+
+    @Test
     void goldenCanonicalYamlForWithdrawFixture() throws IOException {
         Path repoRoot = TestRepoPaths.repoRoot();
         Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");

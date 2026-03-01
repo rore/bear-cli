@@ -4136,6 +4136,73 @@ class BearCliTest {
     }
 
     @Test
+    void prCheckEnvelopeAnomalyBecomesInternalError(@TempDir Path tempDir) throws Exception {
+        Path repo = initGitRepo(tempDir.resolve("repo"));
+        Files.writeString(repo.resolve("README.md"), "base\n", StandardCharsets.UTF_8);
+        gitCommitAll(repo, "base");
+        writeFixtureIr(repo.resolve("spec/withdraw.bear.yaml"));
+        gitCommitAll(repo, "add ir");
+
+        String key = "bear.cli.test.expectedBoundaryExpansionExit.pr-check";
+        String previous = System.getProperty(key);
+        try {
+            System.setProperty(key, "9");
+            CliRunResult run = runCli(new String[] {
+                "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
+            });
+            String stderr = normalizeLf(run.stderr);
+            assertEquals(70, run.exitCode);
+            assertTrue(stderr.contains("PR_CHECK_EXIT_ENVELOPE_ANOMALY"));
+            assertTrue(stderr.contains("observedExit=5"));
+            assertTrue(stderr.contains("expectedExit=9"));
+            assertFailureEnvelope(
+                run.stderr,
+                "INTERNAL_ERROR",
+                "pr-check.envelope",
+                "Capture stderr and file an issue against bear-cli (pr-check exit-envelope anomaly)."
+            );
+        } finally {
+            restoreSystemProperty(key, previous);
+        }
+    }
+
+    @Test
+    void prCheckAllEnvelopeAnomalySurfacesAsInternalFailure(@TempDir Path tempDir) throws Exception {
+        Path repo = initGitRepo(tempDir.resolve("repo"));
+        Files.writeString(repo.resolve("README.md"), "base\n", StandardCharsets.UTF_8);
+        gitCommitAll(repo, "base");
+        writeFixtureIr(repo.resolve("spec/withdraw.bear.yaml"));
+        writeBlockIndex(repo, ""
+            + "version: v0\n"
+            + "blocks:\n"
+            + "  - name: withdraw\n"
+            + "    ir: spec/withdraw.bear.yaml\n"
+            + "    projectRoot: .\n");
+        gitCommitAll(repo, "add ir + index");
+
+        String key = "bear.cli.test.expectedBoundaryExpansionExit.pr-check";
+        String previous = System.getProperty(key);
+        try {
+            System.setProperty(key, "9");
+            CliRunResult run = runCli(new String[] {
+                "pr-check", "--all", "--project", repo.toString(), "--base", "HEAD~1"
+            });
+            String stderr = normalizeLf(run.stderr);
+            assertEquals(70, run.exitCode);
+            assertTrue(stderr.contains("PR_CHECK_EXIT_ENVELOPE_ANOMALY"));
+            assertTrue(stderr.contains("CATEGORY: INTERNAL_ERROR"));
+            assertFailureEnvelope(
+                run.stderr,
+                "REPO_MULTI_BLOCK_FAILED",
+                "bear.blocks.yaml",
+                "Review per-block results above and fix failing blocks, then rerun the command."
+            );
+        } finally {
+            restoreSystemProperty(key, previous);
+        }
+    }
+
+    @Test
     void prCheckOrdinaryOpsDeltaReturnsZero(@TempDir Path tempDir) throws Exception {
         Path repo = initGitRepo(tempDir.resolve("repo"));
         Path ir = repo.resolve("spec/withdraw.bear.yaml");
