@@ -41,7 +41,7 @@ if (-not (Test-Path -LiteralPath $safeCleanScript)) {
 
 Write-Output "Demo cleanup target repo: $demoRoot"
 Write-Output "Step 1/3: remove generated/demo-run artifacts"
-Write-Output "Step 2/3: reset tracked changes + remove untracked files"
+Write-Output "Step 2/3: reset tracked changes + remove untracked and ignored files"
 Write-Output "Step 3/3: report git status + mandatory path checks"
 
 Confirm-Cleanup -Yes:$Yes -WhatIf:$WhatIf
@@ -50,11 +50,23 @@ Push-Location $demoRoot
 try {
     if ($WhatIf) {
         & $safeCleanScript -IncludeGreenfieldReset -IncludeGradleCache:$IncludeGradleCache -WhatIf
-        Write-Output "WhatIf mode: skipping git restore/clean."
+        Write-Output "WhatIf mode: showing git reset/clean actions."
+        Write-Output "Would run: git restore --worktree --staged ."
+        if ($IncludeGradleCache) {
+            Write-Output "Would run: git clean -ndx"
+            & git clean -ndx
+        } else {
+            Write-Output "Would run: git clean -ndx -e .bear-gradle-user-home/"
+            & git clean -ndx -e .bear-gradle-user-home/
+        }
     } else {
         & $safeCleanScript -IncludeGreenfieldReset -IncludeGradleCache:$IncludeGradleCache -Yes
         & git restore --worktree --staged .
-        & git clean -fd
+        if ($IncludeGradleCache) {
+            & git clean -fdx
+        } else {
+            & git clean -fdx -e .bear-gradle-user-home/
+        }
     }
 
     Write-Output ""
@@ -70,8 +82,12 @@ try {
     Write-Output "Path checks:"
     $checks = @(
         "build",
+        "build2",
+        "build3",
+        "build4",
         "bin/main",
         "bin/test",
+        ".gradle",
         "bear.blocks.yaml",
         "spec",
         "src/main/java/blocks",
@@ -88,4 +104,3 @@ try {
 } finally {
     Pop-Location
 }
-

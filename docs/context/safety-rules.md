@@ -68,6 +68,9 @@ When asked to "clean the demo" or "clean demo branch", use this exact contract:
    - `powershell -ExecutionPolicy Bypass -File .\scripts\clean-demo-branch.ps1`
 2. Artifact scope that must be removed:
    - `build/`
+   - `build2/`
+   - `build3/`
+   - `build4/`
    - `bin/main`
    - `bin/test`
    - `bear.blocks.yaml`
@@ -75,7 +78,7 @@ When asked to "clean the demo" or "clean demo branch", use this exact contract:
    - `src/main/java/blocks/`
 3. Reset demo repo working tree to branch HEAD:
    - restore tracked changes
-   - remove untracked files
+   - remove untracked and ignored files (except `.bear-gradle-user-home/` unless explicitly requested)
 4. Keep `.bear-gradle-user-home/` by default.
 5. Only remove `.bear-gradle-user-home/` if explicitly requested.
 6. Routine demo cleanup is operational; do not update `docs/context/state.md` for cleanup-only work.

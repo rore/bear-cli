@@ -23,6 +23,10 @@ P2 stabilization and BEAR guardrails hardening:
 
 ## Session Notes
 
+- Hardened demo cleanup process:
+  - `scripts/clean-demo-branch.ps1` now uses ignored-file cleanup (`git clean -fdx`, preserving `.bear-gradle-user-home` by default) so stale ignored outputs do not survive.
+  - post-clean path checks now include `.gradle` and legacy artifact dirs `build2/`, `build3/`, `build4/`.
+  - `docs/context/safety-rules.md` demo cleanup contract updated to require removing untracked+ignored files and to list `build2/3/4` explicitly.
 - Implemented Guardrails v2.2.5-lite (revised):
   - `BoundaryBypassScanner` now gates rule evaluation through explicit `ruleAppliesToPath(ruleId, relPath)` allowlists.
   - Lane-scope hardening ensures `_shared/state` is excluded from `SHARED_PURITY_VIOLATION` and `SCOPED_IMPORT_POLICY_BYPASS` evaluation.
