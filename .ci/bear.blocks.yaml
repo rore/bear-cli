@@ -1,0 +1,6 @@
+version: v0
+blocks:
+  - name: withdraw
+    ir: spec/fixtures/withdraw.bear.yaml
+    projectRoot: .
+    enabled: true

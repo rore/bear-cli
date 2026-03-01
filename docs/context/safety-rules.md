@@ -68,9 +68,7 @@ When asked to "clean the demo" or "clean demo branch", use this exact contract:
    - `powershell -ExecutionPolicy Bypass -File .\scripts\clean-demo-branch.ps1`
 2. Artifact scope that must be removed:
    - `build/`
-   - `build2/`
-   - `build3/`
-   - `build4/`
+   - legacy numbered build directories (for example `build2`, `build3`, `build4`)
    - `bin/main`
    - `bin/test`
    - `bear.blocks.yaml`

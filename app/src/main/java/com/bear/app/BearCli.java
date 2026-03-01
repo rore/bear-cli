@@ -1,10 +1,7 @@
 package com.bear.app;
 
 import com.bear.kernel.ir.BearIr;
-import com.bear.kernel.ir.BearIrNormalizer;
-import com.bear.kernel.ir.BearIrParser;
 import com.bear.kernel.ir.BearIrValidationException;
-import com.bear.kernel.ir.BearIrValidator;
 import com.bear.kernel.ir.BearIrYamlEmitter;
 import com.bear.kernel.target.JvmTarget;
 
@@ -31,10 +28,17 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public final class BearCli {
+    private static final IrPipeline IR_PIPELINE = new DefaultIrPipeline();
+    private static final Map<String, CommandHandler> COMMAND_HANDLERS = Map.of(
+        "validate", BearCli::runValidate,
+        "compile", BearCli::runCompile,
+        "fix", BearCli::runFix,
+        "check", BearCli::runCheck,
+        "unblock", BearCli::runUnblock,
+        "pr-check", BearCli::runPrCheck
+    );
     private static final String PR_CHECK_BOUNDARY_MARKER = "pr-check: FAIL: BOUNDARY_EXPANSION_DETECTED";
     private static final String PR_CHECK_EXIT_ENVELOPE_ANOMALY = "PR_CHECK_EXIT_ENVELOPE_ANOMALY";
     private static final String PR_CHECK_ENVELOPE_PATH = "pr-check.envelope";
@@ -42,30 +46,8 @@ public final class BearCli {
         "Capture stderr and file an issue against bear-cli (pr-check exit-envelope anomaly).";
     private static final String PR_CHECK_BOUNDARY_EXIT_OVERRIDE_PROPERTY =
         "bear.cli.test.expectedBoundaryExpansionExit.pr-check";
-    private static final String CHECK_BLOCKED_MARKER_RELATIVE = "build/bear/check.blocked.marker";
-    private static final String CHECK_BLOCKED_REASON_LOCK = "LOCK";
-    private static final String CHECK_BLOCKED_REASON_BOOTSTRAP = "BOOTSTRAP_IO";
     private static final int UNBLOCK_DELETE_ATTEMPTS = 3;
     private static final long UNBLOCK_RETRY_BACKOFF_MILLIS = 200L;
-    private static final Pattern DIRECT_IMPL_IMPORT_PATTERN = Pattern.compile(
-        "\\bimport\\s+blocks(?:\\.[A-Za-z_][A-Za-z0-9_]*)*\\.impl\\.[A-Za-z_][A-Za-z0-9_]*Impl\\s*;"
-    );
-    private static final Pattern DIRECT_IMPL_NEW_PATTERN = Pattern.compile(
-        "\\bnew\\s+(?:[A-Za-z_][A-Za-z0-9_]*\\s*\\.\\s*)*[A-Za-z_][A-Za-z0-9_]*Impl\\s*\\("
-    );
-    private static final Pattern DIRECT_IMPL_TYPE_CAST_PATTERN = Pattern.compile(
-        "\\(\\s*(?:[A-Za-z_][A-Za-z0-9_]*\\s*\\.\\s*)*[A-Za-z_][A-Za-z0-9_]*Impl\\s*\\)"
-    );
-    private static final Pattern DIRECT_IMPL_VAR_DECL_PATTERN = Pattern.compile(
-        "(?m)\\b(?:[A-Za-z_][A-Za-z0-9_]*\\s*\\.\\s*)*[A-Za-z_][A-Za-z0-9_]*Impl\\b\\s+[A-Za-z_][A-Za-z0-9_]*\\s*(?:[=;,)])"
-    );
-    private static final Pattern DIRECT_IMPL_EXTENDS_IMPL_PATTERN = Pattern.compile(
-        "\\bextends\\s+(?:[A-Za-z_][A-Za-z0-9_]*\\s*\\.\\s*)*[A-Za-z_][A-Za-z0-9_]*Impl\\b"
-    );
-    private static final Pattern DIRECT_IMPL_IMPLEMENTS_IMPL_PATTERN = Pattern.compile(
-        "\\bimplements\\s+(?:[A-Za-z_][A-Za-z0-9_]*\\s*\\.\\s*)*[A-Za-z_][A-Za-z0-9_]*Impl\\b"
-    );
-    private static final Pattern SUPPRESSION_PATTERN = Pattern.compile("(?m)^\\s*//\\s*BEAR:PORT_USED\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*$");
 
     private BearCli() {
     }
@@ -77,26 +59,22 @@ public final class BearCli {
 
     static int run(String[] args, PrintStream out, PrintStream err) {
         String command = args.length == 0 ? "help" : args[0];
-        return switch (command) {
-            case "help", "-h", "--help" -> {
-                printUsage(out);
-                yield ExitCode.OK;
-            }
-            case "validate" -> runValidate(args, out, err);
-            case "compile" -> runCompile(args, out, err);
-            case "fix" -> runFix(args, out, err);
-            case "check" -> runCheck(args, out, err);
-            case "unblock" -> runUnblock(args, out, err);
-            case "pr-check" -> runPrCheck(args, out, err);
-            default -> failWithLegacy(
-                err,
-                ExitCode.USAGE,
-                "usage: UNKNOWN_COMMAND: unknown command: " + command,
-                FailureCode.USAGE_UNKNOWN_COMMAND,
-                "cli.command",
-                "Run `bear --help` and use a supported command."
-            );
-        };
+        if ("help".equals(command) || "-h".equals(command) || "--help".equals(command)) {
+            printUsage(out);
+            return ExitCode.OK;
+        }
+        CommandHandler handler = COMMAND_HANDLERS.get(command);
+        if (handler != null) {
+            return handler.handle(args, out, err);
+        }
+        return failWithLegacy(
+            err,
+            ExitCode.USAGE,
+            "usage: UNKNOWN_COMMAND: unknown command: " + command,
+            FailureCode.USAGE_UNKNOWN_COMMAND,
+            "cli.command",
+            "Run `bear --help` and use a supported command."
+        );
     }
 
     private static int runValidate(String[] args, PrintStream out, PrintStream err) {
@@ -119,14 +97,8 @@ public final class BearCli {
         Path file = Path.of(args[1]);
         try {
             maybeFailInternalForTest("validate");
-            BearIrParser parser = new BearIrParser();
-            BearIrValidator validator = new BearIrValidator();
-            BearIrNormalizer normalizer = new BearIrNormalizer();
             BearIrYamlEmitter emitter = new BearIrYamlEmitter();
-
-            BearIr ir = parser.parse(file);
-            validator.validate(ir);
-            BearIr normalized = normalizer.normalize(ir);
+            BearIr normalized = IR_PIPELINE.parseValidateNormalize(file);
 
             out.print(emitter.toCanonicalYaml(normalized));
             return ExitCode.OK;
@@ -300,7 +272,7 @@ public final class BearCli {
             );
         }
         Path projectRoot = Path.of(args[2]);
-        Path marker = projectRoot.resolve(CHECK_BLOCKED_MARKER_RELATIVE);
+        Path marker = projectRoot.resolve(CheckBlockedMarker.RELATIVE_PATH);
         if (!Files.isRegularFile(marker)) {
             out.println("unblock: OK");
             return ExitCode.OK;
@@ -337,7 +309,7 @@ public final class BearCli {
             ExitCode.IO,
             line,
             CliCodes.UNBLOCK_LOCKED,
-            CHECK_BLOCKED_MARKER_RELATIVE,
+            CheckBlockedMarker.RELATIVE_PATH,
             "Close processes locking the marker and rerun `bear unblock --project <path>`."
         );
     }
@@ -401,10 +373,7 @@ public final class BearCli {
         }
         if (Files.isRegularFile(headIrPath)) {
             try {
-                BearIrParser parser = new BearIrParser();
-                BearIrValidator validator = new BearIrValidator();
-                BearIrNormalizer normalizer = new BearIrNormalizer();
-                BearIr normalized = normalizer.normalize(parseAndValidateIr(parser, validator, headIrPath));
+                BearIr normalized = IR_PIPELINE.parseValidateNormalize(headIrPath);
                 BlockIdentityResolver.resolveSingleCommandIdentity(headIrPath, projectRoot, normalized.block().name());
             } catch (BearIrValidationException e) {
                 return failWithLegacy(
@@ -519,14 +488,8 @@ public final class BearCli {
     static FixResult executeFix(Path irFile, Path projectRoot, String expectedBlockKey, String expectedBlockLocator) {
         try {
             maybeFailInternalForTest("fix");
-            BearIrParser parser = new BearIrParser();
-            BearIrValidator validator = new BearIrValidator();
-            BearIrNormalizer normalizer = new BearIrNormalizer();
             JvmTarget target = new JvmTarget();
-
-            BearIr ir = parser.parse(irFile);
-            validator.validate(ir);
-            BearIr normalized = normalizer.normalize(ir);
+            BearIr normalized = IR_PIPELINE.parseValidateNormalize(irFile);
             BlockIdentityResolution identity = expectedBlockKey == null
                 ? BlockIdentityResolver.resolveSingleCommandIdentity(irFile, projectRoot, normalized.block().name())
                 : BlockIdentityResolver.resolveIndexIdentity(
@@ -595,14 +558,8 @@ public final class BearCli {
     static CompileResult executeCompile(Path irFile, Path projectRoot, String expectedBlockKey, String expectedBlockLocator) {
         try {
             maybeFailInternalForTest("compile");
-            BearIrParser parser = new BearIrParser();
-            BearIrValidator validator = new BearIrValidator();
-            BearIrNormalizer normalizer = new BearIrNormalizer();
             JvmTarget target = new JvmTarget();
-
-            BearIr ir = parser.parse(irFile);
-            validator.validate(ir);
-            BearIr normalized = normalizer.normalize(ir);
+            BearIr normalized = IR_PIPELINE.parseValidateNormalize(irFile);
             BlockIdentityResolution identity = expectedBlockKey == null
                 ? BlockIdentityResolver.resolveSingleCommandIdentity(irFile, projectRoot, normalized.block().name())
                 : BlockIdentityResolver.resolveIndexIdentity(
@@ -1121,10 +1078,7 @@ public final class BearCli {
 
     static String validateIndexIrNameMatch(Path irFile, String expectedBlockKey, String expectedBlockLocator) {
         try {
-            BearIrParser parser = new BearIrParser();
-            BearIrValidator validator = new BearIrValidator();
-            BearIrNormalizer normalizer = new BearIrNormalizer();
-            BearIr normalized = normalizer.normalize(parseAndValidateIr(parser, validator, irFile));
+            BearIr normalized = IR_PIPELINE.parseValidateNormalize(irFile);
             BlockIdentityResolver.resolveIndexIdentity(
                 expectedBlockKey,
                 expectedBlockLocator == null || expectedBlockLocator.isBlank()
@@ -1235,12 +1189,6 @@ public final class BearCli {
 
     private static List<BoundarySignal> computeBoundarySignals(BoundaryManifest baseline, BoundaryManifest candidate) {
         return PrDeltaClassifier.computeBoundarySignals(baseline, candidate);
-    }
-
-    private static BearIr parseAndValidateIr(BearIrParser parser, BearIrValidator validator, Path path) throws IOException {
-        BearIr ir = parser.parse(path);
-        validator.validate(ir);
-        return ir;
     }
 
     private static List<PrDelta> computePrDeltas(BearIr baseIr, BearIr headIr) {
@@ -1511,7 +1459,7 @@ public final class BearCli {
     }
 
     static CheckBlockedState readCheckBlockedState(Path projectRoot) {
-        Path marker = projectRoot.resolve(CHECK_BLOCKED_MARKER_RELATIVE);
+        Path marker = projectRoot.resolve(CheckBlockedMarker.RELATIVE_PATH);
         if (!Files.isRegularFile(marker)) {
             return CheckBlockedState.notBlocked();
         }
@@ -1540,7 +1488,7 @@ public final class BearCli {
     }
 
     static void writeCheckBlockedMarker(Path projectRoot, String reason, String detail) throws IOException {
-        Path marker = projectRoot.resolve(CHECK_BLOCKED_MARKER_RELATIVE);
+        Path marker = projectRoot.resolve(CheckBlockedMarker.RELATIVE_PATH);
         Files.createDirectories(marker.getParent());
         String safeReason = (reason == null || reason.isBlank()) ? "UNKNOWN" : reason;
         String safeDetail = (detail == null || detail.isBlank()) ? "no details" : detail.trim();
@@ -1549,7 +1497,7 @@ public final class BearCli {
     }
 
     static void clearCheckBlockedMarker(Path projectRoot) throws IOException {
-        Path marker = projectRoot.resolve(CHECK_BLOCKED_MARKER_RELATIVE);
+        Path marker = projectRoot.resolve(CheckBlockedMarker.RELATIVE_PATH);
         Files.deleteIfExists(marker);
     }
 
@@ -1729,41 +1677,15 @@ public final class BearCli {
         String pathLocator,
         String remediation
     ) {
-        err.println(legacyLine);
-        return fail(err, exitCode, code, pathLocator, remediation);
+        return FailureEnvelopeEmitter.failWithLegacy(err, exitCode, legacyLine, code, pathLocator, remediation);
     }
 
     static int fail(PrintStream err, int exitCode, String code, String pathLocator, String remediation) {
-        String locator = normalizeLocator(pathLocator);
-        err.println("CODE=" + code);
-        err.println("PATH=" + locator);
-        err.println("REMEDIATION=" + remediation);
-        return exitCode;
+        return FailureEnvelopeEmitter.fail(err, exitCode, code, pathLocator, remediation);
     }
 
     private static String normalizeLocator(String raw) {
-        if (raw == null) {
-            return "internal";
-        }
-        String trimmed = raw.trim();
-        if (trimmed.isEmpty()) {
-            return "internal";
-        }
-        if (looksAbsolute(trimmed)) {
-            return "internal";
-        }
-        return trimmed.replace('\\', '/');
-    }
-
-    private static boolean looksAbsolute(String value) {
-        String normalized = value.replace('\\', '/');
-        if (normalized.startsWith("/")) {
-            return true;
-        }
-        if (normalized.startsWith("//")) {
-            return true;
-        }
-        return normalized.matches("^[A-Za-z]:/.*");
+        return FailureEnvelopeEmitter.normalizeLocator(raw);
     }
 
     private static final class ExitCode {

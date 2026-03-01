@@ -34,24 +34,15 @@ final class BoundaryBypassScanner {
     private static final String SHARED_STATE_ROOT_PREFIX = "src/main/java/blocks/_shared/state/";
     private static final String BLOCKS_ROOT_PREFIX = "src/main/java/blocks/";
     private static final String ADAPTER_SEGMENT = "/adapter/";
-    private static final Pattern DIRECT_IMPL_IMPORT_PATTERN = Pattern.compile(
-        "\\bimport\\s+blocks(?:\\.[A-Za-z_][A-Za-z0-9_]*)*\\.impl\\.[A-Za-z_][A-Za-z0-9_]*Impl\\s*;"
-    );
-    private static final Pattern DIRECT_IMPL_NEW_PATTERN = Pattern.compile(
-        "\\bnew\\s+(?:[A-Za-z_][A-Za-z0-9_]*\\s*\\.\\s*)*[A-Za-z_][A-Za-z0-9_]*Impl\\s*\\("
-    );
-    private static final Pattern DIRECT_IMPL_TYPE_CAST_PATTERN = Pattern.compile(
-        "\\(\\s*(?:[A-Za-z_][A-Za-z0-9_]*\\s*\\.\\s*)*[A-Za-z_][A-Za-z0-9_]*Impl\\s*\\)"
-    );
-    private static final Pattern DIRECT_IMPL_VAR_DECL_PATTERN = Pattern.compile(
-        "(?m)\\b(?:[A-Za-z_][A-Za-z0-9_]*\\s*\\.\\s*)*[A-Za-z_][A-Za-z0-9_]*Impl\\b\\s+[A-Za-z_][A-Za-z0-9_]*\\s*(?:[=;,)])"
-    );
-    private static final Pattern DIRECT_IMPL_EXTENDS_IMPL_PATTERN = Pattern.compile(
-        "\\bextends\\s+(?:[A-Za-z_][A-Za-z0-9_]*\\s*\\.\\s*)*[A-Za-z_][A-Za-z0-9_]*Impl\\b"
-    );
-    private static final Pattern DIRECT_IMPL_IMPLEMENTS_IMPL_PATTERN = Pattern.compile(
-        "\\bimplements\\s+(?:[A-Za-z_][A-Za-z0-9_]*\\s*\\.\\s*)*[A-Za-z_][A-Za-z0-9_]*Impl\\b"
-    );
+    private static final BoundaryRuleRegistry RULE_REGISTRY = new BoundaryRuleRegistry(List.of(
+        new BoundaryRule(SHARED_PURITY_RULE, BoundaryBypassScanner::isSharedPureSourcePath),
+        new BoundaryRule(SCOPED_IMPORT_POLICY_RULE, relPath -> isImplSourcePath(relPath) || isSharedPureSourcePath(relPath)),
+        new BoundaryRule(IMPL_PURITY_RULE, BoundaryBypassScanner::isImplSourcePath),
+        new BoundaryRule(IMPL_STATE_DEPENDENCY_RULE, BoundaryBypassScanner::isImplSourcePath),
+        new BoundaryRule(STATE_STORE_NOOP_UPDATE_RULE, relPath -> relPath.startsWith(SHARED_STATE_ROOT_PREFIX)),
+        new BoundaryRule(STATE_STORE_OP_MISUSE_RULE, BoundaryBypassScanner::isAdapterSourcePath),
+        new BoundaryRule(SHARED_LAYOUT_POLICY_RULE, relPath -> relPath.startsWith(SHARED_ROOT_PREFIX))
+    ));
     private static final Pattern REFLECTION_CLASS_FORNAME_PATTERN = Pattern.compile("\\bClass\\s*\\.\\s*forName\\s*\\(");
     private static final Pattern REFLECTION_LOAD_CLASS_PATTERN = Pattern.compile("\\bloadClass\\s*\\(");
     private static final Pattern REFLECT_FORNAME_PATTERN = Pattern.compile(
@@ -65,7 +56,6 @@ final class BoundaryBypassScanner {
     private static final Pattern PLACEHOLDER_RESULT_RETURN_PATTERN = Pattern.compile(
         "\\breturn\\s+new\\s+[A-Za-z_][A-Za-z0-9_]*Result\\s*\\("
     );
-    private static final Pattern SUPPRESSION_PATTERN = Pattern.compile("(?m)^\\s*//\\s*BEAR:PORT_USED\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*$");
     private static final Pattern IDENTIFIER_TOKEN_PATTERN = Pattern.compile("\\b[A-Za-z_][A-Za-z0-9_]*\\b");
     private static final Pattern MODULE_PROVIDES_PATTERN = Pattern.compile(
         "\\bprovides\\s+([A-Za-z_][A-Za-z0-9_$.]*)\\s+with\\s+([^;]+);",
@@ -386,27 +376,27 @@ final class BoundaryBypassScanner {
     }
 
     static String firstDirectImplUsageToken(String source) {
-        Matcher importMatcher = DIRECT_IMPL_IMPORT_PATTERN.matcher(source);
+        Matcher importMatcher = PolicyPatterns.DIRECT_IMPL_IMPORT_PATTERN.matcher(source);
         if (importMatcher.find()) {
             return normalizeToken(importMatcher.group());
         }
-        Matcher newMatcher = DIRECT_IMPL_NEW_PATTERN.matcher(source);
+        Matcher newMatcher = PolicyPatterns.DIRECT_IMPL_NEW_PATTERN.matcher(source);
         if (newMatcher.find()) {
             return normalizeToken(newMatcher.group());
         }
-        Matcher castMatcher = DIRECT_IMPL_TYPE_CAST_PATTERN.matcher(source);
+        Matcher castMatcher = PolicyPatterns.DIRECT_IMPL_TYPE_CAST_PATTERN.matcher(source);
         if (castMatcher.find()) {
             return normalizeToken(castMatcher.group());
         }
-        Matcher varMatcher = DIRECT_IMPL_VAR_DECL_PATTERN.matcher(source);
+        Matcher varMatcher = PolicyPatterns.DIRECT_IMPL_VAR_DECL_PATTERN.matcher(source);
         if (varMatcher.find()) {
             return normalizeToken(varMatcher.group());
         }
-        Matcher extendsMatcher = DIRECT_IMPL_EXTENDS_IMPL_PATTERN.matcher(source);
+        Matcher extendsMatcher = PolicyPatterns.DIRECT_IMPL_EXTENDS_IMPL_PATTERN.matcher(source);
         if (extendsMatcher.find()) {
             return normalizeToken(extendsMatcher.group());
         }
-        Matcher implementsMatcher = DIRECT_IMPL_IMPLEMENTS_IMPL_PATTERN.matcher(source);
+        Matcher implementsMatcher = PolicyPatterns.DIRECT_IMPL_IMPLEMENTS_IMPL_PATTERN.matcher(source);
         if (implementsMatcher.find()) {
             return normalizeToken(implementsMatcher.group());
         }
@@ -694,18 +684,7 @@ final class BoundaryBypassScanner {
     }
 
     static boolean ruleAppliesToPath(String ruleId, String relPath) {
-        if (ruleId == null || relPath == null || !relPath.endsWith(".java")) {
-            return false;
-        }
-        return switch (ruleId) {
-            case SHARED_PURITY_RULE -> isSharedPureSourcePath(relPath);
-            case SCOPED_IMPORT_POLICY_RULE -> isImplSourcePath(relPath) || isSharedPureSourcePath(relPath);
-            case IMPL_PURITY_RULE, IMPL_STATE_DEPENDENCY_RULE -> isImplSourcePath(relPath);
-            case STATE_STORE_NOOP_UPDATE_RULE -> relPath.startsWith(SHARED_STATE_ROOT_PREFIX);
-            case STATE_STORE_OP_MISUSE_RULE -> isAdapterSourcePath(relPath);
-            case SHARED_LAYOUT_POLICY_RULE -> relPath.startsWith(SHARED_ROOT_PREFIX);
-            default -> false;
-        };
+        return RULE_REGISTRY.appliesToPath(ruleId, relPath);
     }
 
     private static String firstStateStoreNoopUpdateDetail(String source) {
@@ -1290,7 +1269,7 @@ final class BoundaryBypassScanner {
 
     static Set<String> parsePortSuppressions(String source) {
         TreeSet<String> suppressions = new TreeSet<>();
-        Matcher matcher = SUPPRESSION_PATTERN.matcher(source);
+        Matcher matcher = PolicyPatterns.PORT_USED_SUPPRESSION_PATTERN.matcher(source);
         while (matcher.find()) {
             suppressions.add(matcher.group(1));
         }

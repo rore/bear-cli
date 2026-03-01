@@ -1,10 +1,7 @@
 package com.bear.app;
 
 import com.bear.kernel.ir.BearIr;
-import com.bear.kernel.ir.BearIrNormalizer;
-import com.bear.kernel.ir.BearIrParser;
 import com.bear.kernel.ir.BearIrValidationException;
-import com.bear.kernel.ir.BearIrValidator;
 import com.bear.kernel.policy.SharedAllowedDepsPolicy;
 import com.bear.kernel.policy.SharedAllowedDepsPolicyException;
 import com.bear.kernel.policy.SharedAllowedDepsPolicyParser;
@@ -24,6 +21,7 @@ import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 
 final class PrCheckCommandService {
+    private static final IrPipeline IR_PIPELINE = new DefaultIrPipeline();
     private static final String TEMP_BASE_IR_RELATIVE = "work/base/base.bear.yaml";
     private static final String TEMP_BASE_WIRING_ROOT_RELATIVE = "generated/base";
     private static final String TEMP_HEAD_WIRING_ROOT_RELATIVE = "generated/head";
@@ -48,9 +46,6 @@ final class PrCheckCommandService {
         try {
             lastTempRootForTest = null;
             maybeFailInternalForTest();
-            BearIrParser parser = new BearIrParser();
-            BearIrValidator validator = new BearIrValidator();
-            BearIrNormalizer normalizer = new BearIrNormalizer();
             JvmTarget target = new JvmTarget();
 
             Path headIrPath = projectRoot.resolve(repoRelativePath).normalize();
@@ -69,7 +64,7 @@ final class PrCheckCommandService {
                 );
             }
 
-            BearIr head = normalizer.normalize(parseAndValidateIr(parser, validator, headIrPath));
+            BearIr head = IR_PIPELINE.parseValidateNormalize(headIrPath);
             BlockIdentityResolution headIdentity = BlockIdentityResolver.resolveSingleCommandIdentity(
                 headIrPath,
                 projectRoot,
@@ -222,7 +217,7 @@ final class PrCheckCommandService {
                 }
                 Files.writeString(baseTempIr, showResult.stdout(), StandardCharsets.UTF_8);
                 try {
-                    base = normalizer.normalize(parseAndValidateIr(parser, validator, baseTempIr));
+                    base = IR_PIPELINE.parseValidateNormalize(baseTempIr);
                 } catch (BearIrValidationException e) {
                     return prFailure(
                         CliCodes.EXIT_VALIDATION,
@@ -472,12 +467,6 @@ final class PrCheckCommandService {
                 }
             }
         }
-    }
-
-    private static BearIr parseAndValidateIr(BearIrParser parser, BearIrValidator validator, Path path) throws IOException {
-        BearIr ir = parser.parse(path);
-        validator.validate(ir);
-        return ir;
     }
 
     private static PrCheckResult prFailure(

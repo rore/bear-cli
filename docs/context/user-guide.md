@@ -22,6 +22,12 @@ Default expectation in BEAR workflows:
 Developers are not expected to hand-edit IR as routine workflow.
 IR remains the control surface that agents update when boundary/contract/effect changes are required.
 
+## Mainline Gate SLA
+
+Stability contract for `main`:
+- if mandatory gates fail (`:app:test`, `:kernel:test`, `check --all`, `pr-check --all`), fix the branch the same day
+- do not merge while mandatory gates are red
+
 ## Why This Exists (AI development context)
 
 In AI-assisted development, code can be produced quickly, but structural risk can spread just as quickly:

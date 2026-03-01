@@ -1,10 +1,7 @@
 package com.bear.app;
 
 import com.bear.kernel.ir.BearIr;
-import com.bear.kernel.ir.BearIrNormalizer;
-import com.bear.kernel.ir.BearIrParser;
 import com.bear.kernel.ir.BearIrValidationException;
-import com.bear.kernel.ir.BearIrValidator;
 import com.bear.kernel.policy.SharedAllowedDepsPolicyException;
 import com.bear.kernel.policy.SharedAllowedDepsPolicyParser;
 import com.bear.kernel.target.JvmTarget;
@@ -25,9 +22,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 final class CheckCommandService {
-    private static final String CHECK_BLOCKED_MARKER_RELATIVE = "build/bear/check.blocked.marker";
-    private static final String CHECK_BLOCKED_REASON_LOCK = "LOCK";
-    private static final String CHECK_BLOCKED_REASON_BOOTSTRAP = "BOOTSTRAP_IO";
+    private static final IrPipeline IR_PIPELINE = new DefaultIrPipeline();
     private static final String GENERATED_BEAR_ROOT = "build/generated/bear";
     private static final String GENERATED_WIRING_PREFIX = GENERATED_BEAR_ROOT + "/wiring/";
     private static final String CONTAINMENT_REQUIRED_PATH = "build/generated/bear/config/containment-required.json";
@@ -105,14 +100,8 @@ final class CheckCommandService {
         Path tempRoot = null;
         try {
             maybeFailInternalForTest();
-            BearIrParser parser = new BearIrParser();
-            BearIrValidator validator = new BearIrValidator();
-            BearIrNormalizer normalizer = new BearIrNormalizer();
             JvmTarget target = new JvmTarget();
-
-            BearIr ir = parser.parse(irFile);
-            validator.validate(ir);
-            BearIr normalized = normalizer.normalize(ir);
+            BearIr normalized = IR_PIPELINE.parseValidateNormalize(irFile);
             boolean considerContainmentSurfaces = considerContainmentSurfacesOverride != null
                 ? considerContainmentSurfacesOverride
                 : hasAllowedDeps(normalized) || sharedContainmentInScope(projectRoot);
@@ -461,7 +450,7 @@ final class CheckCommandService {
                     : ProjectTestRunner.firstGradleLockLine(testResult.output());
                 String markerWriteSuffix = "";
                 try {
-                    writeCheckBlockedMarker(projectRoot, CHECK_BLOCKED_REASON_LOCK, lockLine);
+                    writeCheckBlockedMarker(projectRoot, CheckBlockedMarker.REASON_LOCK, lockLine);
                 } catch (IOException markerWriteError) {
                     markerWriteSuffix = markerWriteFailureSuffix(markerWriteError);
                 }
@@ -490,7 +479,7 @@ final class CheckCommandService {
                     : ProjectTestRunner.firstGradleBootstrapIoLine(testResult.output());
                 String markerWriteSuffix = "";
                 try {
-                    writeCheckBlockedMarker(projectRoot, CHECK_BLOCKED_REASON_BOOTSTRAP, bootstrapLine);
+                    writeCheckBlockedMarker(projectRoot, CheckBlockedMarker.REASON_BOOTSTRAP, bootstrapLine);
                 } catch (IOException markerWriteError) {
                     markerWriteSuffix = markerWriteFailureSuffix(markerWriteError);
                 }
@@ -922,12 +911,7 @@ final class CheckCommandService {
 
     static boolean blockDeclaresAllowedDeps(Path irFile) {
         try {
-            BearIrParser parser = new BearIrParser();
-            BearIrValidator validator = new BearIrValidator();
-            BearIrNormalizer normalizer = new BearIrNormalizer();
-            BearIr ir = parser.parse(irFile);
-            validator.validate(ir);
-            BearIr normalized = normalizer.normalize(ir);
+            BearIr normalized = IR_PIPELINE.parseValidateNormalize(irFile);
             return hasAllowedDeps(normalized);
         } catch (Exception ignored) {
             return false;
@@ -1203,7 +1187,7 @@ final class CheckCommandService {
     }
 
     private static void writeCheckBlockedMarker(Path projectRoot, String reason, String detail) throws IOException {
-        Path marker = projectRoot.resolve(CHECK_BLOCKED_MARKER_RELATIVE);
+        Path marker = projectRoot.resolve(CheckBlockedMarker.RELATIVE_PATH);
         Files.createDirectories(marker.getParent());
         String safeReason = (reason == null || reason.isBlank()) ? "UNKNOWN" : reason;
         String safeDetail = (detail == null || detail.isBlank()) ? "no details" : detail.trim();
@@ -1212,7 +1196,7 @@ final class CheckCommandService {
     }
 
     private static void clearCheckBlockedMarker(Path projectRoot) throws IOException {
-        Path marker = projectRoot.resolve(CHECK_BLOCKED_MARKER_RELATIVE);
+        Path marker = projectRoot.resolve(CheckBlockedMarker.RELATIVE_PATH);
         Files.deleteIfExists(marker);
     }
 

@@ -1,0 +1,70 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+      - "release/**"
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Build and unit tests
+        run: ./gradlew --no-daemon :app:test :kernel:test
+
+  bear-gates:
+    runs-on: ubuntu-latest
+    needs:
+      - build-and-test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Resolve base ref
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE_REF="origin/${{ github.base_ref }}"
+            git fetch --no-tags --prune --depth=1 origin "${{ github.base_ref }}"
+          else
+            BASE_REF="${{ github.event.before }}"
+            if [[ -z "$BASE_REF" || "$BASE_REF" == "0000000000000000000000000000000000000000" ]]; then
+              BASE_REF="HEAD~1"
+            fi
+          fi
+          echo "BASE_REF=$BASE_REF" >> "$GITHUB_ENV"
+
+      - name: BEAR compile --all
+        run: ./gradlew --no-daemon :app:run --args="compile --all --project . --blocks .ci/bear.blocks.yaml"
+
+      - name: BEAR check --all
+        run: ./gradlew --no-daemon :app:run --args="check --all --project . --blocks .ci/bear.blocks.yaml"
+
+      - name: BEAR pr-check --all
+        run: ./gradlew --no-daemon :app:run --args="pr-check --all --project . --base $BASE_REF --blocks .ci/bear.blocks.yaml"
