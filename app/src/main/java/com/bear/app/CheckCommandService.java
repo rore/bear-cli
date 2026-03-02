@@ -91,6 +91,10 @@ final class CheckCommandService {
         Path tempRoot = null;
         try {
             maybeFailInternalForTest();
+            CheckResult forcedTimeout = forceProjectTestTimeoutForTest();
+            if (forcedTimeout != null) {
+                return forcedTimeout;
+            }
             JvmTarget target = new JvmTarget();
             BearIr normalized = IR_PIPELINE.parseValidateNormalize(irFile);
             boolean considerContainmentSurfaces = considerContainmentSurfacesOverride != null
@@ -789,6 +793,22 @@ final class CheckCommandService {
         if ("true".equals(System.getProperty(key))) {
             throw new IllegalStateException("INJECTED_INTERNAL_check");
         }
+    }
+
+    private static CheckResult forceProjectTestTimeoutForTest() {
+        if (!"true".equalsIgnoreCase(System.getProperty("bear.check.test.forceTimeoutOutcome"))) {
+            return null;
+        }
+        String timeoutLine = "check: TEST_TIMEOUT: project tests exceeded " + ProjectTestRunner.testTimeoutSeconds() + "s";
+        return checkFailure(
+            CliCodes.EXIT_TEST_FAILURE,
+            List.of(timeoutLine),
+            "TEST_FAILURE",
+            CliCodes.TEST_TIMEOUT,
+            "project.tests",
+            "Reduce test runtime or increase timeout, then rerun `bear check <ir-file> --project <path>`.",
+            timeoutLine
+        );
     }
 
     private static boolean isWiringDriftPath(String path) {

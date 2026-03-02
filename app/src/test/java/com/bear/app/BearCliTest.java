@@ -1843,10 +1843,12 @@ class BearCliTest {
 
         String timeoutPrev = System.getProperty("bear.check.testTimeoutSeconds");
         String forceTimeoutPrev = System.getProperty("bear.check.test.forceTimeout");
+        String forceTimeoutOutcomePrev = System.getProperty("bear.check.test.forceTimeoutOutcome");
         Path timeoutMarker = tempDir.resolve(".bear-test-force-timeout");
         try {
             System.setProperty("bear.check.testTimeoutSeconds", "1");
             System.setProperty("bear.check.test.forceTimeout", "true");
+            System.setProperty("bear.check.test.forceTimeoutOutcome", "true");
             Files.writeString(timeoutMarker, "true", StandardCharsets.UTF_8);
             CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
             String stderr = normalizeLf(check.stderr);
@@ -1862,6 +1864,7 @@ class BearCliTest {
         } finally {
             restoreSystemProperty("bear.check.testTimeoutSeconds", timeoutPrev);
             restoreSystemProperty("bear.check.test.forceTimeout", forceTimeoutPrev);
+            restoreSystemProperty("bear.check.test.forceTimeoutOutcome", forceTimeoutOutcomePrev);
             Files.deleteIfExists(timeoutMarker);
         }
     }

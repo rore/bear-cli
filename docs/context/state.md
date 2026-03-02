@@ -48,7 +48,7 @@ Stability-first quality rollout (aggressive track):
   - marked reach import-vs-FQCN symmetry as deferred/non-enforced and added optional verification-hygiene guidance.
 - Fixed GitHub Actions wrapper execution failure on Linux runners:
   - set `gradlew` file mode to executable in git index (`100755`).
-  - added explicit `chmod +x ./gradlew` steps in both CI jobs before Gradle invocations.
+  - added explicit `chmod +x ./gradlew` steps in both CI jobs and set CI concurrency grouping to `${{ github.sha }}` to collapse duplicate push+PR runs per commit.
 - Fixed Linux-only CI test regressions after wrapper-permission recovery:
   - made `AllModeOptionParserTest.parseAllCheckOptionsRejectsAbsoluteBlocksPath` OS-agnostic by using a runtime absolute path instead of `C:/...`.
   - fixed `ContextDocsConsistencyTest` archive exclusion to normalize path separators (`\\` vs `/`) before matching.
@@ -60,6 +60,6 @@ Stability-first quality rollout (aggressive track):
 - CI execution audit pass:
   - repeated `checkProjectTestTimeoutReturnsExit4` 8x with no failures; reran CI-equivalent flow locally (`:app:test :kernel:test`) with all green.
 - Eliminated timeout test flakiness at source:
-  - added dual timeout forcing in `BearCliTest.checkProjectTestTimeoutReturnsExit4` (system property + `.bear-test-force-timeout` marker) with deterministic property restore in `finally`.
-  - kept timeout assertion classification-based (`TEST_TIMEOUT`) and enriched failure diagnostics with combined stderr/stdout context; stress-ran test 12x and full `:app:test :kernel:test` green.
+  - added deterministic command-layer test hook in `CheckCommandService` (`bear.check.test.forceTimeoutOutcome`) and wired `BearCliTest.checkProjectTestTimeoutReturnsExit4` to use it with deterministic property restore in `finally`.
+  - kept timeout assertion classification-based (`TEST_TIMEOUT`) and added focused `ProjectTestRunnerTest.runProjectTestsCanForceTimeoutViaProperty`; revalidated targeted tests plus full `:app:test :kernel:test` green.
 - Full historical details remain in archive docs; this file stays operational and bounded.

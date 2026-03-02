@@ -93,6 +93,31 @@ class ProjectTestRunnerTest {
     }
 
     @Test
+    void runProjectTestsCanForceTimeoutViaProperty(@TempDir Path tempDir) throws Exception {
+        Path projectRoot = tempDir.resolve("project");
+        Files.createDirectories(projectRoot);
+        writeProjectWrapper(
+            projectRoot,
+            "@echo off\r\necho start\r\npowershell -Command \"Start-Sleep -Seconds 3\"\r\necho end\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho start\nsleep 3\necho end\nexit 0\n"
+        );
+
+        String key = "bear.check.test.forceTimeout";
+        String previous = System.getProperty(key);
+        try {
+            System.setProperty(key, "true");
+            ProjectTestResult result = ProjectTestRunner.runProjectTests(projectRoot);
+            assertEquals(ProjectTestStatus.TIMEOUT, result.status());
+        } finally {
+            if (previous == null) {
+                System.clearProperty(key);
+            } else {
+                System.setProperty(key, previous);
+            }
+        }
+    }
+
+    @Test
     void runProjectTestsIncludesInitScriptAtDeterministicPosition(@TempDir Path tempDir) throws Exception {
         Path projectRoot = tempDir.resolve("project");
         Files.createDirectories(projectRoot);
