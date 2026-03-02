@@ -46,4 +46,7 @@ Stability-first quality rollout (aggressive track):
   - added decomposition default/split-trigger anchors in BOOTSTRAP and baseline triage anchor in TROUBLESHOOTING.
   - added docs-consistency anchor checks for new headings and kept exact package parity checks intact.
   - marked reach import-vs-FQCN symmetry as deferred/non-enforced and added optional verification-hygiene guidance.
+- Fixed GitHub Actions wrapper execution failure on Linux runners:
+  - set `gradlew` file mode to executable in git index (`100755`).
+  - added explicit `chmod +x ./gradlew` steps in both CI jobs before Gradle invocations.
 - Full historical details remain in archive docs; this file stays operational and bounded.

@@ -26,6 +26,9 @@ jobs:
           java-version: "21"
           cache: gradle
 
+      - name: Ensure Gradle wrapper executable
+        run: chmod +x ./gradlew
+
       - name: Build and unit tests
         run: ./gradlew --no-daemon :app:test :kernel:test
 
@@ -45,6 +48,9 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: gradle
+
+      - name: Ensure Gradle wrapper executable
+        run: chmod +x ./gradlew
 
       - name: Resolve base ref
         shell: bash
