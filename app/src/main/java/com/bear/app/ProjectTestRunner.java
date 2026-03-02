@@ -168,6 +168,7 @@ final class ProjectTestRunner {
             command.add("/c");
             command.add(wrapper.toString());
         } else {
+            command.add("sh");
             command.add(wrapper.toString());
         }
         command.add("--no-daemon");
@@ -769,9 +770,6 @@ final class ProjectTestRunner {
         Path wrapper = projectRoot.resolve("gradlew");
         if (!Files.isRegularFile(wrapper)) {
             throw new IOException("PROJECT_TEST_WRAPPER_MISSING: expected " + wrapper);
-        }
-        if (!Files.isExecutable(wrapper)) {
-            throw new IOException("PROJECT_TEST_WRAPPER_NOT_EXECUTABLE: expected executable " + wrapper + " (run: chmod +x gradlew)");
         }
         return wrapper;
     }

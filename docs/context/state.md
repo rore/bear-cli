@@ -53,4 +53,11 @@ Stability-first quality rollout (aggressive track):
   - made `AllModeOptionParserTest.parseAllCheckOptionsRejectsAbsoluteBlocksPath` OS-agnostic by using a runtime absolute path instead of `C:/...`.
   - fixed `ContextDocsConsistencyTest` archive exclusion to normalize path separators (`\\` vs `/`) before matching.
   - hardened `BearCliTest.writeProjectWrapper` with a Unix executable fallback (`File#setExecutable`) to reduce env-specific wrapper execution failures.
+- Hardened project test execution on Unix in runtime path:
+  - `ProjectTestRunner` now invokes wrapper scripts via `sh <project>/gradlew` instead of direct exec on Unix.
+  - removed strict Unix executable-bit precheck in `resolveWrapper` (still requires wrapper file presence).
+  - this avoids CI/container `noexec` mount failures while preserving wrapper-missing detection semantics.
+- CI execution audit pass:
+  - repeated `checkProjectTestTimeoutReturnsExit4` 5x with no failures.
+  - reran CI-equivalent flow locally (`:app:test :kernel:test` + BEAR `compile/check/pr-check --all`) with all green.
 - Full historical details remain in archive docs; this file stays operational and bounded.
