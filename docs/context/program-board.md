@@ -217,7 +217,3 @@ Detailed locked spec text was moved to:
 - Direction lock: BEAR semantic scope follows enforceability + determinism (wrapper-owned where possible), not domain-specific rule coverage.
 - Decision lock: do not enforce endpoint-per-block decomposition; preserve structural governance focus over style/location policing.
 
-
-
-
-
