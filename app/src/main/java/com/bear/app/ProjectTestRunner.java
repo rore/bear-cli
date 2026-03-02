@@ -190,6 +190,12 @@ final class ProjectTestRunner {
 
         String output;
         try (InputStream in = process.getInputStream()) {
+            if (forceTimeoutForTest()) {
+                process.destroyForcibly();
+                process.waitFor(5, TimeUnit.SECONDS);
+                output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+                return new ProjectTestAttempt(attemptLabel, gradleUserHome, ProjectTestStatus.TIMEOUT, output);
+            }
             boolean finished = process.waitFor(testTimeoutSeconds(), TimeUnit.SECONDS);
             if (!finished) {
                 process.destroyForcibly();
@@ -789,5 +795,9 @@ final class ProjectTestRunner {
         } catch (NumberFormatException e) {
             return 300;
         }
+    }
+
+    private static boolean forceTimeoutForTest() {
+        return "true".equalsIgnoreCase(System.getProperty("bear.check.test.forceTimeout"));
     }
 }

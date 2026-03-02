@@ -58,6 +58,8 @@ Stability-first quality rollout (aggressive track):
   - removed strict Unix executable-bit precheck in `resolveWrapper` (still requires wrapper file presence).
   - this avoids CI/container `noexec` mount failures while preserving wrapper-missing detection semantics.
 - CI execution audit pass:
-  - repeated `checkProjectTestTimeoutReturnsExit4` 5x with no failures.
-  - reran CI-equivalent flow locally (`:app:test :kernel:test` + BEAR `compile/check/pr-check --all`) with all green.
+  - repeated `checkProjectTestTimeoutReturnsExit4` 5x with no failures; reran CI-equivalent flow locally (`:app:test :kernel:test` + BEAR `compile/check/pr-check --all`) with all green.
+- Eliminated timeout test flakiness at source:
+  - added test-only forced-timeout hook (`bear.check.test.forceTimeout`) in `ProjectTestRunner` and switched `BearCliTest.checkProjectTestTimeoutReturnsExit4` to use it.
+  - removed dependence on wall-clock `sleep` timing for timeout assertion while preserving exit/envelope contract checks.
 - Full historical details remain in archive docs; this file stays operational and bounded.

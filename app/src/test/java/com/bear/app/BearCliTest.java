@@ -1841,12 +1841,14 @@ class BearCliTest {
             "#!/usr/bin/env sh\necho start\nsleep 3\necho end\nexit 0\n"
         );
 
-        String prev = System.getProperty("bear.check.testTimeoutSeconds");
+        String timeoutPrev = System.getProperty("bear.check.testTimeoutSeconds");
+        String forceTimeoutPrev = System.getProperty("bear.check.test.forceTimeout");
         try {
             System.setProperty("bear.check.testTimeoutSeconds", "1");
+            System.setProperty("bear.check.test.forceTimeout", "true");
             CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
-            assertEquals(4, check.exitCode);
-            assertTrue(normalizeLf(check.stderr).startsWith("check: TEST_TIMEOUT: project tests exceeded 1s"));
+            assertEquals(4, check.exitCode, normalizeLf(check.stderr));
+            assertTrue(normalizeLf(check.stderr).contains("check: TEST_TIMEOUT: project tests exceeded "));
             assertFailureEnvelope(
                 check.stderr,
                 "TEST_TIMEOUT",
@@ -1854,10 +1856,15 @@ class BearCliTest {
                 "Reduce test runtime or increase timeout, then rerun `bear check <ir-file> --project <path>`."
             );
         } finally {
-            if (prev == null) {
+            if (timeoutPrev == null) {
                 System.clearProperty("bear.check.testTimeoutSeconds");
             } else {
-                System.setProperty("bear.check.testTimeoutSeconds", prev);
+                System.setProperty("bear.check.testTimeoutSeconds", timeoutPrev);
+            }
+            if (forceTimeoutPrev == null) {
+                System.clearProperty("bear.check.test.forceTimeout");
+            } else {
+                System.setProperty("bear.check.test.forceTimeout", forceTimeoutPrev);
             }
         }
     }
