@@ -49,4 +49,8 @@ Stability-first quality rollout (aggressive track):
 - Fixed GitHub Actions wrapper execution failure on Linux runners:
   - set `gradlew` file mode to executable in git index (`100755`).
   - added explicit `chmod +x ./gradlew` steps in both CI jobs before Gradle invocations.
+- Fixed Linux-only CI test regressions after wrapper-permission recovery:
+  - made `AllModeOptionParserTest.parseAllCheckOptionsRejectsAbsoluteBlocksPath` OS-agnostic by using a runtime absolute path instead of `C:/...`.
+  - fixed `ContextDocsConsistencyTest` archive exclusion to normalize path separators (`\\` vs `/`) before matching.
+  - hardened `BearCliTest.writeProjectWrapper` with a Unix executable fallback (`File#setExecutable`) to reduce env-specific wrapper execution failures.
 - Full historical details remain in archive docs; this file stays operational and bounded.

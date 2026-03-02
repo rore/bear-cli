@@ -32,9 +32,16 @@ class AllModeOptionParserTest {
     void parseAllCheckOptionsRejectsAbsoluteBlocksPath(@TempDir Path repoRoot) {
         ByteArrayOutputStream errBytes = new ByteArrayOutputStream();
         PrintStream err = new PrintStream(errBytes);
+        Path absoluteBlocksPath = repoRoot
+            .resolveSibling("abs")
+            .resolve("blocks.yaml")
+            .toAbsolutePath()
+            .normalize();
 
         AllCheckOptions options = AllModeOptionParser.parseAllCheckOptions(
-            new String[] { "check", "--all", "--project", repoRoot.toString(), "--blocks", Path.of("C:/abs/blocks.yaml").toString() },
+            new String[] {
+                "check", "--all", "--project", repoRoot.toString(), "--blocks", absoluteBlocksPath.toString()
+            },
             err
         );
 

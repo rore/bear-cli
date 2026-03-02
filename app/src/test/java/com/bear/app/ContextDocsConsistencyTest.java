@@ -49,7 +49,7 @@ class ContextDocsConsistencyTest {
         try (Stream<Path> files = Files.walk(contextRoot)) {
             files.filter(Files::isRegularFile)
                     .filter(path -> path.toString().endsWith(".md"))
-                    .filter(path -> !path.toString().contains("docs\\context\\archive\\"))
+                    .filter(path -> !path.toString().replace('\\', '/').contains("docs/context/archive/"))
                     .forEach(path -> assertNoBannedPattern(path, banned));
         }
     }

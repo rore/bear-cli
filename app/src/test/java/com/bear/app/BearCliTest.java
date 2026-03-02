@@ -4523,6 +4523,8 @@ class BearCliTest {
             } catch (UnsupportedOperationException ignored) {
                 // Ignore on filesystems without POSIX permissions.
             }
+            // Fallback for environments where POSIX permission APIs are unavailable or partial.
+            wrapper.toFile().setExecutable(true, false);
         }
     }
 
