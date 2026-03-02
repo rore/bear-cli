@@ -17,51 +17,68 @@ Run report MUST start with this exact template and order:
 `Status:` MUST use this one-line format:
 1. `tests=<PASS|FAIL>; check=<code>; pr-check=<code> base=<ref>; outcome=<COMPLETE|BLOCKED|WAITING_FOR_BASELINE_REVIEW>`
 
+`Review scope:` MUST follow:
+1. max 8 comma-separated entries.
+2. when `Run outcome: WAITING_FOR_BASELINE_REVIEW`, first two entries are exactly `bear.blocks.yaml`, `spec/*.bear.yaml` (literal token, not expanded files).
+
 ## Required Fields
 
 Run report MUST include:
 1. `Request summary: <one line>`
 2. `Block decision: updated=<...> added=<...>`
 3. `Decomposition evidence: <explicit rubric/trigger evidence>`
-4. `Decomposition mode: single|grouped|multi`
-5. `Groups: [...]`
-6. `Decomposition reason: default|trigger:<canonical_name>|spec_explicit`
-7. `Blocks added: [...]`
-8. `IR delta: <files + boundary notes>`
-9. `Implementation delta: <files>`
-10. `Tests delta: <files>`
-11. `Surface evidence: n/a (spec does not require an API surface)` OR
-12. `Surface evidence: <file1>,<file2>,...` OR
-13. `Surface deferred: <reason_token>`
-14. `Gate results:`
-15. `- bear check --all --project <repoRoot> => <exit>`
-16. `- bear pr-check --all --project <repoRoot> --base <ref> => <exit>`
-17. `Gate run order: <ordered list of executed gates>`
-18. `Run outcome: COMPLETE|BLOCKED|WAITING_FOR_BASELINE_REVIEW`
-19. `Required next action: <...>` (required when `Run outcome` is `BLOCKED` or `WAITING_FOR_BASELINE_REVIEW`)
-20. `Gate blocker: IO_LOCK | TEST_FAILURE | BOUNDARY_EXPANSION | OTHER`
-21. `Stopped after blocker: yes|no`
-22. `First failing command: <exact command line>|none (preflight)`
-23. `First failure signature: <one copied verbatim line>`
-24. `PR base used: <ref>`
-25. `PR base rationale: <merge-base against target branch OR user-provided base SHA>`
-26. `PR classification interpretation: <expected|unintended> - <brief rationale>`
-27. `Baseline review scope: <required for WAITING_FOR_BASELINE_REVIEW; must include bear.blocks.yaml and spec/*.bear.yaml>`
-28. `Constraint conflicts encountered: none|<list>`
-29. `Escalation decision: none|<reason>`
-30. `Containment sanity check: pass|fail|n/a - <evidence>`
-31. `Infra edits: none|<list>`
-32. `Unblock used: no|yes - <reason>`
-33. `Gate policy acknowledged: yes|no`
-34. `Final git status: <git status --short summary>`
-35. `GOVERNANCE_SIGNAL_DISPOSITION`
-36. `MULTI_BLOCK_PORT_IMPL_ALLOWED: none|<count>`
-37. `JUSTIFICATION: <required when count > 0>`
-38. `TRADEOFF: <required when count > 0>`
+4. `Decomposition rubric: state_domain_<same|split>; effects_<read_only|write>; idempotency_<same|split|n/a>; lifecycle_<same|split>; authority_<same|split>`
+5. `Decomposition mode: single|grouped|multi`
+6. `Groups: n/a` OR `Groups: [<group_name>:{<block1>,<block2>}; <group_name>:{<block3>}]`
+7. `Decomposition reason: default|trigger:<canonical_name>|spec_explicit`
+8. `Blocks added: [...]`
+9. `IR delta: <files + boundary notes>`
+10. `Implementation delta: <files>`
+11. `Tests delta: <files>`
+12. `Surface evidence: n/a (spec does not require an API surface)` OR
+13. `Surface evidence: <file1>,<file2>,...` OR
+14. `Surface deferred: <reason_token>`
+15. `Gate results:`
+16. `- bear check --all --project <repoRoot> => <exit>`
+17. `- bear pr-check --all --project <repoRoot> --base <ref> => <exit>`
+18. `Gate run order: <ordered list of executed gates>`
+19. `Run outcome: COMPLETE|BLOCKED|WAITING_FOR_BASELINE_REVIEW`
+20. `Required next action: <...>` (required when `Run outcome` is `BLOCKED` or `WAITING_FOR_BASELINE_REVIEW`)
+21. `Gate blocker: IO_LOCK | TEST_FAILURE | BOUNDARY_EXPANSION | OTHER`
+22. `Stopped after blocker: yes|no`
+23. `First failing command: <exact command line>|none (preflight)`
+24. `First failure signature: <one copied verbatim line>`
+25. `PR base used: <ref>`
+26. `PR base rationale: <merge-base against target branch OR user-provided base SHA>`
+27. `PR classification interpretation: <expected|unintended> - <brief rationale>`
+28. `Baseline review scope: <required for WAITING_FOR_BASELINE_REVIEW; must include bear.blocks.yaml and spec/*.bear.yaml>`
+29. `Constraint conflicts encountered: none|<list>`
+30. `Escalation decision: none|<reason>`
+31. `Containment sanity check: pass|fail|n/a - <evidence>`
+32. `Infra edits: none|<list>`
+33. `Unblock used: no|yes - <reason>`
+34. `Gate policy acknowledged: yes|no`
+35. `Final git status: <git status --short summary>`
+36. `GOVERNANCE_SIGNAL_DISPOSITION`
+37. `MULTI_BLOCK_PORT_IMPL_ALLOWED: none|<count>`
+38. `JUSTIFICATION: <required when count > 0>`
+39. `TRADEOFF: <required when count > 0>`
+
+## Decomposition Field Rules
+
+1. Mode/groups coupling:
+- `Decomposition mode: grouped` => `Groups: [<group_name>:{<block1>,<block2>}; <group_name>:{<block3>}]`
+- `Decomposition mode: single|multi` => `Groups: n/a`
+2. `Groups` format is stable:
+- group names sorted lexicographically
+- block names inside each group sorted lexicographically
+- no freeform prose
+3. `idempotency_n/a` is valid only when no operation in the decomposition is idempotent.
+4. `Decomposition reason: trigger:<canonical_name>` must use only tokens from `.bear/agent/BOOTSTRAP.md` `DECOMPOSITION_SPLIT_TRIGGERS`.
 
 Surface contract notes:
 1. `Surface deferred` allowed reason tokens only: `out_of_scope_by_spec|explicit_user_deferral|demo_minimalism`.
-2. `Surface evidence` must reference concrete runtime entrypoint/routing files under `src/main/java`.
+2. `Surface evidence` must reference concrete non-generated runtime entrypoint/routing files under `src/main/java`.
 3. Generated stubs/wrappers under generated directories do not count as surface evidence.
 4. This is an agent reporting contract requirement; CLI does not parse/enforce this field.
 
@@ -140,8 +157,9 @@ Review scope: spec/withdraw.bear.yaml, src/main/java/blocks/withdraw/impl/Withdr
 Request summary: Add transfer fee invariants to existing withdrawal flow
 Block decision: updated=withdraw added=none
 Decomposition evidence: grouped model retained; compatibility dimensions stayed `_same`
+Decomposition rubric: state_domain_same; effects_write; idempotency_n/a; lifecycle_same; authority_same
 Decomposition mode: grouped
-Groups: [wallet_write_flow]
+Groups: [wallet_write_flow:{withdraw}]
 Decomposition reason: default
 Blocks added: []
 IR delta: spec/withdraw.bear.yaml (invariants updated)
@@ -185,10 +203,11 @@ Review scope: bear.blocks.yaml, spec/*.bear.yaml
 
 Request summary: Initial greenfield wallet baseline
 Block decision: updated=none added=create-wallet,deposit-to-wallet,withdraw-from-wallet,get-wallet-balance,get-wallet-statement
-Decomposition evidence: split required by `state_domain_split` and `effect_boundary_split`
+Decomposition evidence: split required by `state_domain_split` and `effects_split`
+Decomposition rubric: state_domain_split; effects_write; idempotency_split; lifecycle_same; authority_same
 Decomposition mode: multi
-Groups: [wallet_read_flow, wallet_write_flow]
-Decomposition reason: trigger:state_domain_split
+Groups: n/a
+Decomposition reason: trigger:effects_split
 Blocks added: [create-wallet, deposit-to-wallet, withdraw-from-wallet, get-wallet-balance, get-wallet-statement]
 IR delta: spec/*.bear.yaml, bear.blocks.yaml
 Implementation delta: src/main/java/blocks/**, src/main/java/com/bear/account/demo/WalletService.java
@@ -233,8 +252,9 @@ Review scope: bear.blocks.yaml, spec/wallet.bear.yaml
 Request summary: Non-greenfield boundary expansion without approved scope
 Block decision: updated=none added=wallet
 Decomposition evidence: spec explicitly introduced isolated authority boundary
+Decomposition rubric: state_domain_split; effects_write; idempotency_n/a; lifecycle_same; authority_split
 Decomposition mode: multi
-Groups: [wallet_authority_flow]
+Groups: n/a
 Decomposition reason: spec_explicit
 Blocks added: [wallet]
 IR delta: spec/wallet.bear.yaml, bear.blocks.yaml

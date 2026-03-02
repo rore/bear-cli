@@ -111,7 +111,7 @@ Escalation threshold:
 ## REACH_REMEDIATION_NON_SOLUTIONS
 
 These are explicitly invalid remediation patterns:
-1. Rewriting forbidden import usage as FQCN usage (for example replacing `import java.net.X` with `new java.net.X(...)`).
+1. If a surface is forbidden by reach policy, switching import-form usage to FQCN-form usage is not remediation.
 2. "Log and return" without explicit missing-state signaling for update paths.
 
 Required direction:

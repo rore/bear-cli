@@ -16,12 +16,14 @@ Stability-first quality rollout (aggressive track):
 - introduce low-risk refactor seams (`IrPipeline`, shared marker/constants, envelope emitter)
 - standardize non-trivial task execution via repo-local `workflow-orchestration` skill + AGENTS registry entry
 - finalize v2.2.6.3 guardrails hardening (decomposition rubric determinism + reporting precision + noop-update widening)
+- finalize v2.2.6.4 guardrails hardening (decomposition determinism lock for mode/groups/trigger/report quality)
 
 ## Next Concrete Task
 
 1. Continue command-domain test split for `BearCliTest` by extracting `compile`/`fix` command suites.
 2. Add guard slices for long app classes still near threshold (`CheckCommandService`, `PrCheckCommandService`, `ProjectTestRunner`).
 3. Add/extend quality-guard tests for class-size ceilings and deterministic output ordering where missing.
+4. Continue command-domain extraction for `BearCliTest` and guard-slice refactors (`CheckCommandService`, `ProjectTestRunner`) after docs/guardrails stabilization.
 
 ## Session Notes
 
@@ -64,3 +66,11 @@ Stability-first quality rollout (aggressive track):
   - added deterministic command-layer test hook in `CheckCommandService` (`bear.check.test.forceTimeoutOutcome`) and wired `BearCliTest.checkProjectTestTimeoutReturnsExit4` to use it with deterministic property restore in `finally`.
   - kept timeout assertion classification-based (`TEST_TIMEOUT`), added focused `ProjectTestRunnerTest.runProjectTestsCanForceTimeoutViaProperty`, and removed forced-timeout process-kill race by returning synthetic timeout before process start in `ProjectTestRunner.runProjectTestsOnce`; validated with 15 repeated runs plus full `:app:test :kernel:test` green.
 - Full historical details remain in archive docs; this file stays operational and bounded.
+- Implemented `Guardrails v2.2.6.4` docs/tests-only determinism lock:
+  - unified canonical decomposition trigger token to `effects_split` across agent package docs.
+  - clarified grouped decomposition as reporting lens only (IR remains one block per file in v2.2.6.x).
+  - tightened REPORTING with deterministic mode/groups coupling, required decomposition rubric grammar line, stable groups format, review-scope cap/order, and strict non-generated `Surface evidence` rule.
+  - refined TROUBLESHOOTING reach non-solution wording to policy-forbidden-surface context.
+  - extended docs consistency checks with exact-string assertions for rubric grammar, trigger whitelist tokens, mode/groups contract, and baseline review-scope literal requirements.
+  - aligned demo simulation runbook grading checklist with new reporting determinism requirements.
+  - verification: `:app:test --tests com.bear.app.BearPackageDocsConsistencyTest` and full `:app:test` both green.

@@ -149,20 +149,23 @@ Derivation rules:
 1. `effects_read_only` means no mutation ports/ops are used by operations in a group.
 2. `effects_write` means any mutation port/op is used by any operation in a group.
 3. `idempotency_same` applies only when grouped operations share identical key shape and identical store tuple `port|getOp|putOp`.
-4. Grouped mode is allowed only when all applicable dimensions are `_same` and none are `_split`.
-5. Endpoint count alone is never a split trigger.
+4. `idempotency_n/a` applies only when no operation in the decomposition is idempotent.
+5. Grouped mode is allowed only when all applicable dimensions are `_same` and none are `_split`.
+6. Even when `Decomposition mode` is `grouped`, IR files remain per block; grouping is a reporting lens for reviewers.
+7. Endpoint count alone is never a split trigger.
 
 ## DECOMPOSITION_SPLIT_TRIGGERS
 
 Allowed canonical trigger names for `trigger:<canonical_name>`:
 1. `state_domain_split`
-2. `effect_boundary_split`
+2. `effects_split`
 3. `idempotency_split`
 4. `lifecycle_split`
 5. `authority_split`
 6. `operation_multiplexer_anti_pattern`
 
 `operation_multiplexer_anti_pattern` applies only to unrelated mega-router/switch designs; it does not mean "multiple operations implies split".
+Non-whitelisted trigger names are invalid in reports.
 
 ## GREENFIELD_ARTIFACT_SOURCE_RULE
 

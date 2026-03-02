@@ -75,6 +75,28 @@ class BearPackageDocsConsistencyTest {
         assertMatchesHeading(reporting, "(?m)^##\\s+DEVELOPER_SUMMARY\\s*$");
         assertMatchesHeading(reporting, "(?m)^##\\s+GREENFIELD_BASELINE_WAITING_SEMANTICS\\s*$");
         assertMatchesHeading(reporting, "(?m)^##\\s+Blocker\\s+And\\s+Anomaly\\s+Reporting\\s*$");
+
+        assertContains(
+            reporting,
+            "Decomposition rubric: state_domain_<same|split>; effects_<read_only|write>; idempotency_<same|split|n/a>; lifecycle_<same|split>; authority_<same|split>"
+        );
+        assertContains(
+            reporting,
+            "`Decomposition mode: grouped` => `Groups: [<group_name>:{<block1>,<block2>}; <group_name>:{<block3>}]`"
+        );
+        assertContains(reporting, "`Decomposition mode: single|multi` => `Groups: n/a`");
+        assertContains(
+            reporting,
+            "first two entries are exactly `bear.blocks.yaml`, `spec/*.bear.yaml`"
+        );
+
+        assertContains(bootstrap, "1. `state_domain_split`");
+        assertContains(bootstrap, "2. `effects_split`");
+        assertContains(bootstrap, "3. `idempotency_split`");
+        assertContains(bootstrap, "4. `lifecycle_split`");
+        assertContains(bootstrap, "5. `authority_split`");
+        assertContains(bootstrap, "6. `operation_multiplexer_anti_pattern`");
+        assertContains(bootstrap, "Non-whitelisted trigger names are invalid in reports.");
     }
 
     @Test
@@ -88,5 +110,9 @@ class BearPackageDocsConsistencyTest {
 
     private static void assertMatchesHeading(String content, String headingRegex) {
         assertTrue(Pattern.compile(headingRegex).matcher(content).find(), "Expected heading anchor missing: " + headingRegex);
+    }
+
+    private static void assertContains(String content, String token) {
+        assertTrue(content.contains(token), "Expected exact token missing: " + token);
     }
 }

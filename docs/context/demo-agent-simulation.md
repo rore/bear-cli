@@ -108,6 +108,11 @@ Capture the full run transcript, including:
 7. completion governance-signal disposition block
 8. required Developer Summary template fields from `.bear/agent/REPORTING.md`
 9. required `Surface evidence` field from `.bear/agent/REPORTING.md`
+10. valid mode/groups coupling (`grouped` => structured `Groups`; `single|multi` => `Groups: n/a`)
+11. required `Decomposition rubric` line in canonical format
+12. `Decomposition reason` trigger token is whitelisted in `.bear/agent/BOOTSTRAP.md`
+13. `Review scope` obeys cap/order rule (max 8; baseline waiting starts with `bear.blocks.yaml`, `spec/*.bear.yaml`)
+14. `Surface evidence` cites non-generated runtime entrypoint/routing files
 
 Minimum completion evidence format:
 
