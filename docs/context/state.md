@@ -61,5 +61,5 @@ Stability-first quality rollout (aggressive track):
   - repeated `checkProjectTestTimeoutReturnsExit4` 8x with no failures; reran CI-equivalent flow locally (`:app:test :kernel:test`) with all green.
 - Eliminated timeout test flakiness at source:
   - added deterministic command-layer test hook in `CheckCommandService` (`bear.check.test.forceTimeoutOutcome`) and wired `BearCliTest.checkProjectTestTimeoutReturnsExit4` to use it with deterministic property restore in `finally`.
-  - kept timeout assertion classification-based (`TEST_TIMEOUT`) and added focused `ProjectTestRunnerTest.runProjectTestsCanForceTimeoutViaProperty`; revalidated targeted tests plus full `:app:test :kernel:test` green.
+  - kept timeout assertion classification-based (`TEST_TIMEOUT`), added focused `ProjectTestRunnerTest.runProjectTestsCanForceTimeoutViaProperty`, and removed forced-timeout process-kill race by returning synthetic timeout before process start in `ProjectTestRunner.runProjectTestsOnce`; validated with 15 repeated runs plus full `:app:test :kernel:test` green.
 - Full historical details remain in archive docs; this file stays operational and bounded.

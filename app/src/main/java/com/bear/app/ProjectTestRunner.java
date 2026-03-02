@@ -163,6 +163,15 @@ final class ProjectTestRunner {
         String attemptLabel,
         String initScriptRelativePath
     ) throws IOException, InterruptedException {
+        if (forceTimeoutForTest(projectRoot)) {
+            return new ProjectTestAttempt(
+                attemptLabel,
+                gradleUserHome,
+                ProjectTestStatus.TIMEOUT,
+                "PROJECT_TEST_FORCED_TIMEOUT"
+            );
+        }
+
         List<String> command = new ArrayList<>();
         if (isWindows()) {
             command.add("cmd");
@@ -191,12 +200,6 @@ final class ProjectTestRunner {
 
         String output;
         try (InputStream in = process.getInputStream()) {
-            if (forceTimeoutForTest(projectRoot)) {
-                process.destroyForcibly();
-                process.waitFor(5, TimeUnit.SECONDS);
-                output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-                return new ProjectTestAttempt(attemptLabel, gradleUserHome, ProjectTestStatus.TIMEOUT, output);
-            }
             boolean finished = process.waitFor(testTimeoutSeconds(), TimeUnit.SECONDS);
             if (!finished) {
                 process.destroyForcibly();
