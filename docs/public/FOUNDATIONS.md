@@ -19,7 +19,7 @@ BEAR addresses this with deterministic contracts and deterministic gates.
 ## BEAR IR fundamentals
 
 BEAR IR is a constrained YAML contract for one governed block.
-It declares block interface and boundary surface, then drives deterministic generation and checks.
+It declares block boundary authority and one or more typed operations, then drives deterministic generation and checks.
 
 Typical shape:
 
@@ -28,13 +28,24 @@ version: v1
 block:
   name: Withdraw
   kind: logic
-  contract:
-    inputs:
-      - name: txId
-        type: string
-    outputs:
-      - name: balance
-        type: decimal
+  operations:
+    - name: ExecuteWithdraw
+      contract:
+        inputs:
+          - name: txId
+            type: string
+        outputs:
+          - name: balance
+            type: decimal
+      uses:
+        allow:
+          - port: ledger
+            ops: [getBalance, setBalance]
+          - port: idempotency
+            ops: [get, put]
+      idempotency:
+        mode: use
+        key: txId
   effects:
     allow:
       - port: ledger
@@ -42,7 +53,6 @@ block:
       - port: idempotency
         ops: [get, put]
   idempotency:
-    key: txId
     store:
       port: idempotency
       getOp: get

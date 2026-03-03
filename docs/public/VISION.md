@@ -31,11 +31,10 @@ The target is deterministic, review-visible signals rather than full business be
 Future policy can evolve from a simple allowlist into explicit side-effect categories (for example network, database, messaging, filesystem, process, and escape hatches).
 The intent is stable governance semantics across targets: pure/internal libraries remain broadly usable, while new external reach requires explicit declaration and review visibility.
 
-## Direction 3: Operation-scoped contracts within a block
+## Direction 3: Post-operation-set governance precision
 
-Current IR shape can force operation-per-block decomposition when one domain block has multiple externally visible operations with different policies.
-A future direction is operation-scoped contract sections under one block, with per-operation contract/effect/idempotency/invariant declarations.
-This would preserve structural governance while reducing artificial decomposition pressure.
+Preview already supports operation-scoped contracts/usages within one block (`block.operations`) with block-level boundary authority.
+Future direction is finer governance precision on top of that model, for example richer operation-usage deltas and stronger cross-operation policy diagnostics without weakening determinism.
 
 ## Direction 4: Cross-block and system-level modeling
 

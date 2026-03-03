@@ -121,24 +121,20 @@ Non-goal:
 
 ---
 
-## Operation-Scoped Block Definitions (Future Expansion Candidate)
+## Operation-Set Governance Precision (Future Expansion Candidate)
 
-Problem being tracked:
-- current IR models one contract/idempotency/invariant scope per block
-- this can force operation-per-block decomposition when one domain block has multiple API operations with different policies
+Current baseline:
+- IR v1 includes first-class `block.operations` with per-operation contract/usages and block-level boundary authority.
+- operation usage is constrained by block effects/idempotency capability/allowed invariant set.
 
 Candidate direction:
-- add first-class operation scope under one block (for example `operations[]`)
-- allow per-operation:
-  - contract inputs/outputs
-  - idempotency configuration
-  - invariants
-  - effect declarations (or operation-level effect subset)
+- improve precision of operation-level governance signals (for example richer usage-shape diagnostics).
+- strengthen cross-operation boundary diagnostics without introducing router-style contracts.
 
 Design guardrails:
 - remain deterministic and machine-checkable
+- preserve block-level boundary authority as the canonical governance envelope
 - avoid untyped opcode/action router patterns
-- preserve clear boundary governance and review visibility
 
 Status:
 - tracked as future expansion only; not committed to active milestone scope

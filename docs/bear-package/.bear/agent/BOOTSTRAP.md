@@ -151,7 +151,7 @@ Derivation rules:
 3. `idempotency_same` applies only when grouped operations share identical key shape and identical store tuple `port|getOp|putOp`.
 4. `idempotency_n/a` applies only when no operation in the decomposition is idempotent.
 5. Grouped mode is allowed only when all applicable dimensions are `_same` and none are `_split`.
-6. Even when `Decomposition mode` is `grouped`, IR files remain per block; grouping is a reporting lens for reviewers.
+6. In grouped mode, keep one IR file per block and model grouped operations structurally via `block.operations` inside that block.
 7. Endpoint count alone is never a split trigger.
 
 ## DECOMPOSITION_SPLIT_TRIGGERS
