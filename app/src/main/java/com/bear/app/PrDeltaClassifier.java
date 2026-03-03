@@ -60,7 +60,22 @@ final class PrDeltaClassifier {
         PrSurface head = toPrSurface(headIr);
 
         List<PrDelta> deltas = new ArrayList<>();
+        addBlockEffectDeltas(deltas, base, head);
+        addBlockIdempotencyDeltas(deltas, base.blockIdempotency(), head.blockIdempotency());
+        addAllowedDepDeltas(deltas, base.allowedDeps(), head.allowedDeps());
+        addBlockInvariantDeltas(deltas, base.blockInvariants(), head.blockInvariants());
+        addOperationSurfaceDeltas(deltas, base.operations(), head.operations());
+        addOperationDeltas(deltas, base, head);
 
+        deltas.sort(Comparator
+            .comparing((PrDelta delta) -> delta.clazz().order)
+            .thenComparing(delta -> delta.category().order)
+            .thenComparing(delta -> delta.change().order)
+            .thenComparing(PrDelta::key));
+        return deltas;
+    }
+
+    private static void addBlockEffectDeltas(List<PrDelta> deltas, PrSurface base, PrSurface head) {
         for (String port : head.ports()) {
             if (!base.ports().contains(port)) {
                 deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.PORTS, PrChange.ADDED, port));
@@ -79,7 +94,7 @@ final class PrDeltaClassifier {
             TreeSet<String> baseOps = base.opsByPort().getOrDefault(port, new TreeSet<>());
             for (String op : headOps) {
                 if (!baseOps.contains(op)) {
-                    deltas.add(new PrDelta(PrClass.ORDINARY, PrCategory.OPS, PrChange.ADDED, port + "." + op));
+                    deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.OPS, PrChange.ADDED, port + "." + op));
                 }
             }
             for (String op : baseOps) {
@@ -88,29 +103,6 @@ final class PrDeltaClassifier {
                 }
             }
         }
-
-        addIdempotencyDeltas(deltas, base.idempotency(), head.idempotency());
-        addAllowedDepDeltas(deltas, base.allowedDeps(), head.allowedDeps());
-        addContractDeltas(deltas, base.inputs(), head.inputs(), true);
-        addContractDeltas(deltas, base.outputs(), head.outputs(), false);
-
-        for (String invariant : head.invariants()) {
-            if (!base.invariants().contains(invariant)) {
-                deltas.add(new PrDelta(PrClass.ORDINARY, PrCategory.INVARIANTS, PrChange.ADDED, invariant));
-            }
-        }
-        for (String invariant : base.invariants()) {
-            if (!head.invariants().contains(invariant)) {
-                deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.INVARIANTS, PrChange.REMOVED, invariant));
-            }
-        }
-
-        deltas.sort(Comparator
-            .comparing((PrDelta delta) -> delta.clazz().order)
-            .thenComparing(delta -> delta.category().order)
-            .thenComparing(delta -> delta.change().order)
-            .thenComparing(PrDelta::key));
-        return deltas;
     }
 
     static void addAllowedDepDeltas(List<PrDelta> deltas, Map<String, String> base, Map<String, String> head) {
@@ -139,42 +131,153 @@ final class PrDeltaClassifier {
         }
     }
 
-    static void addIdempotencyDeltas(
+    private static void addBlockIdempotencyDeltas(
         List<PrDelta> deltas,
-        BearIr.Idempotency base,
-        BearIr.Idempotency head
+        BearIr.BlockIdempotency base,
+        BearIr.BlockIdempotency head
     ) {
         if (base == null && head == null) {
             return;
         }
         if (base == null) {
-            deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.IDEMPOTENCY, PrChange.ADDED, "idempotency"));
+            deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.IDEMPOTENCY, PrChange.ADDED, "block.idempotency"));
             return;
         }
         if (head == null) {
-            deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.IDEMPOTENCY, PrChange.REMOVED, "idempotency"));
+            deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.IDEMPOTENCY, PrChange.REMOVED, "block.idempotency"));
             return;
         }
-
-        if (!Objects.equals(base.key(), head.key())) {
-            deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.IDEMPOTENCY, PrChange.CHANGED, "idempotency.key"));
-        }
-        if (!Objects.equals(base.keyFromInputs(), head.keyFromInputs())) {
-            deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.IDEMPOTENCY, PrChange.CHANGED, "idempotency.keyFromInputs"));
-        }
         if (!base.store().port().equals(head.store().port())) {
-            deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.IDEMPOTENCY, PrChange.CHANGED, "idempotency.store.port"));
+            deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.IDEMPOTENCY, PrChange.CHANGED, "block.idempotency.store.port"));
         }
         if (!base.store().getOp().equals(head.store().getOp())) {
-            deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.IDEMPOTENCY, PrChange.CHANGED, "idempotency.store.getOp"));
+            deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.IDEMPOTENCY, PrChange.CHANGED, "block.idempotency.store.getOp"));
         }
         if (!base.store().putOp().equals(head.store().putOp())) {
-            deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.IDEMPOTENCY, PrChange.CHANGED, "idempotency.store.putOp"));
+            deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.IDEMPOTENCY, PrChange.CHANGED, "block.idempotency.store.putOp"));
         }
     }
 
-    static void addContractDeltas(
+    private static void addBlockInvariantDeltas(List<PrDelta> deltas, TreeSet<String> base, TreeSet<String> head) {
+        for (String invariant : head) {
+            if (!base.contains(invariant)) {
+                deltas.add(new PrDelta(PrClass.ORDINARY, PrCategory.INVARIANTS, PrChange.ADDED, "block.invariant:" + invariant));
+            }
+        }
+        for (String invariant : base) {
+            if (!head.contains(invariant)) {
+                deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.INVARIANTS, PrChange.REMOVED, "block.invariant:" + invariant));
+            }
+        }
+    }
+
+    private static void addOperationSurfaceDeltas(List<PrDelta> deltas, TreeSet<String> base, TreeSet<String> head) {
+        for (String operation : head) {
+            if (!base.contains(operation)) {
+                deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.SURFACE, PrChange.ADDED, "op." + operation));
+            }
+        }
+        for (String operation : base) {
+            if (!head.contains(operation)) {
+                deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.SURFACE, PrChange.REMOVED, "op." + operation));
+            }
+        }
+    }
+
+    private static void addOperationDeltas(List<PrDelta> deltas, PrSurface base, PrSurface head) {
+        TreeSet<String> commonOperations = new TreeSet<>(head.operations());
+        commonOperations.retainAll(base.operations());
+
+        for (String op : commonOperations) {
+            addOperationUsesDeltas(
+                deltas,
+                op,
+                base.usesByOperation().getOrDefault(op, new TreeSet<>()),
+                head.usesByOperation().getOrDefault(op, new TreeSet<>())
+            );
+            addOperationIdempotencyDeltas(
+                deltas,
+                op,
+                base.idempotencyByOperation().get(op),
+                head.idempotencyByOperation().get(op)
+            );
+            addOperationContractDeltas(
+                deltas,
+                op,
+                base.inputsByOperation().getOrDefault(op, Map.of()),
+                head.inputsByOperation().getOrDefault(op, Map.of()),
+                true
+            );
+            addOperationContractDeltas(
+                deltas,
+                op,
+                base.outputsByOperation().getOrDefault(op, Map.of()),
+                head.outputsByOperation().getOrDefault(op, Map.of()),
+                false
+            );
+            addOperationInvariantDeltas(
+                deltas,
+                op,
+                base.invariantsByOperation().getOrDefault(op, new TreeSet<>()),
+                head.invariantsByOperation().getOrDefault(op, new TreeSet<>())
+            );
+        }
+    }
+
+    private static void addOperationUsesDeltas(List<PrDelta> deltas, String operation, TreeSet<String> base, TreeSet<String> head) {
+        for (String token : head) {
+            if (!base.contains(token)) {
+                deltas.add(new PrDelta(
+                    PrClass.BOUNDARY_EXPANDING,
+                    PrCategory.OPS,
+                    PrChange.ADDED,
+                    "op." + operation + ":uses." + token
+                ));
+            }
+        }
+        for (String token : base) {
+            if (!head.contains(token)) {
+                deltas.add(new PrDelta(
+                    PrClass.BOUNDARY_EXPANDING,
+                    PrCategory.OPS,
+                    PrChange.REMOVED,
+                    "op." + operation + ":uses." + token
+                ));
+            }
+        }
+    }
+
+    private static void addOperationIdempotencyDeltas(
         List<PrDelta> deltas,
+        String operation,
+        BearIr.OperationIdempotency base,
+        BearIr.OperationIdempotency head
+    ) {
+        if (base == null && head == null) {
+            return;
+        }
+        if (base == null) {
+            deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.IDEMPOTENCY, PrChange.ADDED, "op." + operation + ":idempotency"));
+            return;
+        }
+        if (head == null) {
+            deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.IDEMPOTENCY, PrChange.REMOVED, "op." + operation + ":idempotency"));
+            return;
+        }
+        if (base.mode() != head.mode()) {
+            deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.IDEMPOTENCY, PrChange.CHANGED, "op." + operation + ":idempotency.mode"));
+        }
+        if (!Objects.equals(base.key(), head.key())) {
+            deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.IDEMPOTENCY, PrChange.CHANGED, "op." + operation + ":idempotency.key"));
+        }
+        if (!Objects.equals(base.keyFromInputs(), head.keyFromInputs())) {
+            deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.IDEMPOTENCY, PrChange.CHANGED, "op." + operation + ":idempotency.keyFromInputs"));
+        }
+    }
+
+    private static void addOperationContractDeltas(
+        List<PrDelta> deltas,
+        String operation,
         Map<String, BearIr.FieldType> base,
         Map<String, BearIr.FieldType> head,
         boolean input
@@ -186,6 +289,7 @@ final class PrDeltaClassifier {
             boolean inBase = base.containsKey(name);
             boolean inHead = head.containsKey(name);
             String prefix = input ? "input." : "output.";
+            String opPrefix = "op." + operation + ":" + prefix;
 
             if (!inBase) {
                 PrClass clazz = input ? PrClass.ORDINARY : PrClass.BOUNDARY_EXPANDING;
@@ -193,7 +297,7 @@ final class PrDeltaClassifier {
                     clazz,
                     PrCategory.CONTRACT,
                     PrChange.ADDED,
-                    prefix + name + ":" + typeToken(head.get(name))
+                    opPrefix + name + ":" + typeToken(head.get(name))
                 ));
                 continue;
             }
@@ -202,7 +306,7 @@ final class PrDeltaClassifier {
                     PrClass.BOUNDARY_EXPANDING,
                     PrCategory.CONTRACT,
                     PrChange.REMOVED,
-                    prefix + name + ":" + typeToken(base.get(name))
+                    opPrefix + name + ":" + typeToken(base.get(name))
                 ));
                 continue;
             }
@@ -211,7 +315,35 @@ final class PrDeltaClassifier {
                     PrClass.BOUNDARY_EXPANDING,
                     PrCategory.CONTRACT,
                     PrChange.CHANGED,
-                    prefix + name + ":" + typeToken(base.get(name)) + "->" + typeToken(head.get(name))
+                    opPrefix + name + ":" + typeToken(base.get(name)) + "->" + typeToken(head.get(name))
+                ));
+            }
+        }
+    }
+
+    private static void addOperationInvariantDeltas(
+        List<PrDelta> deltas,
+        String operation,
+        TreeSet<String> base,
+        TreeSet<String> head
+    ) {
+        for (String invariant : head) {
+            if (!base.contains(invariant)) {
+                deltas.add(new PrDelta(
+                    PrClass.BOUNDARY_EXPANDING,
+                    PrCategory.INVARIANTS,
+                    PrChange.ADDED,
+                    "op." + operation + ":invariant." + invariant
+                ));
+            }
+        }
+        for (String invariant : base) {
+            if (!head.contains(invariant)) {
+                deltas.add(new PrDelta(
+                    PrClass.BOUNDARY_EXPANDING,
+                    PrCategory.INVARIANTS,
+                    PrChange.REMOVED,
+                    "op." + operation + ":invariant." + invariant
                 ));
             }
         }
@@ -235,22 +367,113 @@ final class PrDeltaClassifier {
             }
         }
 
-        Map<String, BearIr.FieldType> inputs = new TreeMap<>();
-        for (BearIr.Field input : ir.block().contract().inputs()) {
-            inputs.put(input.name(), input.type());
-        }
-        Map<String, BearIr.FieldType> outputs = new TreeMap<>();
-        for (BearIr.Field output : ir.block().contract().outputs()) {
-            outputs.put(output.name(), output.type());
-        }
-
-        TreeSet<String> invariants = new TreeSet<>();
+        TreeSet<String> blockInvariants = new TreeSet<>();
         if (ir.block().invariants() != null) {
             for (BearIr.Invariant invariant : ir.block().invariants()) {
-                invariants.add(invariant.kind().name().toLowerCase() + ":" + invariant.field());
+                blockInvariants.add(invariantFingerprint(invariant));
             }
         }
-        return new PrSurface(ports, opsByPort, allowedDeps, inputs, outputs, ir.block().idempotency(), invariants);
+
+        TreeSet<String> operations = new TreeSet<>();
+        Map<String, Map<String, BearIr.FieldType>> inputsByOperation = new TreeMap<>();
+        Map<String, Map<String, BearIr.FieldType>> outputsByOperation = new TreeMap<>();
+        Map<String, TreeSet<String>> usesByOperation = new TreeMap<>();
+        Map<String, BearIr.OperationIdempotency> idempotencyByOperation = new TreeMap<>();
+        Map<String, TreeSet<String>> invariantsByOperation = new TreeMap<>();
+
+        for (BearIr.Operation operation : ir.block().operations()) {
+            operations.add(operation.name());
+            inputsByOperation.put(operation.name(), toFieldTypeMap(operation.contract().inputs()));
+            outputsByOperation.put(operation.name(), toFieldTypeMap(operation.contract().outputs()));
+            usesByOperation.put(operation.name(), toUsesTokens(operation.uses()));
+            if (operation.idempotency() != null) {
+                idempotencyByOperation.put(operation.name(), operation.idempotency());
+            }
+            TreeSet<String> opInvariants = new TreeSet<>();
+            if (operation.invariants() != null) {
+                for (BearIr.Invariant invariant : operation.invariants()) {
+                    opInvariants.add(invariantFingerprint(invariant));
+                }
+            }
+            invariantsByOperation.put(operation.name(), opInvariants);
+        }
+
+        return new PrSurface(
+            ports,
+            opsByPort,
+            allowedDeps,
+            ir.block().idempotency(),
+            blockInvariants,
+            operations,
+            inputsByOperation,
+            outputsByOperation,
+            usesByOperation,
+            idempotencyByOperation,
+            invariantsByOperation
+        );
+    }
+
+    private static Map<String, BearIr.FieldType> toFieldTypeMap(List<BearIr.Field> fields) {
+        TreeMap<String, BearIr.FieldType> map = new TreeMap<>();
+        for (BearIr.Field field : fields) {
+            map.put(field.name(), field.type());
+        }
+        return map;
+    }
+
+    private static TreeSet<String> toUsesTokens(BearIr.Effects uses) {
+        TreeSet<String> tokens = new TreeSet<>();
+        for (BearIr.EffectPort port : uses.allow()) {
+            for (String op : port.ops()) {
+                tokens.add(port.port() + "." + op);
+            }
+        }
+        return tokens;
+    }
+
+    private static String invariantFingerprint(BearIr.Invariant invariant) {
+        String kind = invariant.kind().name().toLowerCase();
+        String scope = invariant.scope().name().toLowerCase();
+        String field = escapeInvariantToken(invariant.field());
+        String params = canonicalInvariantParams(invariant);
+        return "kind=" + kind + "|scope=" + scope + "|field=" + field + "|params=" + params;
+    }
+
+    private static String canonicalInvariantParams(BearIr.Invariant invariant) {
+        BearIr.InvariantParams params = invariant.params();
+        String value = params == null ? null : params.value();
+        List<String> values = params == null || params.values() == null ? List.of() : params.values();
+        return switch (invariant.kind()) {
+            case NON_NEGATIVE, NON_EMPTY -> "none";
+            case EQUALS -> "value=" + escapeInvariantToken(value);
+            case ONE_OF -> {
+                ArrayList<String> sorted = new ArrayList<>(values);
+                sorted.sort(String::compareTo);
+                yield "values=" + escapeInvariantCsv(sorted);
+            }
+        };
+    }
+
+    private static String escapeInvariantCsv(List<String> values) {
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < values.size(); i++) {
+            if (i > 0) {
+                out.append(",");
+            }
+            out.append(escapeInvariantToken(values.get(i)));
+        }
+        return out.toString();
+    }
+
+    private static String escapeInvariantToken(String value) {
+        if (value == null) {
+            return "<null>";
+        }
+        return value
+            .replace("\\", "\\\\")
+            .replace("|", "\\|")
+            .replace(",", "\\,")
+            .replace("=", "\\=");
     }
 
     static PrSurface emptyPrSurface() {
@@ -258,10 +481,14 @@ final class PrDeltaClassifier {
             new TreeSet<>(),
             new TreeMap<>(),
             new TreeMap<>(),
-            new TreeMap<>(),
-            new TreeMap<>(),
             null,
-            new TreeSet<>()
+            new TreeSet<>(),
+            new TreeSet<>(),
+            new TreeMap<>(),
+            new TreeMap<>(),
+            new TreeMap<>(),
+            new TreeMap<>(),
+            new TreeMap<>()
         );
     }
 }

@@ -48,18 +48,21 @@ public final class BearIrParser {
             }
 
             Map<?, ?> block = requireMap(root, "block", "block");
-            requireOnlyKeys(block, "block", Set.of("name", "kind", "contract", "effects", "impl", "idempotency", "invariants"));
+            requireOnlyKeys(block, "block", Set.of("name", "kind", "operations", "effects", "impl", "idempotency", "invariants"));
 
             String name = requireString(block, "name", "block.name");
             BearIr.BlockKind kind = parseBlockKind(requireString(block, "kind", "block.kind"), "block.kind");
 
-            BearIr.Contract contract = parseContract(requireMap(block, "contract", "block.contract"), "block.contract");
+            List<BearIr.Operation> operations = parseOperations(
+                requireList(block, "operations", "block.operations"),
+                "block.operations"
+            );
             BearIr.Effects effects = parseEffects(requireMap(block, "effects", "block.effects"), "block.effects");
             BearIr.Impl impl = parseImpl(block.containsKey("impl") ? requireMap(block, "impl", "block.impl") : Map.of(), "block.impl");
 
-            BearIr.Idempotency idempotency = null;
+            BearIr.BlockIdempotency idempotency = null;
             if (block.containsKey("idempotency")) {
-                idempotency = parseIdempotency(requireMap(block, "idempotency", "block.idempotency"), "block.idempotency");
+                idempotency = parseBlockIdempotency(requireMap(block, "idempotency", "block.idempotency"), "block.idempotency");
             }
 
             List<BearIr.Invariant> invariants = null;
@@ -67,7 +70,7 @@ public final class BearIrParser {
                 invariants = parseInvariants(requireList(block, "invariants", "block.invariants"), "block.invariants");
             }
 
-            return new BearIr(version, new BearIr.Block(name, kind, contract, effects, impl, idempotency, invariants));
+            return new BearIr(version, new BearIr.Block(name, kind, operations, effects, impl, idempotency, invariants));
         }
     }
 
@@ -121,11 +124,50 @@ public final class BearIrParser {
         throw schema(path, BearIrValidationException.Code.INVALID_ENUM, "expected 'result'");
     }
 
+    private BearIr.OperationIdempotencyMode parseOperationIdempotencyMode(String raw, String path) {
+        return switch (raw) {
+            case "use" -> BearIr.OperationIdempotencyMode.USE;
+            case "none" -> BearIr.OperationIdempotencyMode.NONE;
+            default -> throw schema(path, BearIrValidationException.Code.INVALID_ENUM, "expected 'use' or 'none'");
+        };
+    }
+
     private BearIr.Contract parseContract(Map<?, ?> contract, String path) {
         requireOnlyKeys(contract, path, Set.of("inputs", "outputs"));
         List<?> inputs = requireList(contract, "inputs", path + ".inputs");
         List<?> outputs = requireList(contract, "outputs", path + ".outputs");
         return new BearIr.Contract(parseFields(inputs, path + ".inputs"), parseFields(outputs, path + ".outputs"));
+    }
+
+    private List<BearIr.Operation> parseOperations(List<?> items, String path) {
+        ArrayList<BearIr.Operation> operations = new ArrayList<>();
+        for (int i = 0; i < items.size(); i++) {
+            String itemPath = path + "[" + i + "]";
+            Object item = items.get(i);
+            if (!(item instanceof Map<?, ?> op)) {
+                throw schema(itemPath, BearIrValidationException.Code.INVALID_TYPE, "expected mapping");
+            }
+            requireOnlyKeys(op, itemPath, Set.of("name", "contract", "uses", "idempotency", "invariants"));
+            String name = requireString(op, "name", itemPath + ".name");
+            BearIr.Contract contract = parseContract(
+                requireMap(op, "contract", itemPath + ".contract"),
+                itemPath + ".contract"
+            );
+            BearIr.Effects uses = parseEffects(requireMap(op, "uses", itemPath + ".uses"), itemPath + ".uses");
+            BearIr.OperationIdempotency idempotency = null;
+            if (op.containsKey("idempotency")) {
+                idempotency = parseOperationIdempotency(
+                    requireMap(op, "idempotency", itemPath + ".idempotency"),
+                    itemPath + ".idempotency"
+                );
+            }
+            List<BearIr.Invariant> invariants = null;
+            if (op.containsKey("invariants")) {
+                invariants = parseInvariants(requireList(op, "invariants", itemPath + ".invariants"), itemPath + ".invariants");
+            }
+            operations.add(new BearIr.Operation(name, contract, uses, idempotency, invariants));
+        }
+        return List.copyOf(operations);
     }
 
     private List<BearIr.Field> parseFields(List<?> items, String path) {
@@ -170,22 +212,34 @@ public final class BearIrParser {
         return new BearIr.Effects(ports);
     }
 
-    private BearIr.Idempotency parseIdempotency(Map<?, ?> idempotency, String path) {
-        requireOnlyKeys(idempotency, path, Set.of("key", "keyFromInputs", "store"));
+    private BearIr.BlockIdempotency parseBlockIdempotency(Map<?, ?> idempotency, String path) {
+        requireOnlyKeys(idempotency, path, Set.of("store"));
+        Map<?, ?> store = requireMap(idempotency, "store", path + ".store");
+        requireOnlyKeys(store, path + ".store", Set.of("port", "getOp", "putOp"));
+        String port = requireString(store, "port", path + ".store.port");
+        String getOp = requireString(store, "getOp", path + ".store.getOp");
+        String putOp = requireString(store, "putOp", path + ".store.putOp");
+        return new BearIr.BlockIdempotency(new BearIr.IdempotencyStore(port, getOp, putOp));
+    }
+
+    private BearIr.OperationIdempotency parseOperationIdempotency(Map<?, ?> idempotency, String path) {
+        requireOnlyKeys(idempotency, path, Set.of("mode", "key", "keyFromInputs"));
+        BearIr.OperationIdempotencyMode mode = parseOperationIdempotencyMode(
+            requireString(idempotency, "mode", path + ".mode"),
+            path + ".mode"
+        );
         String key = null;
         if (idempotency.containsKey("key")) {
             key = requireString(idempotency, "key", path + ".key");
         }
         List<String> keyFromInputs = null;
         if (idempotency.containsKey("keyFromInputs")) {
-            keyFromInputs = parseStringList(requireList(idempotency, "keyFromInputs", path + ".keyFromInputs"), path + ".keyFromInputs");
+            keyFromInputs = parseStringList(
+                requireList(idempotency, "keyFromInputs", path + ".keyFromInputs"),
+                path + ".keyFromInputs"
+            );
         }
-        Map<?, ?> store = requireMap(idempotency, "store", path + ".store");
-        requireOnlyKeys(store, path + ".store", Set.of("port", "getOp", "putOp"));
-        String port = requireString(store, "port", path + ".store.port");
-        String getOp = requireString(store, "getOp", path + ".store.getOp");
-        String putOp = requireString(store, "putOp", path + ".store.putOp");
-        return new BearIr.Idempotency(key, keyFromInputs, new BearIr.IdempotencyStore(port, getOp, putOp));
+        return new BearIr.OperationIdempotency(mode, key, keyFromInputs);
     }
 
     private List<BearIr.Invariant> parseInvariants(List<?> items, String path) {

@@ -48,9 +48,11 @@ Rule:
 2. Multiple external operations may be grouped when compatibility signals are `_same` and no split trigger applies.
 
 IR v1 capability fact:
-1. IR v1 supports one `logic` block per IR file.
-2. This is a structural capability fact, not a decomposition mandate.
-3. Even when `Decomposition mode` is `grouped`, IR files remain per block; grouping is a reporting lens for reviewers.
+1. IR v1 supports one `logic` block per IR file with `block.operations` (multi-operation).
+2. Block boundary authority remains block-level (`effects`, idempotency capability, allowed invariants).
+3. Operation contracts/usages are per-operation subsets inside that block boundary.
+4. Grouped decomposition is structural in v1 (not only reporting): one block can host multiple compatible operations.
+5. Add/remove operation entrypoints is governance-relevant surface expansion.
 
 ## Contract Modeling Anti-Patterns (Normative)
 

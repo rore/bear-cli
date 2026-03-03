@@ -26,13 +26,27 @@ public record BearIr(String version, BearIr.Block block) {
         RESULT
     }
 
+    public enum OperationIdempotencyMode {
+        USE,
+        NONE
+    }
+
     public record Block(
         String name,
         BlockKind kind,
-        Contract contract,
+        List<Operation> operations,
         Effects effects,
         Impl impl,
-        Idempotency idempotency,
+        BlockIdempotency idempotency,
+        List<Invariant> invariants
+    ) {
+    }
+
+    public record Operation(
+        String name,
+        Contract contract,
+        Effects uses,
+        OperationIdempotency idempotency,
         List<Invariant> invariants
     ) {
     }
@@ -49,7 +63,10 @@ public record BearIr(String version, BearIr.Block block) {
     public record EffectPort(String port, List<String> ops) {
     }
 
-    public record Idempotency(String key, List<String> keyFromInputs, IdempotencyStore store) {
+    public record BlockIdempotency(IdempotencyStore store) {
+    }
+
+    public record OperationIdempotency(OperationIdempotencyMode mode, String key, List<String> keyFromInputs) {
     }
 
     public record IdempotencyStore(String port, String getOp, String putOp) {

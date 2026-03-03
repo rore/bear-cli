@@ -2,14 +2,11 @@
 
 Purpose:
 - Single authoritative BEAR IR reference.
-- Consolidates schema quickref and minimal examples.
+- Canonical schema and rule quick reference.
 
 Authority rule:
-- This file is the canonical IR contract for the package.
-- Do not reverse engineer binaries to infer missing IR behavior.
 - If a shape/rule is not declared here, do not assume it.
-- IR file = one block; decomposition is an architectural choice governed by BEAR decomposition policy.
-- Even when `Decomposition mode` is `grouped`, IR files remain per block; grouping is a reporting lens for reviewers.
+- IR file = one block; block may contain multiple operations.
 
 ## Required Root Shape
 
@@ -19,7 +16,7 @@ block:
   ...
 ```
 
-Required keys:
+Required root keys:
 - `version` (`v1`)
 - `block`
 
@@ -28,15 +25,35 @@ Required keys:
 Required:
 - `name`
 - `kind` (`logic`)
-- `contract`
+- `operations` (non-empty)
 - `effects`
 
 Optional:
-- `idempotency`
-- `invariants`
+- `idempotency` (store capability only)
+- `invariants` (allowed set)
 - `impl`
 
-## Contract
+## Operation Object
+
+Required:
+- `name`
+- `contract.inputs`
+- `contract.outputs`
+- `uses.allow`
+
+Optional:
+- `idempotency` (`mode: use|none`)
+- `invariants`
+
+Forbidden:
+- per-operation `impl`
+
+Rules:
+- operation names unique and trimmed
+- field uniqueness is per operation only
+- `uses.allow` must be subset of `block.effects.allow`
+
+## Contract Fields
 
 ```yaml
 contract:
@@ -48,11 +65,6 @@ contract:
       type: bool
 ```
 
-Rules:
-- `inputs` non-empty
-- `outputs` non-empty
-- unique input/output names
-
 Types:
 - `string`
 - `decimal`
@@ -60,7 +72,7 @@ Types:
 - `bool`
 - `enum`
 
-## Effects
+## Effects Boundary
 
 ```yaml
 effects:
@@ -70,43 +82,50 @@ effects:
 ```
 
 Rules:
-- `allow` required
+- block effects are authoritative boundary superset
 - unique ports
 - unique ops per port
-- empty `allow` is valid only for echo-safe pure blocks:
-  - no `idempotency`
-  - no `invariants`
-  - every output matches an input by exact `name+type` (order-independent canonical tuple match)
+- empty `allow` valid only for per-operation echo-safe blocks
 
-## Idempotency (Optional)
+## Idempotency
 
-Single-field key:
+Block capability:
 ```yaml
 idempotency:
-  key: requestId
   store:
     port: idempotency
     getOp: get
     putOp: put
 ```
 
-Composite key:
+Operation usage:
 ```yaml
 idempotency:
+  mode: use
+  key: requestId
+```
+or
+```yaml
+idempotency:
+  mode: use
   keyFromInputs: [walletId, requestId]
-  store:
-    port: idempotency
-    getOp: get
-    putOp: put
+```
+or
+```yaml
+idempotency:
+  mode: none
 ```
 
 Rules:
-- exactly one of `key` / `keyFromInputs`
-- `keyFromInputs` non-empty, ordered, unique values
-- referenced fields must exist in `contract.inputs`
-- `store` references must exist in declared effects
+- `mode=use` requires block idempotency store
+- `mode=use` requires exactly one of `key` / `keyFromInputs`
+- key fields must exist in that operation inputs
+- operation `uses` must include idempotency `getOp` and `putOp`
+- `mode=none` forbids key fields
 
-## Invariants (Optional)
+## Invariants
+
+Block-level `invariants` define allowed rules; operation invariants choose subset.
 
 ```yaml
 invariants:
@@ -124,9 +143,8 @@ Kinds:
 
 Rules:
 - `scope` must be `result`
-- `field` must exist in outputs
-- kind/type compatibility is enforced
-- kind-specific params are strict
+- `field` must reference operation outputs
+- operation invariants must be subset of block allowed set by deterministic fingerprint
 
 ## Impl Allowed Deps (Optional)
 
@@ -142,119 +160,67 @@ Rules:
 - pinned exact version
 - duplicate GA invalid
 
-## Key v1.2 Enforcement Notes
+## Generator Contract
 
-- Idempotency and invariants are wrapper-owned semantics.
-- Idempotent logic signatures exclude idempotency port.
-- Wrapper signature clarification (frozen):
-  - generated logic signatures exclude the idempotency store port
-  - wrapper enforcement binds idempotency via IR-declared `idempotency.store` (`port`, `getOp`, `putOp`)
-- IR-declared semantics must be enforceable by target; otherwise `check` fails.
+Generated artifacts:
+- shared: `BearValue`, `<Block>Logic`, ports, `<Block>Impl` stub
+- per operation:
+  - `<Block>_<Operation>Request`
+  - `<Block>_<Operation>Result`
+  - `<Block>_<Operation>` wrapper
 
-Selection rule:
-- enforce only semantics that are wrapper-enforceable from declared inputs/outputs/ports
-- require no hidden context unless explicitly declared
-- require deterministic target implementation
-- require frozen, testable contracts
+Wrapper behavior:
+- idempotency and invariants are wrapper-owned
+- idempotency key includes operation identity segment
 
-## State Modeling Guidance (Deterministic)
-
-Rule:
-1. If state is required, declare state capabilities as ports in `effects.allow`.
-2. Implement state access in adapter/state lanes (for example `blocks/**/adapter/**` or `blocks/_shared/state/**`), not in logic lane.
-3. Keep `impl` logic deterministic and free of hidden shared mutable state.
-
-Tiny canonical pattern:
-
-```yaml
-effects:
-  allow:
-    - port: walletStore
-      ops: [read, put]
-    - port: statementStore
-      ops: [append, listSince]
-    - port: idempotency
-      ops: [get, put]
-idempotency:
-  keyFromInputs: [walletId, requestId]
-  store:
-    port: idempotency
-    getOp: get
-    putOp: put
-```
-
-Concrete walletStore contract pattern:
-1. create path: `walletStore.put` used only for create semantics.
-2. update path: `walletStore.updateBalance` (or `walletStore.putBalance`) used only for update semantics.
-3. read path: `walletStore.get` must return explicit found state (`found=true|false`) and never rely on hidden state assumptions.
-4. avoid overloaded ambiguous update/create `put` behavior in adapters.
-
-## Minimal Examples
-
-### Example A: Minimal Single Block
-
-`spec/process-task.bear.yaml`
+## Minimal Example
 
 ```yaml
 version: v1
 block:
-  name: ProcessTask
+  name: Withdraw
   kind: logic
-  contract:
-    inputs:
-      - name: requestId
-        type: string
-      - name: workloadUnits
-        type: decimal
-    outputs:
-      - name: processed
-        type: bool
-      - name: remainingQuota
-        type: decimal
+  operations:
+    - name: ExecuteWithdraw
+      contract:
+        inputs:
+          - name: txId
+            type: string
+        outputs:
+          - name: balance
+            type: decimal
+      uses:
+        allow:
+          - port: ledger
+            ops: [getBalance, setBalance]
+          - port: idempotency
+            ops: [get, put]
+      idempotency:
+        mode: use
+        key: txId
+      invariants:
+        - kind: non_negative
+          field: balance
   effects:
     allow:
-      - port: quotaStore
-        ops: [read, write]
+      - port: ledger
+        ops: [getBalance, setBalance]
       - port: idempotency
         ops: [get, put]
   idempotency:
-    key: requestId
     store:
       port: idempotency
       getOp: get
       putOp: put
   invariants:
     - kind: non_negative
-      scope: result
-      field: remainingQuota
-      params: {}
-```
-
-### Example B: Minimal Multi-Block (Indexed)
-
-`bear.blocks.yaml`
-
-```yaml
-version: v0
-blocks:
-  - name: execution-core
-    ir: spec/execution-core.bear.yaml
-    projectRoot: .
-  - name: activity-log
-    ir: spec/activity-log.bear.yaml
-    projectRoot: .
+      field: balance
 ```
 
 ## Commands
 
 For each changed IR:
 1. `bear validate <ir-file>`
-2. `bear compile <ir-file> --project <repoRoot>`
-- or `bear compile --all --project <repoRoot>` when index-managed multi-block
+2. `bear compile <ir-file> --project <repoRoot>` or `bear compile --all --project <repoRoot>`
 3. `bear fix <ir-file> --project <repoRoot>` (or `fix --all`)
-4. `bear check <ir-file> --project <repoRoot> [--strict-hygiene]` (or `check --all [--strict-hygiene]`)
-
-Policy files used by `check`:
-1. `.bear/policy/reflection-allowlist.txt`
-2. `.bear/policy/hygiene-allowlist.txt`
-3. Strict policy format contract: see `.bear/agent/CONTRACTS.md`.
+4. `bear check <ir-file> --project <repoRoot> [--strict-hygiene]` (or `check --all`)

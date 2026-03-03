@@ -32,37 +32,38 @@ Run report MUST include:
 6. `Groups: n/a` OR `Groups: [<group_name>:{<block1>,<block2>}; <group_name>:{<block3>}]`
 7. `Decomposition reason: default|trigger:<canonical_name>|spec_explicit`
 8. `Blocks added: [...]`
-9. `IR delta: <files + boundary notes>`
-10. `Implementation delta: <files>`
-11. `Tests delta: <files>`
-12. `Surface evidence: n/a (spec does not require an API surface)` OR
-13. `Surface evidence: <file1>,<file2>,...` OR
-14. `Surface deferred: <reason_token>`
-15. `Gate results:`
-16. `- bear check --all --project <repoRoot> => <exit>`
-17. `- bear pr-check --all --project <repoRoot> --base <ref> => <exit>`
-18. `Gate run order: <ordered list of executed gates>`
-19. `Run outcome: COMPLETE|BLOCKED|WAITING_FOR_BASELINE_REVIEW`
-20. `Required next action: <...>` (required when `Run outcome` is `BLOCKED` or `WAITING_FOR_BASELINE_REVIEW`)
-21. `Gate blocker: IO_LOCK | TEST_FAILURE | BOUNDARY_EXPANSION | OTHER`
-22. `Stopped after blocker: yes|no`
-23. `First failing command: <exact command line>|none (preflight)`
-24. `First failure signature: <one copied verbatim line>`
-25. `PR base used: <ref>`
-26. `PR base rationale: <merge-base against target branch OR user-provided base SHA>`
-27. `PR classification interpretation: <expected|unintended> - <brief rationale>`
-28. `Baseline review scope: <required for WAITING_FOR_BASELINE_REVIEW; must include bear.blocks.yaml and spec/*.bear.yaml>`
-29. `Constraint conflicts encountered: none|<list>`
-30. `Escalation decision: none|<reason>`
-31. `Containment sanity check: pass|fail|n/a - <evidence>`
-32. `Infra edits: none|<list>`
-33. `Unblock used: no|yes - <reason>`
-34. `Gate policy acknowledged: yes|no`
-35. `Final git status: <git status --short summary>`
-36. `GOVERNANCE_SIGNAL_DISPOSITION`
-37. `MULTI_BLOCK_PORT_IMPL_ALLOWED: none|<count>`
-38. `JUSTIFICATION: <required when count > 0>`
-39. `TRADEOFF: <required when count > 0>`
+9. `Grouped operations: n/a` OR `Grouped operations: [<block>:{<op1>,<op2>}; ...]`
+10. `IR delta: <files + boundary notes>`
+11. `Implementation delta: <files>`
+12. `Tests delta: <files>`
+13. `Surface evidence: n/a (spec does not require an API surface)` OR
+14. `Surface evidence: <file1>,<file2>,...` OR
+15. `Surface deferred: <reason_token>`
+16. `Gate results:`
+17. `- bear check --all --project <repoRoot> => <exit>`
+18. `- bear pr-check --all --project <repoRoot> --base <ref> => <exit>`
+19. `Gate run order: <ordered list of executed gates>`
+20. `Run outcome: COMPLETE|BLOCKED|WAITING_FOR_BASELINE_REVIEW`
+21. `Required next action: <...>` (required when `Run outcome` is `BLOCKED` or `WAITING_FOR_BASELINE_REVIEW`)
+22. `Gate blocker: IO_LOCK | TEST_FAILURE | BOUNDARY_EXPANSION | OTHER`
+23. `Stopped after blocker: yes|no`
+24. `First failing command: <exact command line>|none (preflight)`
+25. `First failure signature: <one copied verbatim line>`
+26. `PR base used: <ref>`
+27. `PR base rationale: <merge-base against target branch OR user-provided base SHA>`
+28. `PR classification interpretation: <expected|unintended> - <brief rationale>`
+29. `Baseline review scope: <required for WAITING_FOR_BASELINE_REVIEW; must include bear.blocks.yaml and spec/*.bear.yaml>`
+30. `Constraint conflicts encountered: none|<list>`
+31. `Escalation decision: none|<reason>`
+32. `Containment sanity check: pass|fail|n/a - <evidence>`
+33. `Infra edits: none|<list>`
+34. `Unblock used: no|yes - <reason>`
+35. `Gate policy acknowledged: yes|no`
+36. `Final git status: <git status --short summary>`
+37. `GOVERNANCE_SIGNAL_DISPOSITION`
+38. `MULTI_BLOCK_PORT_IMPL_ALLOWED: none|<count>`
+39. `JUSTIFICATION: <required when count > 0>`
+40. `TRADEOFF: <required when count > 0>`
 
 ## Decomposition Field Rules
 
@@ -73,8 +74,17 @@ Run report MUST include:
 - group names sorted lexicographically
 - block names inside each group sorted lexicographically
 - no freeform prose
-3. `idempotency_n/a` is valid only when no operation in the decomposition is idempotent.
-4. `Decomposition reason: trigger:<canonical_name>` must use only tokens from `.bear/agent/BOOTSTRAP.md` `DECOMPOSITION_SPLIT_TRIGGERS`.
+3. `Grouped operations` format is stable when mode is grouped:
+- block names sorted lexicographically
+- operation names per block sorted lexicographically
+- operation names are block-local; do not key contract fields across different operations
+4. `idempotency_n/a` is valid only when no operation in the decomposition is idempotent.
+5. `Decomposition reason: trigger:<canonical_name>` must use only tokens from `.bear/agent/BOOTSTRAP.md` `DECOMPOSITION_SPLIT_TRIGGERS`.
+
+PR delta interpretation addendum:
+1. Operation add/remove must be interpreted as `BOUNDARY_EXPANDING` surface expansion.
+2. Operation `uses`, operation idempotency, and operation invariants deltas are `BOUNDARY_EXPANDING`.
+3. Operation contract deltas follow contract semantics and must remain operation-attributed (`op.<operation>:...` keys).
 
 Surface contract notes:
 1. `Surface deferred` allowed reason tokens only: `out_of_scope_by_spec|explicit_user_deferral|demo_minimalism`.

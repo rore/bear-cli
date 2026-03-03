@@ -8,15 +8,12 @@ public final class BearIrNormalizer {
     public BearIr normalize(BearIr ir) {
         BearIr.Block block = ir.block();
 
-        List<BearIr.Field> inputs = sortFields(block.contract().inputs());
-        List<BearIr.Field> outputs = sortFields(block.contract().outputs());
-        BearIr.Contract contract = new BearIr.Contract(inputs, outputs);
-
+        List<BearIr.Operation> operations = normalizeOperations(block.operations());
         List<BearIr.EffectPort> ports = sortPorts(block.effects().allow());
         BearIr.Effects effects = new BearIr.Effects(ports);
         BearIr.Impl impl = sortImpl(block.impl());
 
-        BearIr.Idempotency idempotency = normalizeIdempotency(block.idempotency());
+        BearIr.BlockIdempotency idempotency = normalizeBlockIdempotency(block.idempotency());
         List<BearIr.Invariant> invariants = block.invariants();
         if (invariants != null) {
             invariants = normalizeInvariants(invariants);
@@ -28,13 +25,41 @@ public final class BearIrNormalizer {
         BearIr.Block normalizedBlock = new BearIr.Block(
             block.name(),
             block.kind(),
-            contract,
+            operations,
             effects,
             impl,
             idempotency,
             invariants
         );
         return new BearIr(ir.version(), normalizedBlock);
+    }
+
+    private List<BearIr.Operation> normalizeOperations(List<BearIr.Operation> operations) {
+        ArrayList<BearIr.Operation> normalized = new ArrayList<>();
+        for (BearIr.Operation operation : operations) {
+            BearIr.Contract contract = new BearIr.Contract(
+                sortFields(operation.contract().inputs()),
+                sortFields(operation.contract().outputs())
+            );
+            BearIr.Effects uses = new BearIr.Effects(sortPorts(operation.uses().allow()));
+            BearIr.OperationIdempotency idempotency = normalizeOperationIdempotency(operation.idempotency());
+            List<BearIr.Invariant> invariants = operation.invariants();
+            if (invariants != null) {
+                invariants = normalizeInvariants(invariants);
+                if (invariants.isEmpty()) {
+                    invariants = null;
+                }
+            }
+            normalized.add(new BearIr.Operation(
+                operation.name(),
+                contract,
+                uses,
+                idempotency,
+                invariants
+            ));
+        }
+        normalized.sort(Comparator.comparing(BearIr.Operation::name));
+        return List.copyOf(normalized);
     }
 
     private List<BearIr.Field> sortFields(List<BearIr.Field> fields) {
@@ -68,14 +93,21 @@ public final class BearIrNormalizer {
         return List.copyOf(list);
     }
 
-    private BearIr.Idempotency normalizeIdempotency(BearIr.Idempotency idempotency) {
+    private BearIr.BlockIdempotency normalizeBlockIdempotency(BearIr.BlockIdempotency idempotency) {
+        if (idempotency == null) {
+            return null;
+        }
+        return new BearIr.BlockIdempotency(idempotency.store());
+    }
+
+    private BearIr.OperationIdempotency normalizeOperationIdempotency(BearIr.OperationIdempotency idempotency) {
         if (idempotency == null) {
             return null;
         }
         List<String> keyFromInputs = idempotency.keyFromInputs() == null
             ? null
             : List.copyOf(idempotency.keyFromInputs());
-        return new BearIr.Idempotency(idempotency.key(), keyFromInputs, idempotency.store());
+        return new BearIr.OperationIdempotency(idempotency.mode(), idempotency.key(), keyFromInputs);
     }
 
     private BearIr.Impl sortImpl(BearIr.Impl impl) {

@@ -44,21 +44,37 @@ public final class BearIrYamlEmitter {
         map.put("kind", switch (block.kind()) {
             case LOGIC -> "logic";
         });
-        map.put("contract", toContractMap(block.contract()));
+        map.put("operations", toOperationsList(block.operations()));
         map.put("effects", toEffectsMap(block.effects()));
+        if (block.idempotency() != null) {
+            map.put("idempotency", toBlockIdempotencyMap(block.idempotency()));
+        }
+        if (block.invariants() != null && !block.invariants().isEmpty()) {
+            map.put("invariants", toInvariantsList(block.invariants()));
+        }
         if (block.impl() != null && block.impl().allowedDeps() != null && !block.impl().allowedDeps().isEmpty()) {
             map.put("impl", toImplMap(block.impl()));
         }
 
-        if (block.idempotency() != null) {
-            map.put("idempotency", toIdempotencyMap(block.idempotency()));
-        }
-
-        if (block.invariants() != null && !block.invariants().isEmpty()) {
-            map.put("invariants", toInvariantsList(block.invariants()));
-        }
-
         return map;
+    }
+
+    private List<Object> toOperationsList(List<BearIr.Operation> operations) {
+        List<Object> list = new ArrayList<>();
+        for (BearIr.Operation operation : operations) {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("name", operation.name());
+            map.put("contract", toContractMap(operation.contract()));
+            map.put("uses", toEffectsMap(operation.uses()));
+            if (operation.idempotency() != null) {
+                map.put("idempotency", toOperationIdempotencyMap(operation.idempotency()));
+            }
+            if (operation.invariants() != null && !operation.invariants().isEmpty()) {
+                map.put("invariants", toInvariantsList(operation.invariants()));
+            }
+            list.add(map);
+        }
+        return list;
     }
 
     private Map<String, Object> toContractMap(BearIr.Contract contract) {
@@ -102,15 +118,24 @@ public final class BearIrYamlEmitter {
         return list;
     }
 
-    private Map<String, Object> toIdempotencyMap(BearIr.Idempotency idempotency) {
+    private Map<String, Object> toBlockIdempotencyMap(BearIr.BlockIdempotency idempotency) {
         Map<String, Object> map = new LinkedHashMap<>();
+        map.put("store", toIdempotencyStoreMap(idempotency.store()));
+        return map;
+    }
+
+    private Map<String, Object> toOperationIdempotencyMap(BearIr.OperationIdempotency idempotency) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("mode", switch (idempotency.mode()) {
+            case USE -> "use";
+            case NONE -> "none";
+        });
         if (idempotency.key() != null) {
             map.put("key", idempotency.key());
         }
         if (idempotency.keyFromInputs() != null) {
             map.put("keyFromInputs", new ArrayList<>(idempotency.keyFromInputs()));
         }
-        map.put("store", toIdempotencyStoreMap(idempotency.store()));
         return map;
     }
 

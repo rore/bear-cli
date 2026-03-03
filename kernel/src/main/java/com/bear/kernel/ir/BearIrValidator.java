@@ -1,11 +1,13 @@
 package com.bear.kernel.ir;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 
@@ -20,28 +22,55 @@ public final class BearIrValidator {
         requireNonBlank(block.name(), "block.name");
         requireNonNull(block.kind(), "block.kind");
 
-        validateContract(block.contract());
-        validateEffects(block.effects());
+        validateEffects(block.effects(), "block.effects");
         validateImpl(block.impl());
 
+        List<OperationShape> operationShapes = validateOperations(block.operations());
+        validateOperationUsesWithinBlockEffects(block.effects(), operationShapes);
+
         if (block.idempotency() != null) {
-            validateIdempotency(block);
+            validateBlockIdempotencyStore(block.idempotency(), effectsMap(block.effects()), "block.idempotency");
         }
+        validateOperationIdempotency(block, operationShapes);
 
-        if (block.invariants() != null) {
-            validateInvariants(block);
-        }
+        validateBlockInvariantsAgainstOperations(block.invariants(), operationShapes);
+        validateOperationInvariants(block, operationShapes);
 
-        validateEmptyEffectsPolicy(block);
+        validateEmptyEffectsPolicy(block, operationShapes);
     }
 
-    private void validateContract(BearIr.Contract contract) {
-        requireNonNull(contract, "block.contract");
-        requireNonEmpty(contract.inputs(), "block.contract.inputs");
-        requireNonEmpty(contract.outputs(), "block.contract.outputs");
+    private List<OperationShape> validateOperations(List<BearIr.Operation> operations) {
+        requireNonEmpty(operations, "block.operations");
+        HashSet<String> seenNames = new HashSet<>();
+        ArrayList<OperationShape> shapes = new ArrayList<>();
+        for (int i = 0; i < operations.size(); i++) {
+            BearIr.Operation operation = operations.get(i);
+            String operationPath = "block.operations[" + i + "]";
+            requireNonNull(operation, operationPath);
+            requireNonBlank(operation.name(), operationPath + ".name");
+            if (!seenNames.add(operation.name())) {
+                throw semantic(
+                    operationPath + ".name",
+                    BearIrValidationException.Code.DUPLICATE,
+                    "duplicate operation name: " + operation.name()
+                );
+            }
+            validateContract(operation.contract(), operationPath + ".contract");
+            validateEffects(operation.uses(), operationPath + ".uses");
 
-        validateUniqueFieldNames(contract.inputs(), "block.contract.inputs");
-        validateUniqueFieldNames(contract.outputs(), "block.contract.outputs");
+            TreeMap<String, BearIr.FieldType> inputTypes = toFieldTypeMap(operation.contract().inputs());
+            TreeMap<String, BearIr.FieldType> outputTypes = toFieldTypeMap(operation.contract().outputs());
+            shapes.add(new OperationShape(i, operation, operationPath, inputTypes, outputTypes));
+        }
+        return List.copyOf(shapes);
+    }
+
+    private void validateContract(BearIr.Contract contract, String path) {
+        requireNonNull(contract, path);
+        requireNonEmpty(contract.inputs(), path + ".inputs");
+        requireNonEmpty(contract.outputs(), path + ".outputs");
+        validateUniqueFieldNames(contract.inputs(), path + ".inputs");
+        validateUniqueFieldNames(contract.outputs(), path + ".outputs");
     }
 
     private void validateUniqueFieldNames(List<BearIr.Field> fields, String path) {
@@ -57,14 +86,22 @@ public final class BearIrValidator {
         }
     }
 
-    private void validateEffects(BearIr.Effects effects) {
-        requireNonNull(effects, "block.effects");
-        requireNonNull(effects.allow(), "block.effects.allow");
+    private TreeMap<String, BearIr.FieldType> toFieldTypeMap(List<BearIr.Field> fields) {
+        TreeMap<String, BearIr.FieldType> map = new TreeMap<>();
+        for (BearIr.Field field : fields) {
+            map.put(field.name(), field.type());
+        }
+        return map;
+    }
+
+    private void validateEffects(BearIr.Effects effects, String path) {
+        requireNonNull(effects, path);
+        requireNonNull(effects.allow(), path + ".allow");
 
         Set<String> seenPorts = new HashSet<>();
         for (int i = 0; i < effects.allow().size(); i++) {
             BearIr.EffectPort port = effects.allow().get(i);
-            String portPath = "block.effects.allow[" + i + "]";
+            String portPath = path + ".allow[" + i + "]";
             requireNonBlank(port.port(), portPath + ".port");
             if (!seenPorts.add(port.port())) {
                 throw semantic(portPath + ".port", BearIrValidationException.Code.DUPLICATE, "duplicate port: " + port.port());
@@ -83,139 +120,305 @@ public final class BearIrValidator {
         }
     }
 
-    private void validateIdempotency(BearIr.Block block) {
-        BearIr.Idempotency idempotency = block.idempotency();
-        boolean hasKey = idempotency.key() != null;
-        boolean hasKeyFromInputs = idempotency.keyFromInputs() != null;
-        if (hasKey == hasKeyFromInputs) {
-            throw semantic(
-                "block.idempotency",
-                BearIrValidationException.Code.INVALID_VALUE,
-                "exactly one of key or keyFromInputs must be provided"
-            );
-        }
-        if (hasKey) {
-            requireNonBlank(idempotency.key(), "block.idempotency.key");
-        }
-        if (hasKeyFromInputs) {
-            requireNonNull(idempotency.keyFromInputs(), "block.idempotency.keyFromInputs");
-            if (idempotency.keyFromInputs().isEmpty()) {
-                throw semantic("block.idempotency.keyFromInputs", BearIrValidationException.Code.INVALID_VALUE, "must be a non-empty list");
-            }
-            Set<String> seen = new LinkedHashSet<>();
-            for (int i = 0; i < idempotency.keyFromInputs().size(); i++) {
-                String value = idempotency.keyFromInputs().get(i);
-                String fieldPath = "block.idempotency.keyFromInputs[" + i + "]";
-                requireNonBlank(value, fieldPath);
-                if (!seen.add(value)) {
-                    throw semantic(fieldPath, BearIrValidationException.Code.DUPLICATE, "duplicate key field: " + value);
+    private void validateOperationUsesWithinBlockEffects(BearIr.Effects blockEffects, List<OperationShape> operationShapes) {
+        Map<String, Set<String>> allowed = effectsMap(blockEffects);
+        for (OperationShape shape : operationShapes) {
+            List<BearIr.EffectPort> opPorts = shape.operation().uses().allow();
+            for (int i = 0; i < opPorts.size(); i++) {
+                BearIr.EffectPort port = opPorts.get(i);
+                String portPath = shape.path() + ".uses.allow[" + i + "]";
+                if (!allowed.containsKey(port.port())) {
+                    throw semantic(
+                        portPath + ".port",
+                        BearIrValidationException.Code.UNKNOWN_REFERENCE,
+                        "unknown block effect port: " + port.port()
+                    );
+                }
+                Set<String> blockOps = allowed.get(port.port());
+                for (int j = 0; j < port.ops().size(); j++) {
+                    String op = port.ops().get(j);
+                    if (!blockOps.contains(op)) {
+                        throw semantic(
+                            portPath + ".ops[" + j + "]",
+                            BearIrValidationException.Code.UNKNOWN_REFERENCE,
+                            "unknown block effect op: " + port.port() + "." + op
+                        );
+                    }
                 }
             }
         }
-        requireNonNull(idempotency.store(), "block.idempotency.store");
-        requireNonBlank(idempotency.store().port(), "block.idempotency.store.port");
-        requireNonBlank(idempotency.store().getOp(), "block.idempotency.store.getOp");
-        requireNonBlank(idempotency.store().putOp(), "block.idempotency.store.putOp");
+    }
 
-        Set<String> inputNames = new HashSet<>();
-        for (BearIr.Field input : block.contract().inputs()) {
-            inputNames.add(input.name());
+    private void validateBlockIdempotencyStore(
+        BearIr.BlockIdempotency idempotency,
+        Map<String, Set<String>> blockEffects,
+        String path
+    ) {
+        requireNonNull(idempotency, path);
+        requireNonNull(idempotency.store(), path + ".store");
+        requireNonBlank(idempotency.store().port(), path + ".store.port");
+        requireNonBlank(idempotency.store().getOp(), path + ".store.getOp");
+        requireNonBlank(idempotency.store().putOp(), path + ".store.putOp");
+
+        if (!blockEffects.containsKey(idempotency.store().port())) {
+            throw semantic(path + ".store.port", BearIrValidationException.Code.UNKNOWN_REFERENCE, "unknown port: " + idempotency.store().port());
         }
-        if (hasKey) {
-            if (!inputNames.contains(idempotency.key())) {
-                throw semantic("block.idempotency.key", BearIrValidationException.Code.UNKNOWN_REFERENCE, "must reference an input field");
+        Set<String> ops = blockEffects.get(idempotency.store().port());
+        if (!ops.contains(idempotency.store().getOp())) {
+            throw semantic(path + ".store.getOp", BearIrValidationException.Code.UNKNOWN_REFERENCE, "unknown op: " + idempotency.store().getOp());
+        }
+        if (!ops.contains(idempotency.store().putOp())) {
+            throw semantic(path + ".store.putOp", BearIrValidationException.Code.UNKNOWN_REFERENCE, "unknown op: " + idempotency.store().putOp());
+        }
+    }
+
+    private void validateOperationIdempotency(BearIr.Block block, List<OperationShape> operationShapes) {
+        BearIr.BlockIdempotency blockIdempotency = block.idempotency();
+        for (OperationShape shape : operationShapes) {
+            BearIr.OperationIdempotency idempotency = shape.operation().idempotency();
+            if (idempotency == null) {
+                continue;
             }
-        } else {
-            for (int i = 0; i < idempotency.keyFromInputs().size(); i++) {
-                String field = idempotency.keyFromInputs().get(i);
-                if (!inputNames.contains(field)) {
+            String path = shape.path() + ".idempotency";
+            requireNonNull(idempotency.mode(), path + ".mode");
+            boolean hasKey = idempotency.key() != null;
+            boolean hasKeyFromInputs = idempotency.keyFromInputs() != null;
+
+            if (idempotency.mode() == BearIr.OperationIdempotencyMode.NONE) {
+                if (hasKey || hasKeyFromInputs) {
                     throw semantic(
-                        "block.idempotency.keyFromInputs[" + i + "]",
+                        path,
+                        BearIrValidationException.Code.INVALID_VALUE,
+                        "mode=none does not allow key or keyFromInputs"
+                    );
+                }
+                continue;
+            }
+
+            if (blockIdempotency == null) {
+                throw semantic(
+                    path + ".mode",
+                    BearIrValidationException.Code.INVALID_VALUE,
+                    "mode=use requires block.idempotency.store"
+                );
+            }
+
+            if (hasKey == hasKeyFromInputs) {
+                throw semantic(
+                    path,
+                    BearIrValidationException.Code.INVALID_VALUE,
+                    "mode=use requires exactly one of key or keyFromInputs"
+                );
+            }
+            if (hasKey) {
+                requireNonBlank(idempotency.key(), path + ".key");
+                if (!shape.inputTypes().containsKey(idempotency.key())) {
+                    throw semantic(path + ".key", BearIrValidationException.Code.UNKNOWN_REFERENCE, "must reference an input field");
+                }
+            }
+            if (hasKeyFromInputs) {
+                requireNonNull(idempotency.keyFromInputs(), path + ".keyFromInputs");
+                if (idempotency.keyFromInputs().isEmpty()) {
+                    throw semantic(path + ".keyFromInputs", BearIrValidationException.Code.INVALID_VALUE, "must be a non-empty list");
+                }
+                LinkedHashSet<String> seen = new LinkedHashSet<>();
+                for (int i = 0; i < idempotency.keyFromInputs().size(); i++) {
+                    String value = idempotency.keyFromInputs().get(i);
+                    String fieldPath = path + ".keyFromInputs[" + i + "]";
+                    requireNonBlank(value, fieldPath);
+                    if (!seen.add(value)) {
+                        throw semantic(fieldPath, BearIrValidationException.Code.DUPLICATE, "duplicate key field: " + value);
+                    }
+                    if (!shape.inputTypes().containsKey(value)) {
+                        throw semantic(fieldPath, BearIrValidationException.Code.UNKNOWN_REFERENCE, "must reference an input field");
+                    }
+                }
+            }
+
+            if (!usesContains(
+                shape.operation().uses(),
+                blockIdempotency.store().port(),
+                blockIdempotency.store().getOp()
+            )) {
+                throw semantic(
+                    path,
+                    BearIrValidationException.Code.INVALID_VALUE,
+                    "mode=use requires operation.uses to include idempotency store getOp"
+                );
+            }
+            if (!usesContains(
+                shape.operation().uses(),
+                blockIdempotency.store().port(),
+                blockIdempotency.store().putOp()
+            )) {
+                throw semantic(
+                    path,
+                    BearIrValidationException.Code.INVALID_VALUE,
+                    "mode=use requires operation.uses to include idempotency store putOp"
+                );
+            }
+        }
+    }
+
+    private boolean usesContains(BearIr.Effects uses, String portName, String opName) {
+        for (BearIr.EffectPort port : uses.allow()) {
+            if (!portName.equals(port.port())) {
+                continue;
+            }
+            return port.ops().contains(opName);
+        }
+        return false;
+    }
+
+    private void validateBlockInvariantsAgainstOperations(List<BearIr.Invariant> blockInvariants, List<OperationShape> shapes) {
+        if (blockInvariants == null) {
+            return;
+        }
+        for (int i = 0; i < blockInvariants.size(); i++) {
+            BearIr.Invariant invariant = blockInvariants.get(i);
+            String path = "block.invariants[" + i + "]";
+            for (OperationShape shape : shapes) {
+                validateInvariantRule(invariant, path, shape.outputTypes());
+            }
+        }
+    }
+
+    private void validateOperationInvariants(BearIr.Block block, List<OperationShape> shapes) {
+        TreeSet<String> blockAllowed = new TreeSet<>();
+        if (block.invariants() != null) {
+            for (int i = 0; i < block.invariants().size(); i++) {
+                blockAllowed.add(invariantFingerprint(block.invariants().get(i)));
+            }
+        }
+        for (OperationShape shape : shapes) {
+            List<BearIr.Invariant> opInvariants = shape.operation().invariants();
+            if (opInvariants == null || opInvariants.isEmpty()) {
+                continue;
+            }
+            if (blockAllowed.isEmpty()) {
+                throw semantic(
+                    shape.path() + ".invariants",
+                    BearIrValidationException.Code.INVALID_VALUE,
+                    "operation invariants require block.invariants allowed set"
+                );
+            }
+            for (int i = 0; i < opInvariants.size(); i++) {
+                BearIr.Invariant invariant = opInvariants.get(i);
+                String path = shape.path() + ".invariants[" + i + "]";
+                validateInvariantRule(invariant, path, shape.outputTypes());
+                String fingerprint = invariantFingerprint(invariant);
+                if (!blockAllowed.contains(fingerprint)) {
+                    throw semantic(
+                        path,
                         BearIrValidationException.Code.UNKNOWN_REFERENCE,
-                        "must reference an input field"
+                        "operation invariant is not declared in block.invariants allowed set"
                     );
                 }
             }
         }
+    }
 
-        Map<String, Set<String>> portToOps = effectsMap(block.effects());
-        if (!portToOps.containsKey(idempotency.store().port())) {
-            throw semantic("block.idempotency.store.port", BearIrValidationException.Code.UNKNOWN_REFERENCE, "unknown port: " + idempotency.store().port());
+    private void validateInvariantRule(BearIr.Invariant invariant, String path, Map<String, BearIr.FieldType> outputTypesByName) {
+        requireNonNull(invariant.kind(), path + ".kind");
+        requireNonNull(invariant.scope(), path + ".scope");
+        requireNonBlank(invariant.field(), path + ".field");
+        requireNonNull(invariant.params(), path + ".params");
+        if (!outputTypesByName.containsKey(invariant.field())) {
+            throw semantic(path + ".field", BearIrValidationException.Code.UNKNOWN_REFERENCE, "must reference an output field");
         }
-        Set<String> ops = portToOps.get(idempotency.store().port());
-        if (!ops.contains(idempotency.store().getOp())) {
-            throw semantic("block.idempotency.store.getOp", BearIrValidationException.Code.UNKNOWN_REFERENCE, "unknown op: " + idempotency.store().getOp());
+        if (invariant.scope() != BearIr.InvariantScope.RESULT) {
+            throw semantic(path + ".scope", BearIrValidationException.Code.INVALID_VALUE, "scope must be result");
         }
-        if (!ops.contains(idempotency.store().putOp())) {
-            throw semantic("block.idempotency.store.putOp", BearIrValidationException.Code.UNKNOWN_REFERENCE, "unknown op: " + idempotency.store().putOp());
+
+        BearIr.FieldType fieldType = outputTypesByName.get(invariant.field());
+        switch (invariant.kind()) {
+            case NON_NEGATIVE -> {
+                if (fieldType != BearIr.FieldType.INT && fieldType != BearIr.FieldType.DECIMAL) {
+                    throw semantic(path + ".kind", BearIrValidationException.Code.INVALID_VALUE, "non_negative requires int or decimal output");
+                }
+                if (invariant.params().value() != null || !invariant.params().values().isEmpty()) {
+                    throw semantic(path + ".params", BearIrValidationException.Code.INVALID_VALUE, "non_negative does not accept params");
+                }
+            }
+            case NON_EMPTY -> {
+                if (fieldType != BearIr.FieldType.STRING) {
+                    throw semantic(path + ".kind", BearIrValidationException.Code.INVALID_VALUE, "non_empty requires string output");
+                }
+                if (invariant.params().value() != null || !invariant.params().values().isEmpty()) {
+                    throw semantic(path + ".params", BearIrValidationException.Code.INVALID_VALUE, "non_empty does not accept params");
+                }
+            }
+            case EQUALS -> {
+                if (invariant.params().value() == null) {
+                    throw semantic(path + ".params.value", BearIrValidationException.Code.INVALID_VALUE, "equals requires params.value");
+                }
+                if (!invariant.params().values().isEmpty()) {
+                    throw semantic(path + ".params.values", BearIrValidationException.Code.INVALID_VALUE, "equals does not accept params.values");
+                }
+            }
+            case ONE_OF -> {
+                if (invariant.params().value() != null) {
+                    throw semantic(path + ".params.value", BearIrValidationException.Code.INVALID_VALUE, "one_of does not accept params.value");
+                }
+                if (invariant.params().values().isEmpty()) {
+                    throw semantic(path + ".params.values", BearIrValidationException.Code.INVALID_VALUE, "one_of requires non-empty params.values");
+                }
+                Set<String> seen = new LinkedHashSet<>();
+                for (int j = 0; j < invariant.params().values().size(); j++) {
+                    String value = invariant.params().values().get(j);
+                    String valuePath = path + ".params.values[" + j + "]";
+                    requireNonNull(value, valuePath);
+                    if (!seen.add(value)) {
+                        throw semantic(valuePath, BearIrValidationException.Code.DUPLICATE, "duplicate params.values entry: " + value);
+                    }
+                }
+            }
         }
     }
 
-    private void validateInvariants(BearIr.Block block) {
-        Map<String, BearIr.FieldType> outputTypesByName = new HashMap<>();
-        for (BearIr.Field output : block.contract().outputs()) {
-            outputTypesByName.put(output.name(), output.type());
-        }
+    static String invariantFingerprint(BearIr.Invariant invariant) {
+        String kind = invariant.kind().name().toLowerCase();
+        String scope = invariant.scope().name().toLowerCase();
+        String field = escapeInvariantToken(invariant.field());
+        String params = canonicalInvariantParams(invariant);
+        return "kind=" + kind + "|scope=" + scope + "|field=" + field + "|params=" + params;
+    }
 
-        for (int i = 0; i < block.invariants().size(); i++) {
-            BearIr.Invariant invariant = block.invariants().get(i);
-            String basePath = "block.invariants[" + i + "]";
-            requireNonNull(invariant.kind(), basePath + ".kind");
-            requireNonNull(invariant.scope(), basePath + ".scope");
-            requireNonBlank(invariant.field(), basePath + ".field");
-            requireNonNull(invariant.params(), basePath + ".params");
-            if (!outputTypesByName.containsKey(invariant.field())) {
-                throw semantic(basePath + ".field", BearIrValidationException.Code.UNKNOWN_REFERENCE, "must reference an output field");
+    private static String canonicalInvariantParams(BearIr.Invariant invariant) {
+        BearIr.InvariantParams params = invariant.params();
+        String value = params == null ? null : params.value();
+        List<String> values = params == null || params.values() == null ? List.of() : params.values();
+        return switch (invariant.kind()) {
+            case NON_NEGATIVE, NON_EMPTY -> "none";
+            case EQUALS -> "value=" + escapeInvariantToken(value);
+            case ONE_OF -> {
+                ArrayList<String> sorted = new ArrayList<>(values);
+                sorted.sort(String::compareTo);
+                yield "values=" + escapeInvariantCsv(sorted);
             }
-            if (invariant.scope() != BearIr.InvariantScope.RESULT) {
-                throw semantic(basePath + ".scope", BearIrValidationException.Code.INVALID_VALUE, "scope must be result");
-            }
+        };
+    }
 
-            BearIr.FieldType fieldType = outputTypesByName.get(invariant.field());
-            switch (invariant.kind()) {
-                case NON_NEGATIVE -> {
-                    if (fieldType != BearIr.FieldType.INT && fieldType != BearIr.FieldType.DECIMAL) {
-                        throw semantic(basePath + ".kind", BearIrValidationException.Code.INVALID_VALUE, "non_negative requires int or decimal output");
-                    }
-                    if (invariant.params().value() != null || !invariant.params().values().isEmpty()) {
-                        throw semantic(basePath + ".params", BearIrValidationException.Code.INVALID_VALUE, "non_negative does not accept params");
-                    }
-                }
-                case NON_EMPTY -> {
-                    if (fieldType != BearIr.FieldType.STRING) {
-                        throw semantic(basePath + ".kind", BearIrValidationException.Code.INVALID_VALUE, "non_empty requires string output");
-                    }
-                    if (invariant.params().value() != null || !invariant.params().values().isEmpty()) {
-                        throw semantic(basePath + ".params", BearIrValidationException.Code.INVALID_VALUE, "non_empty does not accept params");
-                    }
-                }
-                case EQUALS -> {
-                    if (invariant.params().value() == null) {
-                        throw semantic(basePath + ".params.value", BearIrValidationException.Code.INVALID_VALUE, "equals requires params.value");
-                    }
-                    if (!invariant.params().values().isEmpty()) {
-                        throw semantic(basePath + ".params.values", BearIrValidationException.Code.INVALID_VALUE, "equals does not accept params.values");
-                    }
-                }
-                case ONE_OF -> {
-                    if (invariant.params().value() != null) {
-                        throw semantic(basePath + ".params.value", BearIrValidationException.Code.INVALID_VALUE, "one_of does not accept params.value");
-                    }
-                    if (invariant.params().values().isEmpty()) {
-                        throw semantic(basePath + ".params.values", BearIrValidationException.Code.INVALID_VALUE, "one_of requires non-empty params.values");
-                    }
-                    Set<String> seen = new LinkedHashSet<>();
-                    for (int j = 0; j < invariant.params().values().size(); j++) {
-                        String value = invariant.params().values().get(j);
-                        String valuePath = basePath + ".params.values[" + j + "]";
-                        requireNonNull(value, valuePath);
-                        if (!seen.add(value)) {
-                            throw semantic(valuePath, BearIrValidationException.Code.DUPLICATE, "duplicate params.values entry: " + value);
-                        }
-                    }
-                }
+    private static String escapeInvariantCsv(List<String> values) {
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < values.size(); i++) {
+            if (i > 0) {
+                out.append(",");
             }
+            out.append(escapeInvariantToken(values.get(i)));
         }
+        return out.toString();
+    }
+
+    private static String escapeInvariantToken(String value) {
+        if (value == null) {
+            return "<null>";
+        }
+        return value
+            .replace("\\", "\\\\")
+            .replace("|", "\\|")
+            .replace(",", "\\,")
+            .replace("=", "\\=");
     }
 
     private void validateImpl(BearIr.Impl impl) {
@@ -245,30 +448,41 @@ public final class BearIrValidator {
         }
     }
 
-    private void validateEmptyEffectsPolicy(BearIr.Block block) {
+    private void validateEmptyEffectsPolicy(BearIr.Block block, List<OperationShape> operationShapes) {
         if (block.effects().allow() == null || !block.effects().allow().isEmpty()) {
             return;
         }
-        if (isEchoSafeEmptyEffectsBlock(block)) {
+        if (isEchoSafeEmptyEffectsBlock(block, operationShapes)) {
             return;
         }
         throw semantic(
             "block.effects.allow",
             BearIrValidationException.Code.INVALID_VALUE,
-            "empty effects.allow requires echo-safe block (no idempotency, no invariants, outputs must mirror input name:type pairs)"
+            "empty effects.allow requires echo-safe block (no idempotency, no invariants, outputs must mirror input name:type pairs per operation)"
         );
     }
 
-    private boolean isEchoSafeEmptyEffectsBlock(BearIr.Block block) {
+    private boolean isEchoSafeEmptyEffectsBlock(BearIr.Block block, List<OperationShape> operationShapes) {
         if (block.idempotency() != null) {
             return false;
         }
         if (block.invariants() != null && !block.invariants().isEmpty()) {
             return false;
         }
-        TreeSet<String> inputTuples = canonicalFieldTuples(block.contract().inputs());
-        TreeSet<String> outputTuples = canonicalFieldTuples(block.contract().outputs());
-        return inputTuples.containsAll(outputTuples);
+        for (OperationShape shape : operationShapes) {
+            if (shape.operation().idempotency() != null && shape.operation().idempotency().mode() == BearIr.OperationIdempotencyMode.USE) {
+                return false;
+            }
+            if (shape.operation().invariants() != null && !shape.operation().invariants().isEmpty()) {
+                return false;
+            }
+            TreeSet<String> inputTuples = canonicalFieldTuples(shape.operation().contract().inputs());
+            TreeSet<String> outputTuples = canonicalFieldTuples(shape.operation().contract().outputs());
+            if (!inputTuples.containsAll(outputTuples)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private TreeSet<String> canonicalFieldTuples(List<BearIr.Field> fields) {
@@ -310,5 +524,13 @@ public final class BearIrValidator {
     private BearIrValidationException semantic(String path, BearIrValidationException.Code code, String message) {
         return new BearIrValidationException(BearIrValidationException.Category.SEMANTIC, path, code, message);
     }
-}
 
+    private record OperationShape(
+        int index,
+        BearIr.Operation operation,
+        String path,
+        Map<String, BearIr.FieldType> inputTypes,
+        Map<String, BearIr.FieldType> outputTypes
+    ) {
+    }
+}

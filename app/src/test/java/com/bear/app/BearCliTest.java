@@ -105,9 +105,9 @@ class BearCliTest {
         Path repoRoot = TestRepoPaths.repoRoot();
         Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
 
-        Path impl = tempDir.resolve("src/main/java/com/bear/generated/withdraw/WithdrawImpl.java");
+        Path impl = tempDir.resolve("src/main/java/blocks/withdraw/impl/WithdrawImpl.java");
         Files.createDirectories(impl.getParent());
-        Files.writeString(impl, "package com.bear.generated.withdraw;\npublic final class WithdrawImpl {}\n");
+        Files.writeString(impl, "package blocks.withdraw.impl;\npublic final class WithdrawImpl {}\n");
 
         ByteArrayOutputStream stdoutBytes = new ByteArrayOutputStream();
         ByteArrayOutputStream stderrBytes = new ByteArrayOutputStream();
@@ -121,14 +121,14 @@ class BearCliTest {
         assertEquals("", stderrBytes.toString());
 
         Path generatedRoot = tempDir.resolve("build/generated/bear/src/main/java/com/bear/generated/withdraw");
-        assertTrue(Files.exists(generatedRoot.resolve("Withdraw.java")));
+        assertTrue(Files.exists(generatedRoot.resolve("Withdraw_ExecuteWithdraw.java")));
         assertTrue(Files.exists(generatedRoot.resolve("WithdrawLogic.java")));
-        assertTrue(Files.exists(generatedRoot.resolve("WithdrawRequest.java")));
-        assertTrue(Files.exists(generatedRoot.resolve("WithdrawResult.java")));
+        assertTrue(Files.exists(generatedRoot.resolve("Withdraw_ExecuteWithdrawRequest.java")));
+        assertTrue(Files.exists(generatedRoot.resolve("Withdraw_ExecuteWithdrawResult.java")));
         assertTrue(Files.exists(generatedRoot.resolve("LedgerPort.java")));
         assertTrue(Files.exists(generatedRoot.resolve("IdempotencyPort.java")));
 
-        assertEquals("package com.bear.generated.withdraw;\npublic final class WithdrawImpl {}\n", Files.readString(impl));
+        assertEquals("package blocks.withdraw.impl;\npublic final class WithdrawImpl {}\n", Files.readString(impl));
     }
 
     @Test
@@ -188,12 +188,12 @@ class BearCliTest {
         Path repoRoot = TestRepoPaths.repoRoot();
         Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
 
-        Path impl = tempDir.resolve("src/main/java/com/bear/generated/withdraw/WithdrawImpl.java");
+        Path impl = tempDir.resolve("src/main/java/blocks/withdraw/impl/WithdrawImpl.java");
         Files.createDirectories(impl.getParent());
-        String implContent = "package com.bear.generated.withdraw;\npublic final class WithdrawImpl {\n  // keep\n}\n";
+        String implContent = "package blocks.withdraw.impl;\npublic final class WithdrawImpl {\n  // keep\n}\n";
         Files.writeString(impl, implContent);
 
-        Path generated = tempDir.resolve("build/generated/bear/src/main/java/com/bear/generated/withdraw/Withdraw.java");
+        Path generated = tempDir.resolve("build/generated/bear/src/main/java/com/bear/generated/withdraw/Withdraw_ExecuteWithdraw.java");
         Files.createDirectories(generated.getParent());
         Files.writeString(generated, "stale\n");
 
@@ -202,7 +202,7 @@ class BearCliTest {
         assertEquals("fix: OK\n", normalizeLf(run.stdout));
         assertEquals("", run.stderr);
 
-        assertTrue(Files.readString(generated).contains("public final class Withdraw"));
+        assertTrue(Files.readString(generated).contains("public final class Withdraw_ExecuteWithdraw"));
         assertEquals(implContent, Files.readString(impl));
     }
 
@@ -212,7 +212,7 @@ class BearCliTest {
         Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
 
         assertEquals(0, runCli(new String[] { "fix", fixture.toString(), "--project", tempDir.toString() }).exitCode);
-        Path generated = tempDir.resolve("build/generated/bear/src/main/java/com/bear/generated/withdraw/Withdraw.java");
+        Path generated = tempDir.resolve("build/generated/bear/src/main/java/com/bear/generated/withdraw/Withdraw_ExecuteWithdraw.java");
         byte[] first = Files.readAllBytes(generated);
 
         assertEquals(0, runCli(new String[] { "fix", fixture.toString(), "--project", tempDir.toString() }).exitCode);
@@ -317,7 +317,7 @@ class BearCliTest {
         assertEquals(0, compile.exitCode);
         writeWorkingWithdrawImpl(tempDir);
 
-        Path baselineFile = tempDir.resolve("build/generated/bear/src/main/java/com/bear/generated/withdraw/Withdraw.java");
+        Path baselineFile = tempDir.resolve("build/generated/bear/src/main/java/com/bear/generated/withdraw/Withdraw_ExecuteWithdraw.java");
         byte[] before = Files.readAllBytes(baselineFile);
         writeProjectWrapper(
             tempDir,
@@ -370,7 +370,7 @@ class BearCliTest {
 
         Path generatedRoot = tempDir.resolve("build/generated/bear");
         Path removedFile = generatedRoot.resolve("src/main/java/com/bear/generated/withdraw/BearValue.java");
-        Path changedFile = generatedRoot.resolve("src/main/java/com/bear/generated/withdraw/Withdraw.java");
+        Path changedFile = generatedRoot.resolve("src/main/java/com/bear/generated/withdraw/Withdraw_ExecuteWithdraw.java");
         Path addedFile = generatedRoot.resolve("zzz_extra.txt");
 
         String changedBefore = Files.readString(changedFile);
@@ -384,7 +384,7 @@ class BearCliTest {
         List<String> lines = nonEnvelopeLines(check.stderr);
         assertEquals(List.of(
             "drift: REMOVED: src/main/java/com/bear/generated/withdraw/BearValue.java",
-            "drift: CHANGED: src/main/java/com/bear/generated/withdraw/Withdraw.java"
+            "drift: CHANGED: src/main/java/com/bear/generated/withdraw/Withdraw_ExecuteWithdraw.java"
         ), lines);
         assertFailureEnvelope(
             check.stderr,
@@ -2121,7 +2121,7 @@ class BearCliTest {
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
 
         Files.writeString(
-            tempDir.resolve("build/generated/bear/src/main/java/com/bear/generated/withdraw/Withdraw.java"),
+            tempDir.resolve("build/generated/bear/src/main/java/com/bear/generated/withdraw/Withdraw_ExecuteWithdraw.java"),
             "drift",
             StandardOpenOption.APPEND
         );
@@ -3725,7 +3725,14 @@ class BearCliTest {
             + "    projectRoot: services/b\n");
         gitCommitAll(repo, "base");
 
-        String ordinary = baseAlpha.replace("          - setBalance\n", "          - setBalance\n          - reverse\n");
+        String ordinary = baseAlpha.replace(
+            "          - name: txId\n"
+                + "            type: string\n",
+            "          - name: txId\n"
+                + "            type: string\n"
+                + "          - name: note\n"
+                + "            type: string\n"
+        );
         String boundary = baseBeta.replace(
             "      - port: idempotency\n        ops:\n          - get\n          - put\n",
             "      - port: audit\n        ops:\n          - write\n      - port: idempotency\n        ops:\n          - get\n          - put\n"
@@ -4120,7 +4127,14 @@ class BearCliTest {
         Files.writeString(ir, base, StandardCharsets.UTF_8);
         gitCommitAll(repo, "base ir");
 
-        String head = base.replace("          - setBalance\n", "          - setBalance\n          - reverse\n");
+        String head = base.replace(
+            "          - name: txId\n"
+                + "            type: string\n",
+            "          - name: txId\n"
+                + "            type: string\n"
+                + "          - name: note\n"
+                + "            type: string\n"
+        );
         Files.writeString(ir, head, StandardCharsets.UTF_8);
         gitCommitAll(repo, "ordinary op change");
 
@@ -4129,7 +4143,7 @@ class BearCliTest {
         });
         String stderr = normalizeLf(run.stderr);
         assertEquals(0, run.exitCode);
-        assertTrue(stderr.contains("pr-delta: ORDINARY: OPS: ADDED: ledger.reverse"));
+        assertTrue(stderr.contains("pr-delta: ORDINARY: CONTRACT: ADDED: op.ExecuteWithdraw:input.note:string"));
         assertFalse(stderr.contains("BOUNDARY_EXPANDING"));
         assertEquals("pr-check: OK: NO_BOUNDARY_EXPANSION\n", normalizeLf(run.stdout));
     }
@@ -4144,14 +4158,41 @@ class BearCliTest {
         gitCommitAll(repo, "base ir");
 
         String head = base
-            .replace("      - name: txId\n        type: string\n", "      - name: txId\n        type: string\n      - name: note\n        type: string\n")
-            .replace("          - setBalance\n", "          - setBalance\n          - reverse\n")
+            .replace(
+                "          - name: txId\n"
+                    + "            type: string\n",
+                "          - name: txId\n"
+                    + "            type: string\n"
+                    + "          - name: note\n"
+                    + "            type: string\n"
+            )
+            .replace(
+                "          - port: ledger\n"
+                    + "            ops:\n"
+                    + "              - getBalance\n"
+                    + "              - setBalance\n",
+                "          - port: ledger\n"
+                    + "            ops:\n"
+                    + "              - getBalance\n"
+                    + "              - setBalance\n"
+                    + "              - reverse\n"
+            )
+            .replace(
+                "      - port: ledger\n"
+                    + "        ops:\n"
+                    + "          - getBalance\n"
+                    + "          - setBalance\n",
+                "      - port: ledger\n"
+                    + "        ops:\n"
+                    + "          - getBalance\n"
+                    + "          - setBalance\n"
+                    + "          - reverse\n"
+            )
             .replace(
                 "      - port: idempotency\n        ops:\n          - get\n          - put\n",
                 "      - port: audit\n        ops:\n          - write\n      - port: idempotency\n        ops:\n          - get\n          - put\n"
             )
-            .replace("    key: txId\n", "    key: accountId\n")
-            .replace("  invariants:\n    - kind: non_negative\n      field: balance\n", "");
+            .replace("        key: txId\n", "        key: accountId\n");
         Files.writeString(ir, head, StandardCharsets.UTF_8);
         gitCommitAll(repo, "mixed changes");
 
@@ -4164,10 +4205,10 @@ class BearCliTest {
         assertEquals(5, run.exitCode);
         assertEquals(List.of(
             "pr-delta: BOUNDARY_EXPANDING: PORTS: ADDED: audit",
-            "pr-delta: BOUNDARY_EXPANDING: IDEMPOTENCY: CHANGED: idempotency.key",
-            "pr-delta: BOUNDARY_EXPANDING: INVARIANTS: REMOVED: non_negative:balance",
-            "pr-delta: ORDINARY: OPS: ADDED: ledger.reverse",
-            "pr-delta: ORDINARY: CONTRACT: ADDED: input.note:string"
+            "pr-delta: BOUNDARY_EXPANDING: OPS: ADDED: ledger.reverse",
+            "pr-delta: BOUNDARY_EXPANDING: OPS: ADDED: op.ExecuteWithdraw:uses.ledger.reverse",
+            "pr-delta: BOUNDARY_EXPANDING: IDEMPOTENCY: CHANGED: op.ExecuteWithdraw:idempotency.key",
+            "pr-delta: ORDINARY: CONTRACT: ADDED: op.ExecuteWithdraw:input.note:string"
         ), lines);
         assertFailureEnvelope(
             run.stderr,
@@ -4183,7 +4224,16 @@ class BearCliTest {
         Path ir = repo.resolve("spec/withdraw.bear.yaml");
         String fixture = fixtureIrContent();
         String base = fixture.replace(
-            "  idempotency:\n    key: txId\n    store:\n      port: idempotency\n      getOp: get\n      putOp: put\n",
+            "      idempotency:\n"
+                + "        mode: use\n"
+                + "        key: txId\n",
+            ""
+        ).replace(
+            "  idempotency:\n"
+                + "    store:\n"
+                + "      port: idempotency\n"
+                + "      getOp: get\n"
+                + "      putOp: put\n",
             ""
         );
         assertFalse(base.equals(fixture));
@@ -4199,11 +4249,11 @@ class BearCliTest {
         });
         String stderr = normalizeLf(run.stderr);
         assertEquals(5, run.exitCode);
-        assertTrue(stderr.contains("pr-delta: BOUNDARY_EXPANDING: IDEMPOTENCY: ADDED: idempotency"));
-        assertFalse(stderr.contains("idempotency.store.port"));
-        assertFalse(stderr.contains("idempotency.store.getOp"));
-        assertFalse(stderr.contains("idempotency.store.putOp"));
-        assertFalse(stderr.contains("idempotency.key"));
+        assertTrue(stderr.contains("pr-delta: BOUNDARY_EXPANDING: IDEMPOTENCY: ADDED: block.idempotency"));
+        assertTrue(stderr.contains("pr-delta: BOUNDARY_EXPANDING: IDEMPOTENCY: ADDED: op.ExecuteWithdraw:idempotency"));
+        assertFalse(stderr.contains("block.idempotency.store.port"));
+        assertFalse(stderr.contains("block.idempotency.store.getOp"));
+        assertFalse(stderr.contains("block.idempotency.store.putOp"));
         assertFailureEnvelope(
             run.stderr,
             "BOUNDARY_EXPANSION",
@@ -4986,6 +5036,9 @@ class BearCliTest {
 
     private static void writeWorkingBlockImpl(Path projectRoot, String blockName) throws Exception {
         String className = Character.toUpperCase(blockName.charAt(0)) + blockName.substring(1);
+        String operationName = "ExecuteWithdraw";
+        String requestType = className + "_" + operationName + "Request";
+        String resultType = className + "_" + operationName + "Result";
         Path impl = projectRoot.resolve("src/main/java/blocks/" + blockName + "/impl/" + className + "Impl.java");
         Files.createDirectories(impl.getParent());
         String generatedPackage = "com.bear.generated." + blockName;
@@ -4995,13 +5048,13 @@ class BearCliTest {
             + "import " + generatedPackage + ".BearValue;\n"
             + "import " + generatedPackage + ".LedgerPort;\n"
             + "import " + generatedPackage + "." + className + "Logic;\n"
-            + "import " + generatedPackage + "." + className + "Request;\n"
-            + "import " + generatedPackage + "." + className + "Result;\n"
+            + "import " + generatedPackage + "." + requestType + ";\n"
+            + "import " + generatedPackage + "." + resultType + ";\n"
             + "\n"
             + "public final class " + className + "Impl implements " + className + "Logic {\n"
-            + "  public " + className + "Result execute(" + className + "Request request, LedgerPort ledgerPort) {\n"
+            + "  public " + resultType + " execute" + operationName + "(" + requestType + " request, LedgerPort ledgerPort) {\n"
             + "    ledgerPort.getBalance(BearValue.empty());\n"
-            + "    return new " + className + "Result(java.math.BigDecimal.ZERO);\n"
+            + "    return new " + resultType + "(java.math.BigDecimal.ZERO);\n"
             + "  }\n"
             + "}\n";
         Files.writeString(impl, source, StandardCharsets.UTF_8);

@@ -304,12 +304,13 @@ enum PrClass {
 }
 
 enum PrCategory {
-    PORTS("PORTS", 0),
-    ALLOWED_DEPS("ALLOWED_DEPS", 1),
-    OPS("OPS", 2),
-    IDEMPOTENCY("IDEMPOTENCY", 3),
-    CONTRACT("CONTRACT", 4),
-    INVARIANTS("INVARIANTS", 5);
+    SURFACE("SURFACE", 0),
+    PORTS("PORTS", 1),
+    ALLOWED_DEPS("ALLOWED_DEPS", 2),
+    OPS("OPS", 3),
+    IDEMPOTENCY("IDEMPOTENCY", 4),
+    CONTRACT("CONTRACT", 5),
+    INVARIANTS("INVARIANTS", 6);
 
     final String label;
     final int order;
@@ -341,10 +342,14 @@ record PrSurface(
     TreeSet<String> ports,
     Map<String, TreeSet<String>> opsByPort,
     Map<String, String> allowedDeps,
-    Map<String, BearIr.FieldType> inputs,
-    Map<String, BearIr.FieldType> outputs,
-    BearIr.Idempotency idempotency,
-    TreeSet<String> invariants
+    BearIr.BlockIdempotency blockIdempotency,
+    TreeSet<String> blockInvariants,
+    TreeSet<String> operations,
+    Map<String, Map<String, BearIr.FieldType>> inputsByOperation,
+    Map<String, Map<String, BearIr.FieldType>> outputsByOperation,
+    Map<String, TreeSet<String>> usesByOperation,
+    Map<String, BearIr.OperationIdempotency> idempotencyByOperation,
+    Map<String, TreeSet<String>> invariantsByOperation
 ) {
 }
 

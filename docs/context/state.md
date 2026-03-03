@@ -10,23 +10,29 @@ Long-form historical notes are archived in `docs/context/archive/archive-state-h
 
 ## Current Focus
 
-Stability-first quality rollout (aggressive track):
-- restore green `main` for policy and docs gates
-- add in-repo CI gate contract for test + dual BEAR checks
-- introduce low-risk refactor seams (`IrPipeline`, shared marker/constants, envelope emitter)
-- standardize non-trivial task execution via repo-local `workflow-orchestration` skill + AGENTS registry entry
-- finalize v2.2.6.3 guardrails hardening (decomposition rubric determinism + reporting precision + noop-update widening)
-- finalize v2.2.6.4 guardrails hardening (decomposition determinism lock for mode/groups/trigger/report quality)
+IR v1 multi-operation cutover under strict block boundary authority:
+- enforce required `block.operations` structure
+- enforce block-authoritative boundary + operation subset semantics in validator/codegen/governance
+- keep generation deterministic with shared block logic + per-operation wrappers
 
 ## Next Concrete Task
 
-1. Continue command-domain test split for `BearCliTest` by extracting `compile`/`fix` command suites.
-2. Add guard slices for long app classes still near threshold (`CheckCommandService`, `PrCheckCommandService`, `ProjectTestRunner`).
-3. Add/extend quality-guard tests for class-size ceilings and deterministic output ordering where missing.
-4. Continue command-domain extraction for `BearCliTest` and guard-slice refactors (`CheckCommandService`, `ProjectTestRunner`) after docs/guardrails stabilization.
+1. If repo-level `--all` gates are required in this workspace, add/provide `bear.blocks.yaml` and rerun:
+- `bear check --all --project <repoRoot>`
+- `bear pr-check --all --project <repoRoot> --base <ref>`
+2. Decide whether to keep or rename tests whose names still mention “ordinary ops” while now validating operation-attributed contract deltas.
 
 ## Session Notes
 
+- Completed atomic IR cutover for multi-operation blocks:
+  - kernel model/parser/validator/normalizer/emitter switched to `block.operations` + per-operation `uses/idempotency/invariants`.
+  - JVM target now emits shared `<Block>Logic`/`<Block>Impl` + per-operation request/result/wrapper classes.
+  - pr-delta surface updated for operation add/remove (`SURFACE`) and op-attributed deltas.
+- Updated fixture/golden (`withdraw`) and aligned kernel/app tests to new schema and generated artifacts.
+- Synced canonical/package docs for multi-operation contract and boundary semantics.
+- Verification:
+  - `:kernel:test` and `:app:test` pass.
+  - `bear check --all --project .` and `bear pr-check --all --project . --base HEAD` currently fail with `IO_ERROR` because `bear.blocks.yaml` is missing at repo root.
 - Added explicit doc-hygiene trim/archive guidance to `AGENTS.md` and `docs/context/start-here.md` so `state.md`/context caps do not repeatedly break CI.
 - Relaxed context-doc guard caps in `ContextDocsConsistencyTest` to reduce repeated CI budget failures during active docs iterations (`state.md` total, `program-board.md` total, and Session Notes section cap).
 - Continued stability-first rollout with deterministic guardrails/docs tightening and no CLI contract changes.

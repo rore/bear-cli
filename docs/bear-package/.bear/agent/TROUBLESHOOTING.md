@@ -28,6 +28,13 @@ Purpose:
 - use `bear fix` / `fix --all` for generated artifacts.
 - or rerun compile for changed IR.
 
+IR schema cutover reminders:
+1. `block.operations` is required in `v1`.
+2. Each operation must declare `contract` and `uses`.
+3. Operation `uses` must be subset of block `effects`.
+4. If `operation.idempotency.mode=use`, operation `uses` must include idempotency store `getOp` and `putOp`.
+5. Operation invariants must be subset of block allowed invariants.
+
 3. Boundary bypass lane (`exit 7`):
 - remove direct impl usage from production seams.
 - remove classloading reflection unless allowlisted.
@@ -50,6 +57,9 @@ Purpose:
 5. Boundary expansion lane (`exit 5`, `pr-check`):
 - treat as governance review signal, not random failure.
 - verify `--base` selection first; `--base HEAD` can misclassify or hide intended delta unless explicitly instructed.
+- operation add/remove is boundary-expanding surface change.
+- operation `uses`, idempotency, and invariants deltas are boundary-expanding.
+- operation contract deltas are operation-attributed (for example `op.ExecuteWithdraw:input.note:string`).
 - if output contains `BOUNDARY_EXPANSION_DETECTED` but exit is not boundary-expansion exit (`5`), classify as tool anomaly (`OTHER`) and stop.
 
 6. Greenfield artifact-mining contract lane:

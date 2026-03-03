@@ -2,201 +2,203 @@
 
 ## Purpose
 BEAR IR is a strict, machine-checkable contract for one logic block.
-It is intentionally constrained so validate/normalize/compile/check behavior stays deterministic.
+`v1` now supports multiple operations in that block while preserving strict block boundary authority.
 
-## Scope Lock (v1.2)
+## Scope Lock (v1)
 v1 supports:
 - one `logic` block per IR file
-- structured effect ports
-- contract inputs/outputs
-- idempotency with either `key` or `keyFromInputs`
-- invariant rules with explicit `kind/scope/field/params`
+- `block.operations` (non-empty) with per-operation contracts
+- block-authoritative effect boundary (`block.effects.allow`)
+- operation usage subsets (`operations[].uses.allow`)
+- block idempotency store capability + operation-level idempotency use mode
+- block allowed invariants + operation invariant subset checks
 - optional implementation dependency allow-list (`impl.allowedDeps`)
 
 v1 does not support:
+- per-operation impl bindings
 - block graphs/composition DSL
 - behavior DSL (`requires/ensures`)
 - transaction semantics / cross-port atomicity
-- undeclared dynamic semantics outside declared IR fields
 
 ## Semantics Decision Rule (Canonical)
 BEAR enforces a semantic only if all are true:
-- it can be implemented as wrapper-owned behavior/checks using declared inputs/outputs and declared ports
-- it requires no hidden context unless that context is explicitly declared as an input or port
-- it is deterministic and implementable by the active target
-- it has a frozen, testable contract (for example key format, marker format, and error envelope)
-
-If any condition fails, the semantic is out of scope for BEAR.
+- it is wrapper-enforceable from declared IR inputs/outputs/ports
+- it requires no hidden context unless explicitly declared
+- it is deterministic for the active target
+- it has a frozen, testable contract
 
 ## Model
 Root object:
 - `version` (required, must be `v1`)
 - `block` (required)
 
-`block` fields:
-- `name` (required)
-- `kind` (required, must be `logic`)
-- `contract` (required)
-- `effects` (required)
-- `idempotency` (optional)
-- `invariants` (optional)
-- `impl` (optional)
+`block` required fields:
+- `name`
+- `kind` (`logic`)
+- `operations` (non-empty)
+- `effects.allow`
 
-`contract` fields:
-- `inputs` (required non-empty list)
-- `outputs` (required non-empty list)
+`block` optional fields:
+- `idempotency.store`
+- `invariants`
+- `impl`
 
-Field shape:
-- `name` (required)
-- `type` (required enum: `string`, `decimal`, `int`, `bool`, `enum`)
+`operation` required fields:
+- `name`
+- `contract.inputs`
+- `contract.outputs`
+- `uses.allow`
 
-`effects` fields:
-- `allow` (required list, may be empty)
+`operation` optional fields:
+- `idempotency` (`mode: use|none`)
+- `invariants`
 
-Effect-port shape:
-- `port` (required)
-- `ops` (required list, may be empty)
+Forbidden:
+- per-operation `impl`
+
+Field type enum:
+- `string`, `decimal`, `int`, `bool`, `enum`
+
+## Boundary Authority Semantics
+1. `block.effects.allow` is the authoritative capability boundary.
+2. `operations[].uses.allow` must be subset-or-equal to block effects.
+3. `block.idempotency.store` declares idempotency capability.
+4. `operations[].idempotency` decides per-operation use (`use|none`).
+5. `block.invariants` is the allowed invariant set.
+6. `operations[].invariants` must be a subset of block allowed invariants.
 
 ## Idempotency Schema
-When `block.idempotency` is present:
-- exactly one of:
-  - `key` (single input field name)
-  - `keyFromInputs` (non-empty ordered list of input field names)
-- `store` (required):
-  - `port`
-  - `getOp`
-  - `putOp`
+Block-level capability:
+```yaml
+idempotency:
+  store:
+    port: idempotency
+    getOp: get
+    putOp: put
+```
+
+Operation-level usage:
+```yaml
+idempotency:
+  mode: use
+  key: requestId
+```
+or
+```yaml
+idempotency:
+  mode: use
+  keyFromInputs: [walletId, requestId]
+```
+or
+```yaml
+idempotency:
+  mode: none
+```
 
 Validation:
-- referenced key fields must exist in `contract.inputs`
-- `keyFromInputs` values must be unique
-- `store.port` must exist in `effects.allow[*].port`
-- `store.getOp` / `store.putOp` must exist under that port
+- `mode=use` requires block idempotency store
+- `mode=use` requires exactly one of `key` / `keyFromInputs`
+- key fields must exist in that operation inputs
+- operation `uses` must include block idempotency `store.getOp` and `store.putOp`
+- `mode=none` forbids key fields
 
 ## Invariant Schema
-`block.invariants` is a list of rules.
-Each rule shape:
-- `kind` (required enum)
-- `scope` (required in canonical form, must be `result`)
-- `field` (required output field name)
-- `params` (optional map; kind-specific)
+`block.invariants` and `operations[].invariants` use full inline rules:
+- `kind`
+- `scope` (canonical `result`)
+- `field`
+- optional `params`
 
-Supported kinds:
+Kinds:
 - `non_negative`
 - `non_empty`
 - `equals`
 - `one_of`
 
-Kind rules:
-- `non_negative`
-  - output type must be `int` or `decimal`
-  - no params allowed
-- `non_empty`
-  - output type must be `string`
-  - no params allowed
-- `equals`
-  - requires `params.value` (string)
-  - `params.values` forbidden
-- `one_of`
-  - requires non-empty `params.values` (unique string list)
-  - `params.value` forbidden
-
-## `impl.allowedDeps`
-Optional:
-- `impl.allowedDeps` list entries:
-  - `maven` (exact `groupId:artifactId`)
-  - `version` (pinned exact version)
-
-Validation:
-- no wildcard/range forms
-- duplicate `maven` entries are invalid
+Subset validation uses deterministic invariant fingerprints:
+- canonical key parts: `kind`, `scope`, `field`, canonical params
+- operation invariant fingerprints must be subset of block allowed fingerprints
 
 ## Validation Rules (Strict)
 - fail on unknown keys at every level
-- fail on invalid enums
-- fail on invalid references
-- input/output names unique
-- port names unique
-- ops unique within each port
-- idempotency exactly-one-of (`key`, `keyFromInputs`)
-- invariant field must reference declared output
-- invariant scope must be `result`
+- operation names unique + trimmed
+- input/output uniqueness is per operation only
+- effect ports unique; ops unique per port
+- operation uses must reference declared block effects
+- if block invariants absent/empty, operation invariants must be empty
+- empty effects policy is per operation echo-safe check
 
 ## Deterministic Normalization
 Canonical form:
 - root key order: `version`, `block`
-- `block` key order: `name`, `kind`, `contract`, `effects`, `idempotency`, `invariants`, `impl`
-- sort inputs/outputs by `name`
-- sort ports by `port`
-- sort ops within each port
-- preserve invariant list order (IR order)
-- sort `impl.allowedDeps` by `maven`
-- emit canonical invariant shape (`scope` + explicit `params` object)
+- block key order: `name`, `kind`, `operations`, `effects`, `idempotency`, `invariants`, `impl`
+- operations sorted by operation name
+- field sorting and uniqueness are per operation
+- ports sorted by `port`; ops sorted within each port
+- `impl.allowedDeps` sorted by `maven`
 
-## Wrapper-Owned Semantics (Contract)
-Generated wrappers own semantic enforcement:
-- idempotency get/replay/put is wrapper-owned
-- invariants are checked on:
-  - fresh logic result
-  - replay-decoded result
+## Wrapper-Owned Semantics
+Generated wrappers own semantic enforcement per operation:
+- idempotency get/replay/put
+- invariant checks on fresh and replay-decoded results
 
-Logic implementations are not the semantic authority for these checks.
+Generator contract:
+- shared `<Block>Logic` + shared `<Block>Impl` stub
+- per-operation request/result/wrapper:
+  - `<Block>_<Operation>Request`
+  - `<Block>_<Operation>Result`
+  - `<Block>_<Operation>` with typed `execute`
+- idempotency key includes operation identity segment
 
-## Why Idempotency Is Included
-Idempotency is included because it satisfies the decision rule without extra domain context:
-- key material comes from declared request inputs
-- side-effect boundaries come from declared ports/ops
-- replay payload shape comes from declared outputs
-- storage boundary is explicit (`idempotency.store`)
-
-This allows one deterministic guarantee:
-- same computed key -> no duplicate side effects -> deterministic replay result
-
-BEAR uses a frozen idempotency contract for enforceability and reproducibility. Contract variation belongs in explicit future IR semantics, not ad hoc logic conventions.
-
-## Why Invariants Are Limited
-`invariants` in v1.2 are intentionally output-level structural checks:
-- `non_negative`
-- `non_empty`
-- `equals`
-- `one_of`
-
-They are boundary-checkable and deterministic. They do not encode business policy inference.
-
-## Explicit Non-Goals
-- BEAR is not an application runtime framework.
-- BEAR is not a business rules engine.
-- BEAR does not infer or guess undeclared semantics.
-- BEAR does not guarantee cross-port transaction atomicity.
-
-## Canonical Example (excerpt)
+## Canonical Example (Excerpt)
 ```yaml
 version: v1
 block:
-  name: Withdraw
+  name: WalletRead
   kind: logic
-  contract:
-    inputs:
-      - name: txId
-        type: string
-    outputs:
-      - name: balance
-        type: decimal
+  operations:
+    - name: GetWalletBalance
+      contract:
+        inputs:
+          - name: walletId
+            type: string
+        outputs:
+          - name: balanceCents
+            type: int
+      uses:
+        allow:
+          - port: walletStore
+            ops: [get]
+      idempotency:
+        mode: none
+      invariants:
+        - kind: non_negative
+          field: balanceCents
+    - name: GetWalletStatement
+      contract:
+        inputs:
+          - name: walletId
+            type: string
+          - name: since
+            type: string
+        outputs:
+          - name: statementId
+            type: string
+      uses:
+        allow:
+          - port: statementStore
+            ops: [listSince]
+      idempotency:
+        mode: none
   effects:
     allow:
-      - port: idempotency
-        ops: [get, put]
-  idempotency:
-    key: txId
-    store:
-      port: idempotency
-      getOp: get
-      putOp: put
+      - port: walletStore
+        ops: [get]
+      - port: statementStore
+        ops: [listSince]
   invariants:
     - kind: non_negative
-      scope: result
-      field: balance
-      params: {}
+      field: balanceCents
 ```
 
 ## Notes

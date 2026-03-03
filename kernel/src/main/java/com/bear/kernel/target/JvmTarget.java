@@ -72,9 +72,7 @@ public final class JvmTarget implements Target {
         Files.createDirectories(userMain);
 
         List<PortModel> ports = mapPorts(ir.block().effects().allow());
-        List<FieldModel> inputs = mapFields(ir.block().contract().inputs());
-        List<FieldModel> outputs = mapFields(ir.block().contract().outputs());
-        List<PortModel> logicPorts = logicPorts(ports, ir.block());
+        List<OperationModel> operations = mapOperations(blockName, ports, ir.block());
 
         String runtimeExceptionContent = renderInvariantException();
         writeIfDifferent(
@@ -84,27 +82,43 @@ public final class JvmTarget implements Target {
         deleteDirectoryIfExists(generatedLegacyRuntimeRoot);
 
         write(stagingMain.resolve("BearValue.java"), renderBearValue(packageName));
-        write(stagingMain.resolve(blockName + "Request.java"), renderModel(packageName, blockName + "Request", inputs));
-        write(stagingMain.resolve(blockName + "Result.java"), renderModel(packageName, blockName + "Result", outputs));
-        write(stagingMain.resolve(blockName + "Logic.java"), renderLogic(packageName, blockName, logicPorts));
-        write(
-            stagingMain.resolve(blockName + ".java"),
-            renderEntrypoint(packageName, blockName, effectiveBlockKey, implPackageName, ports, logicPorts, inputs, outputs, ir.block())
-        );
+        write(stagingMain.resolve(blockName + "Logic.java"), renderLogic(packageName, blockName, operations));
+        for (OperationModel operation : operations) {
+            write(stagingMain.resolve(operation.requestClassName + ".java"), renderModel(packageName, operation.requestClassName, operation.inputs));
+            write(stagingMain.resolve(operation.resultClassName + ".java"), renderModel(packageName, operation.resultClassName, operation.outputs));
+            write(
+                stagingMain.resolve(operation.wrapperClassName + ".java"),
+                renderEntrypoint(
+                    packageName,
+                    operation,
+                    blockName,
+                    effectiveBlockKey,
+                    implPackageName,
+                    ports
+                )
+            );
+        }
 
         for (PortModel port : ports) {
             write(stagingMain.resolve(port.interfaceName + ".java"), renderPort(packageName, port));
         }
 
         if (ir.block().kind() == BearIr.BlockKind.LOGIC) {
-            write(
-                stagingTest.resolve(blockName + "StructuralDirectionTest.java"),
-                renderStructuralDirectionTest(packageName, blockName, effectiveBlockKey, ports, logicPorts)
-            );
-            write(
-                stagingTest.resolve(blockName + "StructuralReachTest.java"),
-                renderStructuralReachTest(packageName, blockName, effectiveBlockKey, ports)
-            );
+            for (OperationModel operation : operations) {
+                write(
+                    stagingTest.resolve(operation.wrapperClassName + "StructuralDirectionTest.java"),
+                    renderStructuralDirectionTest(
+                        packageName,
+                        operation,
+                        effectiveBlockKey,
+                        ports
+                    )
+                );
+                write(
+                    stagingTest.resolve(operation.wrapperClassName + "StructuralReachTest.java"),
+                    renderStructuralReachTest(packageName, operation, effectiveBlockKey, ports)
+                );
+            }
         }
 
         write(stagingSurfaceMarker, renderSurfaceManifest(ir));
@@ -117,8 +131,9 @@ public final class JvmTarget implements Target {
                 implPackageName,
                 implPackagePath,
                 ports,
-                logicPorts,
-                ir.block()
+                operations,
+                ir.block().idempotency() != null,
+                ir.block().invariants() != null && !ir.block().invariants().isEmpty()
             )
         );
 
@@ -147,7 +162,7 @@ public final class JvmTarget implements Target {
         Path legacyImpl = userMainLegacy.resolve(blockName + "Impl.java");
         Path legacyByBlockKeyImpl = userMainLegacyByBlockKey.resolve(blockName + "Impl.java");
         if (!Files.exists(userImpl) && !Files.exists(legacyImpl) && !Files.exists(legacyByBlockKeyImpl)) {
-            write(userImpl, renderImplStub(implPackageName, packageName, blockName, logicPorts, outputs));
+            write(userImpl, renderImplStub(implPackageName, packageName, blockName, operations));
         }
     }
 
@@ -168,7 +183,7 @@ public final class JvmTarget implements Target {
         String implPackagePath = implPackageName.replace('.', '/');
 
         List<PortModel> ports = mapPorts(ir.block().effects().allow());
-        List<PortModel> logicPorts = logicPorts(ports, ir.block());
+        List<OperationModel> operations = mapOperations(blockName, ports, ir.block());
 
         Path wiringDir = outputRoot.resolve("wiring");
         Path wiringManifest = wiringDir.resolve(effectiveBlockKey + ".wiring.json");
@@ -181,8 +196,9 @@ public final class JvmTarget implements Target {
                 implPackageName,
                 implPackagePath,
                 ports,
-                logicPorts,
-                ir.block()
+                operations,
+                ir.block().idempotency() != null,
+                ir.block().invariants() != null && !ir.block().invariants().isEmpty()
             )
         );
     }
@@ -236,41 +252,44 @@ public final class JvmTarget implements Target {
         return s.toString();
     }
 
-    private String renderLogic(String packageName, String blockName, List<PortModel> ports) {
+    private String renderLogic(String packageName, String blockName, List<OperationModel> operations) {
         StringBuilder s = new StringBuilder();
         s.append(GENERATED_HEADER).append("package ").append(packageName).append(";\n\n");
         s.append("public interface ").append(blockName).append("Logic {\n");
-        s.append("    ").append(blockName).append("Result execute(").append(blockName).append("Request request");
-        for (PortModel port : ports) {
-            s.append(", ").append(port.interfaceName).append(" ").append(port.variableName);
+        for (OperationModel operation : operations) {
+            s.append("    ").append(operation.resultClassName)
+                .append(" ").append(operation.logicMethodName)
+                .append("(").append(operation.requestClassName).append(" request");
+            for (PortModel port : operation.logicPorts) {
+                s.append(", ").append(port.interfaceName).append(" ").append(port.variableName);
+            }
+            s.append(");\n");
         }
-        s.append(");\n}\n");
+        s.append("}\n");
         return s.toString();
     }
 
     private String renderEntrypoint(
         String packageName,
+        OperationModel operation,
         String blockName,
         String blockKey,
         String implPackageName,
-        List<PortModel> ports,
-        List<PortModel> logicPorts,
-        List<FieldModel> inputs,
-        List<FieldModel> outputs,
-        BearIr.Block block
+        List<PortModel> ports
     ) {
         StringBuilder s = new StringBuilder();
         s.append(GENERATED_HEADER).append("package ").append(packageName).append(";\n\n");
         s.append("import java.math.BigDecimal;\n\n");
         s.append("import java.nio.charset.StandardCharsets;\n\n");
         s.append("import com.bear.generated.runtime.BearInvariantViolationException;\n\n");
-        s.append("public final class ").append(blockName).append(" {\n");
+        s.append("public final class ").append(operation.wrapperClassName).append(" {\n");
         s.append("    private static final String BLOCK_KEY = ").append(JvmLexicalSupport.javaString(blockKey)).append(";\n");
+        s.append("    private static final String OPERATION_NAME = ").append(JvmLexicalSupport.javaString(operation.operationName)).append(";\n");
         for (PortModel port : ports) {
             s.append("    private final ").append(port.interfaceName).append(" ").append(port.variableName).append(";\n");
         }
         s.append("    private final ").append(blockName).append("Logic logic;\n\n");
-        s.append("    public ").append(blockName).append("(");
+        s.append("    public ").append(operation.wrapperClassName).append("(");
         for (int i = 0; i < ports.size(); i++) {
             if (i > 0) {
                 s.append(", ");
@@ -286,8 +305,7 @@ public final class JvmTarget implements Target {
         }
         s.append("        this.logic = logic;\n");
         s.append("    }\n\n");
-        if (block.kind() == BearIr.BlockKind.LOGIC) {
-            s.append("    public static ").append(blockName).append(" of(");
+        s.append("    public static ").append(operation.wrapperClassName).append(" of(");
             for (int i = 0; i < ports.size(); i++) {
                 if (i > 0) {
                     s.append(", ");
@@ -295,7 +313,7 @@ public final class JvmTarget implements Target {
                 s.append(ports.get(i).interfaceName).append(" ").append(ports.get(i).variableName);
             }
             s.append(") {\n");
-            s.append("        return new ").append(blockName).append("(");
+            s.append("        return new ").append(operation.wrapperClassName).append("(");
             for (int i = 0; i < ports.size(); i++) {
                 if (i > 0) {
                     s.append(", ");
@@ -307,46 +325,46 @@ public final class JvmTarget implements Target {
             }
             s.append("new ").append(implPackageName).append(".").append(blockName).append("Impl());\n");
             s.append("    }\n\n");
-        }
-        s.append("    public ").append(blockName).append("Result execute(").append(blockName).append("Request request) {\n");
+        s.append("    public ").append(operation.resultClassName).append(" execute(").append(operation.requestClassName).append(" request) {\n");
 
-        if (block.idempotency() != null) {
-            PortModel idPort = findPort(ports, block.idempotency().store().port());
+        if (operation.idempotencyStore != null) {
+            PortModel idPort = findPort(ports, operation.idempotencyStore.port());
             s.append("        String idempotencyKey = computeIdempotencyKey(request);\n");
             s.append("        BearValue existing = ").append(idPort.variableName).append(".")
-                .append(JvmLexicalSupport.toCamelCase(block.idempotency().store().getOp()))
+                .append(JvmLexicalSupport.toCamelCase(operation.idempotencyStore.getOp()))
                 .append("(BearValue.builder().put(\"key\", idempotencyKey).build());\n");
             s.append("        if (existing != null && \"true\".equals(existing.get(\"hit\"))) {\n");
-            s.append("            ").append(blockName).append("Result replayed = decodeResult(existing);\n");
-            appendInvariantChecks(s, outputs, block, "replayed");
+            s.append("            ").append(operation.resultClassName).append(" replayed = decodeResult(existing);\n");
+            appendInvariantChecks(s, operation.outputs, operation.invariants, "replayed");
             s.append("            return replayed;\n");
             s.append("        }\n");
         }
 
-        s.append("        ").append(blockName).append("Result result = logic.execute(request");
-        for (PortModel port : logicPorts) {
+        s.append("        ").append(operation.resultClassName).append(" result = logic.")
+            .append(operation.logicMethodName).append("(request");
+        for (PortModel port : operation.logicPorts) {
             s.append(", ").append(port.variableName);
         }
         s.append(");\n");
-        appendInvariantChecks(s, outputs, block, "result");
+        appendInvariantChecks(s, operation.outputs, operation.invariants, "result");
 
-        if (block.idempotency() != null) {
-            PortModel idPort = findPort(ports, block.idempotency().store().port());
+        if (operation.idempotencyStore != null) {
+            PortModel idPort = findPort(ports, operation.idempotencyStore.port());
             s.append("        BearValue.Builder stored = BearValue.builder().put(\"hit\", \"true\")")
                 .append(".put(\"key\", idempotencyKey);\n");
-            for (FieldModel output : outputs) {
+            for (FieldModel output : operation.outputs) {
                 s.append("        stored.put(\"result.").append(output.originalName).append("\", toText(result.")
                     .append(output.getterName).append("()));\n");
             }
-            s.append("        ").append(idPort.variableName).append(".").append(JvmLexicalSupport.toCamelCase(block.idempotency().store().putOp()))
+            s.append("        ").append(idPort.variableName).append(".").append(JvmLexicalSupport.toCamelCase(operation.idempotencyStore.putOp()))
                 .append("(stored.build());\n");
         }
 
         s.append("        return result;\n");
         s.append("    }\n\n");
 
-        s.append("    private ").append(blockName).append("Result decodeResult(BearValue value) {\n");
-        for (FieldModel output : outputs) {
+        s.append("    private ").append(operation.resultClassName).append(" decodeResult(BearValue value) {\n");
+        for (FieldModel output : operation.outputs) {
             s.append("        if (value.get(\"result.")
                 .append(output.originalName)
                 .append("\") == null) {\n");
@@ -355,12 +373,12 @@ public final class JvmTarget implements Target {
                 .append("\");\n");
             s.append("        }\n");
         }
-        s.append("        return new ").append(blockName).append("Result(");
-        for (int i = 0; i < outputs.size(); i++) {
+        s.append("        return new ").append(operation.resultClassName).append("(");
+        for (int i = 0; i < operation.outputs.size(); i++) {
             if (i > 0) {
                 s.append(", ");
             }
-            FieldModel output = outputs.get(i);
+            FieldModel output = operation.outputs.get(i);
             s.append("fromText(value.get(\"result.")
                 .append(output.originalName)
                 .append("\"), ")
@@ -372,10 +390,11 @@ public final class JvmTarget implements Target {
         s.append(");\n");
         s.append("    }\n\n");
 
-        if (block.idempotency() != null) {
-            List<FieldModel> keyFields = idempotencyKeyFields(inputs, block.idempotency());
-            s.append("    private String computeIdempotencyKey(").append(blockName).append("Request request) {\n");
+        if (operation.idempotency != null) {
+            List<FieldModel> keyFields = idempotencyKeyFields(operation.inputs, operation.idempotency);
+            s.append("    private String computeIdempotencyKey(").append(operation.requestClassName).append(" request) {\n");
             s.append("        StringBuilder key = new StringBuilder(BLOCK_KEY);\n");
+            s.append("        key.append(\"|op=\").append(escapeDelimitedValue(OPERATION_NAME));\n");
             for (FieldModel keyField : keyFields) {
                 s.append("        String raw_").append(keyField.memberName).append(" = toText(request.")
                     .append(keyField.getterName).append("());\n");
@@ -451,13 +470,13 @@ public final class JvmTarget implements Target {
     private void appendInvariantChecks(
         StringBuilder s,
         List<FieldModel> outputs,
-        BearIr.Block block,
+        List<BearIr.Invariant> invariants,
         String resultRef
     ) {
-        if (block.invariants() == null) {
+        if (invariants == null) {
             return;
         }
-        for (BearIr.Invariant invariant : block.invariants()) {
+        for (BearIr.Invariant invariant : invariants) {
             FieldModel output = findField(outputs, invariant.field());
             String getterCall = resultRef + "." + output.getterName + "()";
             String ruleLiteral = JvmLexicalSupport.javaString(JvmLexicalSupport.invariantRuleText(invariant));
@@ -510,73 +529,88 @@ public final class JvmTarget implements Target {
         String implPackageName,
         String generatedPackageName,
         String blockName,
-        List<PortModel> ports,
-        List<FieldModel> outputs
+        List<OperationModel> operations
     ) {
         List<String> imports = new ArrayList<>();
         imports.add(generatedPackageName + "." + blockName + "Logic");
-        imports.add(generatedPackageName + "." + blockName + "Request");
-        imports.add(generatedPackageName + "." + blockName + "Result");
-        for (PortModel port : ports) {
-            imports.add(generatedPackageName + "." + port.interfaceName);
+        List<FieldModel> allOutputs = new ArrayList<>();
+        for (OperationModel operation : operations) {
+            imports.add(generatedPackageName + "." + operation.requestClassName);
+            imports.add(generatedPackageName + "." + operation.resultClassName);
+            allOutputs.addAll(operation.outputs);
+            for (PortModel port : operation.logicPorts) {
+                imports.add(generatedPackageName + "." + port.interfaceName);
+            }
         }
         imports.sort(String::compareTo);
+        List<String> dedupedImports = new ArrayList<>();
+        String previous = null;
+        for (String importType : imports) {
+            if (importType.equals(previous)) {
+                continue;
+            }
+            dedupedImports.add(importType);
+            previous = importType;
+        }
 
         StringBuilder s = new StringBuilder();
         s.append("package ").append(implPackageName).append(";\n\n");
-        for (String importType : imports) {
+        for (String importType : dedupedImports) {
             s.append("import ").append(importType).append(";\n");
         }
-        if (usesBigDecimal(outputs)) {
+        if (usesBigDecimal(allOutputs)) {
             s.append("import java.math.BigDecimal;\n");
         }
-        if (!imports.isEmpty() || usesBigDecimal(outputs)) {
+        if (!dedupedImports.isEmpty() || usesBigDecimal(allOutputs)) {
             s.append("\n");
         }
         s.append("public final class ").append(blockName).append("Impl implements ").append(blockName).append("Logic {\n");
-        s.append("    @Override\n");
-        s.append("    public ").append(blockName).append("Result execute(").append(blockName).append("Request request");
-        for (PortModel port : ports) {
-            s.append(", ").append(port.interfaceName).append(" ").append(port.variableName);
-        }
-        s.append(") {\n");
-        s.append("        // TODO: replace this entire method body with business logic.\n");
-        s.append("        // Do not append logic below this placeholder return.\n");
-        for (PortModel port : ports) {
-            s.append("        // BEAR:PORT_USED ").append(port.variableName).append("\n");
-        }
-        s.append("        return new ").append(blockName).append("Result(");
-        for (int i = 0; i < outputs.size(); i++) {
-            if (i > 0) {
-                s.append(", ");
+        for (OperationModel operation : operations) {
+            s.append("    @Override\n");
+            s.append("    public ").append(operation.resultClassName).append(" ").append(operation.logicMethodName)
+                .append("(").append(operation.requestClassName).append(" request");
+            for (PortModel port : operation.logicPorts) {
+                s.append(", ").append(port.interfaceName).append(" ").append(port.variableName);
             }
-            s.append(JvmLexicalSupport.defaultLiteral(outputs.get(i).javaType));
+            s.append(") {\n");
+            s.append("        // TODO: replace this entire method body with business logic.\n");
+            s.append("        // Do not append logic below this placeholder return.\n");
+            for (PortModel port : operation.logicPorts) {
+                s.append("        // BEAR:PORT_USED ").append(port.variableName).append("\n");
+            }
+            s.append("        return new ").append(operation.resultClassName).append("(");
+            for (int i = 0; i < operation.outputs.size(); i++) {
+                if (i > 0) {
+                    s.append(", ");
+                }
+                s.append(JvmLexicalSupport.defaultLiteral(operation.outputs.get(i).javaType));
+            }
+            s.append(");\n");
+            s.append("    }\n");
         }
-        s.append(");\n");
-        s.append("    }\n}\n");
+        s.append("}\n");
         return s.toString();
     }
 
     private String renderStructuralDirectionTest(
         String packageName,
-        String blockName,
+        OperationModel operation,
         String blockKey,
-        List<PortModel> ports,
-        List<PortModel> logicPorts
+        List<PortModel> ports
     ) {
         List<String> expectedOfParams = new ArrayList<>();
         for (PortModel port : ports) {
             expectedOfParams.add(port.interfaceName);
         }
         List<String> expectedLogicExecuteParams = new ArrayList<>();
-        expectedLogicExecuteParams.add(blockName + "Request");
-        for (PortModel port : logicPorts) {
+        expectedLogicExecuteParams.add(operation.requestClassName);
+        for (PortModel port : operation.logicPorts) {
             expectedLogicExecuteParams.add(port.interfaceName);
         }
         return JvmStructuralRenderUnits.renderStructuralDirectionTest(
             GENERATED_HEADER,
             packageName,
-            blockName,
+            operation.wrapperClassName,
             blockKey,
             expectedOfParams,
             expectedLogicExecuteParams
@@ -585,7 +619,7 @@ public final class JvmTarget implements Target {
 
     private String renderStructuralReachTest(
         String packageName,
-        String blockName,
+        OperationModel operation,
         String blockKey,
         List<PortModel> ports
     ) {
@@ -602,7 +636,7 @@ public final class JvmTarget implements Target {
         return JvmStructuralRenderUnits.renderStructuralReachTest(
             GENERATED_HEADER,
             packageName,
-            blockName,
+            operation.wrapperClassName,
             blockKey,
             expectedMap.toString()
         );
@@ -643,8 +677,9 @@ public final class JvmTarget implements Target {
         String implPackageName,
         String implPackagePath,
         List<PortModel> ports,
-        List<PortModel> logicPorts,
-        BearIr.Block block
+        List<OperationModel> operations,
+        boolean hasBlockIdempotency,
+        boolean hasBlockInvariants
     ) {
         List<String> requiredEffectPorts = new ArrayList<>();
         for (PortModel port : ports) {
@@ -652,16 +687,27 @@ public final class JvmTarget implements Target {
         }
         requiredEffectPorts.sort(String::compareTo);
         List<String> logicRequiredPorts = new ArrayList<>();
-        for (PortModel port : logicPorts) {
-            logicRequiredPorts.add(port.variableName);
+        for (OperationModel operation : operations) {
+            for (PortModel port : operation.logicPorts) {
+                logicRequiredPorts.add(port.variableName);
+            }
         }
         logicRequiredPorts.sort(String::compareTo);
-        List<String> wrapperOwnedSemanticPorts = semanticPortParams(ports, block);
+        logicRequiredPorts = dedupeSortedStrings(logicRequiredPorts);
+        List<String> wrapperOwnedSemanticPorts = new ArrayList<>();
+        for (OperationModel operation : operations) {
+            if (operation.idempotencyStore != null) {
+                PortModel semantic = findPort(ports, operation.idempotencyStore.port());
+                wrapperOwnedSemanticPorts.add(semantic.variableName);
+            }
+        }
+        wrapperOwnedSemanticPorts.sort(String::compareTo);
+        wrapperOwnedSemanticPorts = dedupeSortedStrings(wrapperOwnedSemanticPorts);
         List<String> wrapperOwnedSemanticChecks = new ArrayList<>();
-        if (block.idempotency() != null) {
+        if (hasBlockIdempotency) {
             wrapperOwnedSemanticChecks.add("IDEMPOTENCY");
         }
-        if (block.invariants() != null && !block.invariants().isEmpty()) {
+        if (hasBlockInvariants) {
             wrapperOwnedSemanticChecks.add("INVARIANTS");
         }
 
@@ -765,29 +811,70 @@ public final class JvmTarget implements Target {
         return JvmRenderUnits.renderContainmentGradleEntrypoint(GENERATED_HEADER);
     }
 
-    private List<PortModel> logicPorts(List<PortModel> ports, BearIr.Block block) {
-        List<String> semanticParams = semanticPortParams(ports, block);
-        if (semanticParams.isEmpty()) {
-            return List.copyOf(ports);
-        }
-        ArrayList<PortModel> filtered = new ArrayList<>();
-        for (PortModel port : ports) {
-            if (!semanticParams.contains(port.variableName)) {
-                filtered.add(port);
+    private List<OperationModel> mapOperations(String blockName, List<PortModel> ports, BearIr.Block block) {
+        ArrayList<OperationModel> models = new ArrayList<>();
+        for (BearIr.Operation operation : block.operations()) {
+            String operationPascal = JvmLexicalSupport.toPascalCase(operation.name());
+            String wrapperClassName = blockName + "_" + operationPascal;
+            String requestClassName = wrapperClassName + "Request";
+            String resultClassName = wrapperClassName + "Result";
+            String logicMethodName = "execute" + operationPascal;
+            List<FieldModel> inputs = mapFields(operation.contract().inputs());
+            List<FieldModel> outputs = mapFields(operation.contract().outputs());
+
+            ArrayList<PortModel> usedPorts = new ArrayList<>();
+            for (BearIr.EffectPort usedPort : operation.uses().allow()) {
+                usedPorts.add(findPort(ports, usedPort.port()));
             }
+            usedPorts.sort(Comparator.comparing(port -> port.interfaceName));
+
+            BearIr.IdempotencyStore idempotencyStore = null;
+            ArrayList<PortModel> logicPorts = new ArrayList<>(usedPorts);
+            if (operation.idempotency() != null
+                && operation.idempotency().mode() == BearIr.OperationIdempotencyMode.USE
+                && block.idempotency() != null) {
+                idempotencyStore = block.idempotency().store();
+                PortModel semanticPort = findPort(ports, idempotencyStore.port());
+                logicPorts.removeIf(port -> port.originalName.equals(semanticPort.originalName));
+            }
+
+            List<BearIr.Invariant> invariants = operation.invariants() == null || operation.invariants().isEmpty()
+                ? null
+                : List.copyOf(operation.invariants());
+
+            models.add(new OperationModel(
+                operation.name(),
+                wrapperClassName,
+                requestClassName,
+                resultClassName,
+                logicMethodName,
+                inputs,
+                outputs,
+                List.copyOf(usedPorts),
+                List.copyOf(logicPorts),
+                operation.idempotency(),
+                idempotencyStore,
+                invariants
+            ));
         }
-        return List.copyOf(filtered);
+        models.sort(Comparator.comparing(model -> model.wrapperClassName));
+        return List.copyOf(models);
     }
 
-    private List<String> semanticPortParams(List<PortModel> ports, BearIr.Block block) {
-        if (block.idempotency() == null) {
-            return List.of();
+    private List<String> dedupeSortedStrings(List<String> sorted) {
+        ArrayList<String> deduped = new ArrayList<>();
+        String previous = null;
+        for (String value : sorted) {
+            if (value.equals(previous)) {
+                continue;
+            }
+            deduped.add(value);
+            previous = value;
         }
-        PortModel semanticPort = findPort(ports, block.idempotency().store().port());
-        return List.of(semanticPort.variableName);
+        return List.copyOf(deduped);
     }
 
-    private List<FieldModel> idempotencyKeyFields(List<FieldModel> inputs, BearIr.Idempotency idempotency) {
+    private List<FieldModel> idempotencyKeyFields(List<FieldModel> inputs, BearIr.OperationIdempotency idempotency) {
         if (idempotency.keyFromInputs() != null && !idempotency.keyFromInputs().isEmpty()) {
             ArrayList<FieldModel> fields = new ArrayList<>();
             for (String field : idempotency.keyFromInputs()) {
@@ -866,6 +953,22 @@ public final class JvmTarget implements Target {
 
     private void deletePath(Path path) throws IOException {
         JvmFileSyncSupport.deletePath(path);
+    }
+
+    private record OperationModel(
+        String operationName,
+        String wrapperClassName,
+        String requestClassName,
+        String resultClassName,
+        String logicMethodName,
+        List<FieldModel> inputs,
+        List<FieldModel> outputs,
+        List<PortModel> usedPorts,
+        List<PortModel> logicPorts,
+        BearIr.OperationIdempotency idempotency,
+        BearIr.IdempotencyStore idempotencyStore,
+        List<BearIr.Invariant> invariants
+    ) {
     }
 
     private record PortModel(String originalName, String interfaceName, String variableName, List<String> methods) {
