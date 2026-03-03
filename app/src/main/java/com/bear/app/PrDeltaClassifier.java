@@ -1,6 +1,7 @@
 package com.bear.app;
 
 import com.bear.kernel.ir.BearIr;
+import com.bear.kernel.ir.InvariantFingerprint;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -370,7 +371,7 @@ final class PrDeltaClassifier {
         TreeSet<String> blockInvariants = new TreeSet<>();
         if (ir.block().invariants() != null) {
             for (BearIr.Invariant invariant : ir.block().invariants()) {
-                blockInvariants.add(invariantFingerprint(invariant));
+                blockInvariants.add(InvariantFingerprint.canonicalKey(invariant));
             }
         }
 
@@ -392,7 +393,7 @@ final class PrDeltaClassifier {
             TreeSet<String> opInvariants = new TreeSet<>();
             if (operation.invariants() != null) {
                 for (BearIr.Invariant invariant : operation.invariants()) {
-                    opInvariants.add(invariantFingerprint(invariant));
+                    opInvariants.add(InvariantFingerprint.canonicalKey(invariant));
                 }
             }
             invariantsByOperation.put(operation.name(), opInvariants);
@@ -429,51 +430,6 @@ final class PrDeltaClassifier {
             }
         }
         return tokens;
-    }
-
-    private static String invariantFingerprint(BearIr.Invariant invariant) {
-        String kind = invariant.kind().name().toLowerCase();
-        String scope = invariant.scope().name().toLowerCase();
-        String field = escapeInvariantToken(invariant.field());
-        String params = canonicalInvariantParams(invariant);
-        return "kind=" + kind + "|scope=" + scope + "|field=" + field + "|params=" + params;
-    }
-
-    private static String canonicalInvariantParams(BearIr.Invariant invariant) {
-        BearIr.InvariantParams params = invariant.params();
-        String value = params == null ? null : params.value();
-        List<String> values = params == null || params.values() == null ? List.of() : params.values();
-        return switch (invariant.kind()) {
-            case NON_NEGATIVE, NON_EMPTY -> "none";
-            case EQUALS -> "value=" + escapeInvariantToken(value);
-            case ONE_OF -> {
-                ArrayList<String> sorted = new ArrayList<>(values);
-                sorted.sort(String::compareTo);
-                yield "values=" + escapeInvariantCsv(sorted);
-            }
-        };
-    }
-
-    private static String escapeInvariantCsv(List<String> values) {
-        StringBuilder out = new StringBuilder();
-        for (int i = 0; i < values.size(); i++) {
-            if (i > 0) {
-                out.append(",");
-            }
-            out.append(escapeInvariantToken(values.get(i)));
-        }
-        return out.toString();
-    }
-
-    private static String escapeInvariantToken(String value) {
-        if (value == null) {
-            return "<null>";
-        }
-        return value
-            .replace("\\", "\\\\")
-            .replace("|", "\\|")
-            .replace(",", "\\,")
-            .replace("=", "\\=");
     }
 
     static PrSurface emptyPrSurface() {

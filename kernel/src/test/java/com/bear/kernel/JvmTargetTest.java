@@ -94,8 +94,95 @@ class JvmTargetTest {
         assertTrue(wiring.contains("\"entrypointFqcn\":\"com.bear.generated.withdraw.Withdraw\""));
     }
 
+    @Test
+    void compileSupportsMixedIdempotencyModesAndNoPerOperationLogicTypes(@TempDir Path tempDir) throws Exception {
+        String yaml = ""
+            + "version: v1\n"
+            + "block:\n"
+            + "  name: Wallet\n"
+            + "  kind: logic\n"
+            + "  operations:\n"
+            + "    - name: Deposit\n"
+            + "      contract:\n"
+            + "        inputs:\n"
+            + "          - name: walletId\n"
+            + "            type: string\n"
+            + "          - name: amountCents\n"
+            + "            type: int\n"
+            + "          - name: requestId\n"
+            + "            type: string\n"
+            + "        outputs:\n"
+            + "          - name: balanceCents\n"
+            + "            type: int\n"
+            + "      uses:\n"
+            + "        allow:\n"
+            + "          - port: walletStore\n"
+            + "            ops: [getBalance, setBalance]\n"
+            + "          - port: idempotency\n"
+            + "            ops: [get, put]\n"
+            + "      idempotency:\n"
+            + "        mode: use\n"
+            + "        key: requestId\n"
+            + "    - name: GetBalance\n"
+            + "      contract:\n"
+            + "        inputs:\n"
+            + "          - name: walletId\n"
+            + "            type: string\n"
+            + "        outputs:\n"
+            + "          - name: balanceCents\n"
+            + "            type: int\n"
+            + "      uses:\n"
+            + "        allow:\n"
+            + "          - port: walletStore\n"
+            + "            ops: [getBalance]\n"
+            + "      idempotency:\n"
+            + "        mode: none\n"
+            + "  effects:\n"
+            + "    allow:\n"
+            + "      - port: walletStore\n"
+            + "        ops: [getBalance, setBalance]\n"
+            + "      - port: idempotency\n"
+            + "        ops: [get, put]\n"
+            + "  idempotency:\n"
+            + "    store:\n"
+            + "      port: idempotency\n"
+            + "      getOp: get\n"
+            + "      putOp: put\n";
+        BearIr ir = parseNormalizedYaml(tempDir, yaml);
+        JvmTarget target = new JvmTarget();
+
+        target.compile(ir, tempDir, "wallet");
+
+        Path base = tempDir.resolve("build/generated/bear/src/main/java/com/bear/generated/wallet");
+        assertTrue(Files.exists(base.resolve("WalletLogic.java")));
+        assertTrue(Files.exists(base.resolve("Wallet_Deposit.java")));
+        assertTrue(Files.exists(base.resolve("Wallet_GetBalance.java")));
+        assertTrue(Files.notExists(base.resolve("Wallet_DepositLogic.java")));
+        assertTrue(Files.notExists(base.resolve("Wallet_GetBalanceLogic.java")));
+
+        String logic = Files.readString(base.resolve("WalletLogic.java"));
+        assertTrue(logic.contains("executeDeposit("));
+        assertTrue(logic.contains("executeGetBalance("));
+
+        String depositWrapper = Files.readString(base.resolve("Wallet_Deposit.java"));
+        assertTrue(depositWrapper.contains("computeIdempotencyKey("));
+        String getBalanceWrapper = Files.readString(base.resolve("Wallet_GetBalance.java"));
+        assertTrue(!getBalanceWrapper.contains("computeIdempotencyKey("));
+    }
+
     private static BearIr parseNormalizedFixture() throws Exception {
         Path fixture = TestRepoPaths.repoRoot().resolve("spec/fixtures/withdraw.bear.yaml");
+        BearIrParser parser = new BearIrParser();
+        BearIrValidator validator = new BearIrValidator();
+        BearIrNormalizer normalizer = new BearIrNormalizer();
+        BearIr ir = parser.parse(fixture);
+        validator.validate(ir);
+        return normalizer.normalize(ir);
+    }
+
+    private static BearIr parseNormalizedYaml(Path tempDir, String yaml) throws Exception {
+        Path fixture = tempDir.resolve("input.bear.yaml");
+        Files.writeString(fixture, yaml);
         BearIrParser parser = new BearIrParser();
         BearIrValidator validator = new BearIrValidator();
         BearIrNormalizer normalizer = new BearIrNormalizer();

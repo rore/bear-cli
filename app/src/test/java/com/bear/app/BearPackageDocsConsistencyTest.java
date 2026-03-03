@@ -72,9 +72,11 @@ class BearPackageDocsConsistencyTest {
         assertMatchesHeading(troubleshooting, "(?m)^##\\s+POLICY_SCOPE_MISMATCH\\s*$");
         assertMatchesHeading(troubleshooting, "(?m)^##\\s+PROCESS_VIOLATION\\s*$");
         assertMatchesHeading(troubleshooting, "(?m)^##\\s+REACH_REMEDIATION_NON_SOLUTIONS\\s*$");
+        assertMatchesHeading(troubleshooting, "(?m)^##\\s+TOOLING_ANOMALY_HARD_STOP\\s*$");
         assertMatchesHeading(reporting, "(?m)^##\\s+DEVELOPER_SUMMARY\\s*$");
         assertMatchesHeading(reporting, "(?m)^##\\s+GREENFIELD_BASELINE_WAITING_SEMANTICS\\s*$");
         assertMatchesHeading(reporting, "(?m)^##\\s+Blocker\\s+And\\s+Anomaly\\s+Reporting\\s*$");
+        assertMatchesHeading(reporting, "(?m)^##\\s+Tooling\\s+Anomaly\\s+Reporting\\s*$");
 
         assertContains(
             reporting,
@@ -89,6 +91,10 @@ class BearPackageDocsConsistencyTest {
             reporting,
             "first two entries are exactly `bear.blocks.yaml`, `spec/*.bear.yaml`"
         );
+        assertContains(reporting, "`Tooling anomaly: yes|no`");
+        assertContains(reporting, "`Tooling anomaly exit code: <code>|n/a`");
+        assertContains(bootstrap, "Hard-stop on BEAR tooling anomalies:");
+        assertContains(bootstrap, "`src/main/java/com/bear/generated/**`");
 
         assertContains(bootstrap, "1. `state_domain_split`");
         assertContains(bootstrap, "2. `effects_split`");

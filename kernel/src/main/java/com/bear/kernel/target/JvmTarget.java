@@ -109,6 +109,7 @@ public final class JvmTarget implements Target {
                     stagingTest.resolve(operation.wrapperClassName + "StructuralDirectionTest.java"),
                     renderStructuralDirectionTest(
                         packageName,
+                        blockName,
                         operation,
                         effectiveBlockKey,
                         ports
@@ -390,7 +391,9 @@ public final class JvmTarget implements Target {
         s.append(");\n");
         s.append("    }\n\n");
 
-        if (operation.idempotency != null) {
+        if (operation.idempotencyStore != null
+            && operation.idempotency != null
+            && operation.idempotency.mode() == BearIr.OperationIdempotencyMode.USE) {
             List<FieldModel> keyFields = idempotencyKeyFields(operation.inputs, operation.idempotency);
             s.append("    private String computeIdempotencyKey(").append(operation.requestClassName).append(" request) {\n");
             s.append("        StringBuilder key = new StringBuilder(BLOCK_KEY);\n");
@@ -594,6 +597,7 @@ public final class JvmTarget implements Target {
 
     private String renderStructuralDirectionTest(
         String packageName,
+        String blockName,
         OperationModel operation,
         String blockKey,
         List<PortModel> ports
@@ -611,6 +615,10 @@ public final class JvmTarget implements Target {
             GENERATED_HEADER,
             packageName,
             operation.wrapperClassName,
+            operation.requestClassName,
+            operation.resultClassName,
+            blockName + "Logic",
+            operation.logicMethodName,
             blockKey,
             expectedOfParams,
             expectedLogicExecuteParams

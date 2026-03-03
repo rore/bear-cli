@@ -14,6 +14,17 @@ bear pr-check <ir-file> --project <path> --base <ref>
 bear pr-check --all --project <repoRoot> --base <ref> [--blocks <path>] [--only <csv>] [--strict-orphans]
 ```
 
+## Missing index envelope (`--all`)
+
+When `bear.blocks.yaml` is missing, `pr-check --all` fails with the same deterministic envelope as other `--all` commands and exits `2`:
+
+```text
+index: VALIDATION_ERROR: INDEX_REQUIRED_MISSING: bear.blocks.yaml: project=.
+CODE=INDEX_REQUIRED_MISSING
+PATH=bear.blocks.yaml
+REMEDIATION=Create bear.blocks.yaml or run non---all command
+```
+
 ## Inputs and flags
 
 - Single mode requires `<ir-file>`, `--project`, and `--base`.

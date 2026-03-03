@@ -90,6 +90,7 @@ public final class BearIrNormalizer {
                 );
             list.add(new BearIr.Invariant(invariant.kind(), invariant.scope(), invariant.field(), params));
         }
+        list.sort(Comparator.comparing(InvariantFingerprint::canonicalKey));
         return List.copyOf(list);
     }
 

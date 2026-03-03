@@ -19,6 +19,23 @@ Purpose:
 11. `CONTAINMENT_METADATA_MISMATCH` -> apply bounded compile-once repair flow only for failing `check` with containment/classpath signatures.
 12. Internal failure (`70`) -> capture output and report tool defect.
 
+## TOOLING_ANOMALY_HARD_STOP
+
+Stop immediately (no workaround edits) when any is true:
+1. command exits `70` (`INTERNAL_ERROR`)
+2. output contains crash signatures: `internal: INTERNAL_ERROR:` or `Exception in thread`
+3. same command exits `124` twice in a row (only one immediate unchanged retry allowed)
+
+Retry accounting contract:
+1. timeout retries are per exact command string only
+2. retry must be immediate and unchanged (no file edits, no arg/env variation)
+3. no retries are allowed for exit `70`
+
+Explicit non-remediations:
+1. do not change IR semantics only to make compile pass (for example `mode:none -> use`)
+2. do not add compatibility sources under `src/main/java/com/bear/generated/**`
+3. do not add `_shared` classpath shim copies of impl/exception classes
+
 ## Deterministic Remediation by Failure Class
 
 1. `CODE=POLICY_INVALID`:

@@ -95,6 +95,19 @@ Read on demand:
 7. Use deterministic BEAR commands; do not replace with ad-hoc scripts.
 8. For expected `BOUNDARY_EXPANSION_DETECTED`, do not force green; report per `.bear/agent/REPORTING.md`.
 9. Greenfield contract source is current IR + fresh generated sources in `build/generated/bear/**`; do not mine stale `build*` artifacts.
+10. Hard-stop on BEAR tooling anomalies:
+- any `INTERNAL_ERROR` / exit `70`
+- compiler crash signatures (`internal: INTERNAL_ERROR:` or `Exception in thread`)
+- repeated timeout exit `124` after one immediate unchanged retry
+11. Retry accounting for timeout `124`:
+- counter is per exact command string
+- retry is immediate and unchanged (no edits/flags/env changes between attempts)
+12. Forbidden compile-pass workarounds:
+- changing semantic IR intent only to pass compile (for example `idempotency.mode: none -> use`)
+- widening effects/idempotency store usage outside spec intent
+- injecting compatibility sources under `src/main/java/com/bear/generated/**`
+13. Do not duplicate impl/exception shims under `_shared` only to satisfy classpath/containment lanes.
+14. If anomaly criteria hold, stop and report; do not continue workaround edits.
 
 ## POLICY_SCOPE_MISMATCH
 

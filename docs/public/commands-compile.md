@@ -11,6 +11,17 @@ bear compile <ir-file> --project <path>
 bear compile --all --project <repoRoot> [--blocks <path>] [--only <csv>] [--fail-fast] [--strict-orphans]
 ```
 
+## Missing index envelope (`--all`)
+
+If `bear.blocks.yaml` is missing, all `--all` commands (`compile`, `check`, `fix`, `pr-check`) fail with the same validation envelope on `stderr` and exit `2`:
+
+```text
+index: VALIDATION_ERROR: INDEX_REQUIRED_MISSING: bear.blocks.yaml: project=.
+CODE=INDEX_REQUIRED_MISSING
+PATH=bear.blocks.yaml
+REMEDIATION=Create bear.blocks.yaml or run non---all command
+```
+
 ## Inputs and flags
 
 Single-block:

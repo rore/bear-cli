@@ -15,6 +15,10 @@ final class PrCheckAllCommandService {
         if (options == null) {
             return CliCodes.EXIT_USAGE;
         }
+        Integer missingIndexExit = AllModeIndexPreflight.failIfMissing(options.blocksPath(), err);
+        if (missingIndexExit != null) {
+            return missingIndexExit;
+        }
 
         BlockIndex index;
         try {

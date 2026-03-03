@@ -241,6 +241,44 @@ class BearIrValidatorTest {
     }
 
     @Test
+    void allowBlockInvariantDefinedForSubsetOfOperations(@TempDir Path tempDir) throws Exception {
+        String yaml = ""
+            + "version: v1\n"
+            + "block:\n"
+            + "  name: Wallet\n"
+            + "  kind: logic\n"
+            + "  operations:\n"
+            + "    - name: GetBalance\n"
+            + "      contract:\n"
+            + "        inputs: [{name: walletId, type: string}]\n"
+            + "        outputs: [{name: balance, type: int}]\n"
+            + "      uses:\n"
+            + "        allow:\n"
+            + "          - port: walletStore\n"
+            + "            ops: [getBalance]\n"
+            + "      invariants:\n"
+            + "        - kind: non_negative\n"
+            + "          field: balance\n"
+            + "    - name: GetStatement\n"
+            + "      contract:\n"
+            + "        inputs: [{name: walletId, type: string}]\n"
+            + "        outputs: [{name: entriesJson, type: string}]\n"
+            + "      uses:\n"
+            + "        allow:\n"
+            + "          - port: walletStore\n"
+            + "            ops: [getStatement]\n"
+            + "  effects:\n"
+            + "    allow:\n"
+            + "      - port: walletStore\n"
+            + "        ops: [getBalance, getStatement]\n"
+            + "  invariants:\n"
+            + "    - kind: non_negative\n"
+            + "      field: balance\n";
+
+        parseValidate(tempDir, yaml);
+    }
+
+    @Test
     void rejectEmptyEffectsWhenAnyOperationIsNotEchoSafe(@TempDir Path tempDir) throws IOException {
         String yaml = ""
             + "version: v1\n"

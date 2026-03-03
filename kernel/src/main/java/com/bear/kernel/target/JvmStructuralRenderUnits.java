@@ -9,7 +9,11 @@ final class JvmStructuralRenderUnits {
     static String renderStructuralDirectionTest(
         String generatedHeader,
         String packageName,
-        String blockName,
+        String wrapperClassName,
+        String requestClassName,
+        String resultClassName,
+        String sharedLogicClassName,
+        String sharedLogicMethodName,
         String blockKey,
         List<String> expectedOfParams,
         List<String> expectedLogicExecuteParams
@@ -23,7 +27,7 @@ final class JvmStructuralRenderUnits {
             + "import java.util.List;\n"
             + "import org.junit.jupiter.api.Test;\n"
             + "import static org.junit.jupiter.api.Assertions.fail;\n\n"
-            + "final class " + blockName + "StructuralDirectionTest {\n"
+            + "final class " + wrapperClassName + "StructuralDirectionTest {\n"
             + "    private static final String BLOCK_KEY = " + javaString(blockKey) + ";\n"
             + "    private static final boolean STRICT = Boolean.getBoolean(\"bear.structural.tests.strict\");\n"
             + "    private static final String TEST_NAME = \"Direction\";\n"
@@ -32,11 +36,11 @@ final class JvmStructuralRenderUnits {
             + "    @Test\n"
             + "    void structuralDirectionEvidence() {\n"
             + "        List<String> mismatches = new ArrayList<>();\n"
-            + "        expectSimpleName(" + blockName + ".class, " + javaString(blockName) + ", \"WRAPPER_CLASS_MISMATCH\", mismatches);\n"
-            + "        expectSimpleName(" + blockName + "Request.class, " + javaString(blockName + "Request") + ", \"REQUEST_CLASS_MISMATCH\", mismatches);\n"
-            + "        expectSimpleName(" + blockName + "Result.class, " + javaString(blockName + "Result") + ", \"RESULT_CLASS_MISMATCH\", mismatches);\n"
-            + "        expectSimpleName(" + blockName + "Logic.class, " + javaString(blockName + "Logic") + ", \"LOGIC_CLASS_MISMATCH\", mismatches);\n"
-            + "        Method ofMethod = findStaticMethod(" + blockName + ".class, \"of\", mismatches, \"WRAPPER_OF_MISSING\");\n"
+            + "        expectSimpleName(" + wrapperClassName + ".class, " + javaString(wrapperClassName) + ", \"WRAPPER_CLASS_MISMATCH\", mismatches);\n"
+            + "        expectSimpleName(" + requestClassName + ".class, " + javaString(requestClassName) + ", \"REQUEST_CLASS_MISMATCH\", mismatches);\n"
+            + "        expectSimpleName(" + resultClassName + ".class, " + javaString(resultClassName) + ", \"RESULT_CLASS_MISMATCH\", mismatches);\n"
+            + "        expectSimpleName(" + sharedLogicClassName + ".class, " + javaString(sharedLogicClassName) + ", \"LOGIC_CLASS_MISMATCH\", mismatches);\n"
+            + "        Method ofMethod = findStaticMethod(" + wrapperClassName + ".class, \"of\", mismatches, \"WRAPPER_OF_MISSING\");\n"
             + "        if (ofMethod != null) {\n"
             + "            List<String> actualOfParams = parameterSimpleNames(ofMethod);\n"
             + "            if (!actualOfParams.equals(EXPECTED_OF_PARAMS)) {\n"
@@ -47,15 +51,19 @@ final class JvmStructuralRenderUnits {
             + "                );\n"
             + "            }\n"
             + "            String actualReturnType = ofMethod.getReturnType().getSimpleName();\n"
-            + "            if (!actualReturnType.equals(" + javaString(blockName) + ")) {\n"
+            + "            if (!actualReturnType.equals(" + javaString(wrapperClassName) + ")) {\n"
             + "                addMismatch(\n"
             + "                    mismatches,\n"
             + "                    \"WRAPPER_OF_RETURN_MISMATCH\",\n"
-            + "                    \"expected=" + blockName + ";actual=\" + actualReturnType\n"
+            + "                    \"expected=" + wrapperClassName + ";actual=\" + actualReturnType\n"
             + "                );\n"
             + "            }\n"
             + "        }\n"
-            + "        Method logicExecute = findMethodByName(" + blockName + "Logic.class, \"execute\", mismatches, \"LOGIC_EXECUTE_MISSING\");\n"
+            + "        Method logicExecute = findMethodByName("
+            + sharedLogicClassName
+            + ".class, "
+            + javaString(sharedLogicMethodName)
+            + ", mismatches, \"LOGIC_EXECUTE_MISSING\");\n"
             + "        if (logicExecute != null) {\n"
             + "            List<String> actualExecuteParams = parameterSimpleNames(logicExecute);\n"
             + "            if (!actualExecuteParams.equals(EXPECTED_LOGIC_EXECUTE_PARAMS)) {\n"
@@ -66,11 +74,11 @@ final class JvmStructuralRenderUnits {
             + "                );\n"
             + "            }\n"
             + "            String actualResultType = logicExecute.getReturnType().getSimpleName();\n"
-            + "            if (!actualResultType.equals(" + javaString(blockName + "Result") + ")) {\n"
+            + "            if (!actualResultType.equals(" + javaString(resultClassName) + ")) {\n"
             + "                addMismatch(\n"
             + "                    mismatches,\n"
             + "                    \"LOGIC_EXECUTE_RETURN_MISMATCH\",\n"
-            + "                    \"expected=" + blockName + "Result;actual=\" + actualResultType\n"
+            + "                    \"expected=" + resultClassName + ";actual=\" + actualResultType\n"
             + "                );\n"
             + "            }\n"
             + "        }\n"

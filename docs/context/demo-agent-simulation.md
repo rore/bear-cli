@@ -114,6 +114,12 @@ Capture the full run transcript, including:
 13. `Review scope` obeys cap/order rule (max 8; baseline waiting starts with `bear.blocks.yaml`, `spec/*.bear.yaml`)
 14. `Surface evidence` cites non-generated runtime entrypoint/routing files
 
+Stop-on-anomaly protocol (mandatory):
+1. If run hits `INTERNAL_ERROR`/exit `70`, stop immediately.
+2. If same command times out (`124`) twice in a row, stop immediately.
+3. Do not accept workaround edits that change IR semantics only to force green.
+4. Record first failing command, exit code, and first failure signature in report.
+
 Minimum completion evidence format:
 
 ```text

@@ -15,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 class RepoArtifactPolicyTest {
     private static final Pattern TRACKED_BUILD_ARTIFACT_DIR = Pattern.compile("^build[0-9]+/.*");
     private static final Pattern STALE_BUILD_PATH_TOKEN = Pattern.compile("build[0-9]+[\\\\/]");
+    private static final Pattern GENERATED_NAMESPACE_SOURCE = Pattern.compile("^src/main/java/com/bear/generated/.*");
 
     @Test
     void trackedBuildArtifactDirectoriesAreForbidden() throws Exception {
@@ -24,6 +25,18 @@ class RepoArtifactPolicyTest {
             assertFalse(
                 TRACKED_BUILD_ARTIFACT_DIR.matcher(relPath).matches(),
                 "Tracked stale build artifact path is forbidden: " + relPath
+            );
+        }
+    }
+
+    @Test
+    void trackedGeneratedNamespaceSourcesAreForbidden() throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        List<String> trackedFiles = gitTrackedFiles(repoRoot);
+        for (String relPath : trackedFiles) {
+            assertFalse(
+                GENERATED_NAMESPACE_SOURCE.matcher(relPath).matches(),
+                "Tracked source under generated namespace is forbidden: " + relPath
             );
         }
     }
@@ -79,4 +92,3 @@ class RepoArtifactPolicyTest {
         return results;
     }
 }
-

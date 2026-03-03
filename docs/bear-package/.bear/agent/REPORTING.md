@@ -49,21 +49,26 @@ Run report MUST include:
 23. `Stopped after blocker: yes|no`
 24. `First failing command: <exact command line>|none (preflight)`
 25. `First failure signature: <one copied verbatim line>`
-26. `PR base used: <ref>`
-27. `PR base rationale: <merge-base against target branch OR user-provided base SHA>`
-28. `PR classification interpretation: <expected|unintended> - <brief rationale>`
-29. `Baseline review scope: <required for WAITING_FOR_BASELINE_REVIEW; must include bear.blocks.yaml and spec/*.bear.yaml>`
-30. `Constraint conflicts encountered: none|<list>`
-31. `Escalation decision: none|<reason>`
-32. `Containment sanity check: pass|fail|n/a - <evidence>`
-33. `Infra edits: none|<list>`
-34. `Unblock used: no|yes - <reason>`
-35. `Gate policy acknowledged: yes|no`
-36. `Final git status: <git status --short summary>`
-37. `GOVERNANCE_SIGNAL_DISPOSITION`
-38. `MULTI_BLOCK_PORT_IMPL_ALLOWED: none|<count>`
-39. `JUSTIFICATION: <required when count > 0>`
-40. `TRADEOFF: <required when count > 0>`
+26. `Tooling anomaly: yes|no`
+27. `Tooling anomaly first command: <exact command>|n/a`
+28. `Tooling anomaly exit code: <code>|n/a`
+29. `Tooling anomaly signature: <first crash/timeout/internal line>|n/a`
+30. `Repro case: ir=<file(s)>; command=<exact>; expected=<...>; actual=<...>; clean_state=<yes|no>`
+31. `PR base used: <ref>`
+32. `PR base rationale: <merge-base against target branch OR user-provided base SHA>`
+33. `PR classification interpretation: <expected|unintended> - <brief rationale>`
+34. `Baseline review scope: <required for WAITING_FOR_BASELINE_REVIEW; must include bear.blocks.yaml and spec/*.bear.yaml>`
+35. `Constraint conflicts encountered: none|<list>`
+36. `Escalation decision: none|<reason>`
+37. `Containment sanity check: pass|fail|n/a - <evidence>`
+38. `Infra edits: none|<list>`
+39. `Unblock used: no|yes - <reason>`
+40. `Gate policy acknowledged: yes|no`
+41. `Final git status: <git status --short summary>`
+42. `GOVERNANCE_SIGNAL_DISPOSITION`
+43. `MULTI_BLOCK_PORT_IMPL_ALLOWED: none|<count>`
+44. `JUSTIFICATION: <required when count > 0>`
+45. `TRADEOFF: <required when count > 0>`
 
 ## Decomposition Field Rules
 
@@ -128,6 +133,18 @@ Non-applicability:
 5. If no command failed because failure occurred at preflight observation time, set:
 - `First failing command: none (preflight)`
 - `First failure signature: PROCESS_VIOLATION|<label>|<missing/evidence>`
+
+## Tooling Anomaly Reporting
+
+When `Tooling anomaly: yes`:
+1. stop immediately after first anomaly (no workaround edits)
+2. populate anomaly fields using first failing command/signature only
+3. `Repro case` must be minimal and deterministic:
+- `ir=<single file or exact set>`
+- `command=<single command>`
+- `expected=<expected behavior>`
+- `actual=<observed behavior>`
+- `clean_state=yes|no` (whether unrelated extra IR/index files were present)
 
 ## Recommended Verification Notes (Optional)
 

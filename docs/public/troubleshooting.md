@@ -36,6 +36,15 @@ Fix:
 1. Run `bear --help`.
 2. Re-run with exact invocation form from command contract page.
 
+## `INDEX_REQUIRED_MISSING`
+
+Symptom: `index: VALIDATION_ERROR: INDEX_REQUIRED_MISSING: bear.blocks.yaml: project=.` and exit `2`.
+Likely cause: running `--all` command without `bear.blocks.yaml`.
+Fix:
+
+1. Create `bear.blocks.yaml` in repo root, or
+2. run non-`--all` command form.
+
 ## `IO_ERROR`
 
 Symptom: read/write or wrapper path failure, exit `74`.
@@ -267,6 +276,15 @@ Fix:
 1. Re-run `bear compile` (or `bear compile --all`) to regenerate manifests.
 2. Ensure generated artifacts are consistent with current IR/index.
 3. Re-run `bear check`.
+
+## `NOT_SUPPORTED_YET`
+
+Symptom: validation-style failure with `CODE=NOT_SUPPORTED_YET`, exit `2`.
+Likely cause: selected IR/target combination is recognized but not implemented yet.
+Fix:
+
+1. Use a supported command/IR combination, or
+2. file an issue with IR path, command, and exact envelope.
 
 ## `INTERNAL_ERROR`
 

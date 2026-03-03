@@ -9,11 +9,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 final class CheckAllCommandService {
     private static final String CHECK_BLOCKED_REASON_LOCK = "LOCK";
     private static final String CHECK_BLOCKED_REASON_BOOTSTRAP = "BOOTSTRAP_IO";
     private static final String CONTAINMENT_ENTRYPOINT_PATH = "build/generated/bear/gradle/bear-containment.gradle";
+    private static final String HEARTBEAT_SECONDS_PROPERTY = "bear.check.all.heartbeatSeconds";
+    private static final long HEARTBEAT_POLL_MILLIS = 200L;
 
     private CheckAllCommandService() {
     }
@@ -22,6 +26,10 @@ final class CheckAllCommandService {
         AllCheckOptions options = AllModeOptionParser.parseAllCheckOptions(args, err);
         if (options == null) {
             return CliCodes.EXIT_USAGE;
+        }
+        Integer missingIndexExit = AllModeIndexPreflight.failIfMissing(options.blocksPath(), err);
+        if (missingIndexExit != null) {
+            return missingIndexExit;
         }
 
         BlockIndex index;
@@ -58,6 +66,7 @@ final class CheckAllCommandService {
                 "Use only block names declared in `bear.blocks.yaml`."
             );
         }
+        out.println("check-all: START project=.");
 
         try {
             List<String> legacyMarkers = options.strictOrphans()
@@ -151,6 +160,7 @@ final class CheckAllCommandService {
         boolean failed = false;
         boolean failFastTriggered = false;
         for (BlockIndexEntry block : selected) {
+            emitBlockStart(out, block);
             if (!block.enabled()) {
                 blockResults.add(BearCli.skipBlock(block, "DISABLED"));
                 continue;
@@ -319,10 +329,25 @@ final class CheckAllCommandService {
                     }
                     continue;
                 }
-                ProjectTestResult testResult = ProjectTestRunner.runProjectTests(
-                    root,
-                    considerContainmentSurfaces ? CONTAINMENT_ENTRYPOINT_PATH : null
+                String rootProject = normalizePathToken(entry.getKey());
+                out.println("check-all: ROOT_TEST_START project=" + rootProject);
+                RootTestHeartbeat heartbeat = RootTestHeartbeat.start(
+                    out,
+                    rootProject,
+                    heartbeatIntervalSeconds()
                 );
+                ProjectTestResult testResult = null;
+                int rootTestExit = CliCodes.EXIT_INTERNAL;
+                try {
+                    testResult = ProjectTestRunner.runProjectTests(
+                        root,
+                        considerContainmentSurfaces ? CONTAINMENT_ENTRYPOINT_PATH : null
+                    );
+                    rootTestExit = rootTestExitCode(testResult);
+                } finally {
+                    heartbeat.stop();
+                    out.println("check-all: ROOT_TEST_DONE project=" + rootProject + " exit=" + rootTestExit);
+                }
                 if (testResult.status() == ProjectTestStatus.LOCKED) {
                     String lockLine = testResult.firstLockLine() != null
                         ? testResult.firstLockLine()
@@ -558,9 +583,11 @@ final class CheckAllCommandService {
         List<String> lines = AllModeRenderer.renderCheckAllOutput(blockResults, summary);
         if (summary.exitCode() == CliCodes.EXIT_OK) {
             CliText.printLines(out, lines);
+            out.println("check-all: DONE project=. exit=" + CliCodes.EXIT_OK);
             return CliCodes.EXIT_OK;
         }
         CliText.printLines(err, lines);
+        out.println("check-all: DONE project=. exit=" + summary.exitCode());
         return BearCli.fail(
             err,
             summary.exitCode(),
@@ -604,6 +631,96 @@ final class CheckAllCommandService {
 
     private static String markerWriteFailureSuffix(IOException error) {
         return "; markerWrite=failed:" + CliText.squash(error.getMessage());
+    }
+
+    private static void emitBlockStart(PrintStream out, BlockIndexEntry block) {
+        out.println("check-all: BLOCK_START name="
+            + block.name()
+            + " ir="
+            + normalizePathToken(block.ir()));
+    }
+
+    private static String normalizePathToken(String path) {
+        return path == null ? "." : path.replace('\\', '/');
+    }
+
+    private static int heartbeatIntervalSeconds() {
+        String raw = System.getProperty(HEARTBEAT_SECONDS_PROPERTY);
+        if (raw == null || raw.isBlank()) {
+            return 30;
+        }
+        try {
+            int parsed = Integer.parseInt(raw.trim());
+            return parsed <= 0 ? 30 : parsed;
+        } catch (NumberFormatException ignored) {
+            return 30;
+        }
+    }
+
+    private static int rootTestExitCode(ProjectTestResult result) {
+        if (result == null) {
+            return CliCodes.EXIT_INTERNAL;
+        }
+        if (result.status() == ProjectTestStatus.PASSED) {
+            return CliCodes.EXIT_OK;
+        }
+        if (result.status() == ProjectTestStatus.TIMEOUT) {
+            return 124;
+        }
+        return 1;
+    }
+
+    private record RootTestHeartbeat(
+        PrintStream out,
+        String projectRoot,
+        int intervalSeconds,
+        AtomicBoolean stopped,
+        Thread worker
+    ) {
+        static RootTestHeartbeat start(PrintStream out, String projectRoot, int intervalSeconds) {
+            AtomicBoolean stopped = new AtomicBoolean(false);
+            String normalizedProjectRoot = normalizePathToken(projectRoot);
+            Thread worker = new Thread(
+                () -> runLoop(out, normalizedProjectRoot, intervalSeconds, stopped),
+                "bear-check-all-heartbeat-" + normalizedProjectRoot
+            );
+            worker.setDaemon(true);
+            worker.start();
+            return new RootTestHeartbeat(out, normalizedProjectRoot, intervalSeconds, stopped, worker);
+        }
+
+        void stop() {
+            stopped.set(true);
+            worker.interrupt();
+            try {
+                worker.join(TimeUnit.SECONDS.toMillis(1));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        private static void runLoop(PrintStream out, String projectRoot, int intervalSeconds, AtomicBoolean stopped) {
+            long startNanos = System.nanoTime();
+            long nextHeartbeat = intervalSeconds;
+            while (!stopped.get()) {
+                long elapsedSeconds = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - startNanos);
+                while (!stopped.get() && elapsedSeconds >= nextHeartbeat) {
+                    out.println(
+                        "check-all: HEARTBEAT seconds="
+                            + nextHeartbeat
+                            + " phase=root_test project="
+                            + projectRoot
+                    );
+                    nextHeartbeat += intervalSeconds;
+                }
+                try {
+                    Thread.sleep(HEARTBEAT_POLL_MILLIS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+            }
+        }
     }
 
     private static String boundaryBypassRemediation(String rule) {

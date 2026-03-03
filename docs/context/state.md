@@ -6,51 +6,50 @@ Long-form historical notes are archived in `docs/context/archive/archive-state-h
 
 ## Last Updated
 
-2026-03-02
+2026-03-03
 
 ## Current Focus
 
-IR v1 multi-operation cutover under strict block boundary authority:
-- enforce required `block.operations` structure
-- enforce block-authoritative boundary + operation subset semantics in validator/codegen/governance
-- keep generation deterministic with shared block logic + per-operation wrappers
+P2 stabilization v3 hardening:
+- unified `--all` missing-index envelope across compile/check/fix/pr-check
+- deterministic `check --all` progress/heartbeat stream
+- single-source invariant fingerprint + validator/codegen consistency for multi-op IR
 
 ## Next Concrete Task
 
-1. If repo-level `--all` gates are required in this workspace, add/provide `bear.blocks.yaml` and rerun:
-- `bear check --all --project <repoRoot>`
-- `bear pr-check --all --project <repoRoot> --base <ref>`
-2. Decide whether to keep or rename tests whose names still mention “ordinary ops” while now validating operation-attributed contract deltas.
+1. If repo-level `--all` gates are required in this workspace, add `bear.blocks.yaml` and rerun:
+- `bear check --all --project .`
+- `bear pr-check --all --project . --base <ref>`
+2. Optional follow-up: add explicit integration coverage for a non-`_shared` containment Gradle lane task in CLI tests.
 
 ## Session Notes
 
-- Completed atomic IR cutover for multi-operation blocks:
-  - kernel model/parser/validator/normalizer/emitter switched to `block.operations` + per-operation `uses/idempotency/invariants`.
-  - JVM target now emits shared `<Block>Logic`/`<Block>Impl` + per-operation request/result/wrapper classes.
-  - pr-delta surface updated for operation add/remove (`SURFACE`) and op-attributed deltas.
-- Updated fixture/golden (`withdraw`) and aligned kernel/app tests to new schema and generated artifacts.
-- Synced canonical/package docs for multi-operation contract and boundary semantics.
+- Completed all-mode index preflight unification:
+  - added shared preflight helper for `compile/check/fix/pr-check --all`
+  - missing-index envelope is now deterministic and identical (`INDEX_REQUIRED_MISSING`, exit `2`, `project=.`)
+- Added deterministic `check --all` progress stream:
+  - `START`, `BLOCK_START`, `ROOT_TEST_START`, monotonic `HEARTBEAT`, `ROOT_TEST_DONE`, `DONE`
+  - covered by new `AllModeContractTest`
+- Added kernel/app invariant fingerprint single source:
+  - new `InvariantFingerprint` in kernel
+  - reused by validator and app `PrDeltaClassifier`
+  - normalizer sorts invariants by canonical fingerprint
+- Relaxed block invariant applicability:
+  - block-level allowed invariants are no longer forced to apply to every operation output
+  - operation invariants remain field/type validated per operation and subset-checked by fingerprint
+- Fixed generator stability for mixed idempotency:
+  - idempotency key codegen now guarded to `mode=use` paths only
+  - added `JvmTargetTest` regression for mixed `none/use`
+- Fixed structural contract drift in generated structural tests:
+  - structural direction tests now assert shared `<Block>Logic` + per-op wrapper/request/result
+  - no per-op `*Logic` expectation in generated structural assertions
+- Added mechanical policy guard:
+  - `RepoArtifactPolicyTest` now forbids tracked `src/main/java/com/bear/generated/**`
+  - `AllModeContractTest` verifies `fix --all` does not mutate `spec/*.bear.yaml`
+- Updated agent/public/context docs:
+  - agent docs now include hard stop on tooling anomalies, timeout retry budget, and anomaly reporting fields
+  - public command docs include exact missing-index signature and `check --all` heartbeat examples
+  - simulation runbook now includes explicit stop-on-anomaly protocol
 - Verification:
-  - `:kernel:test` and `:app:test` pass.
-  - `bear check --all --project .` and `bear pr-check --all --project . --base HEAD` currently fail with `IO_ERROR` because `bear.blocks.yaml` is missing at repo root.
-- Added explicit doc-hygiene trim/archive guidance to `AGENTS.md` and `docs/context/start-here.md` so `state.md`/context caps do not repeatedly break CI.
-- Relaxed context-doc guard caps in `ContextDocsConsistencyTest` to reduce repeated CI budget failures during active docs iterations (`state.md` total, `program-board.md` total, and Session Notes section cap).
-- Continued stability-first rollout with deterministic guardrails/docs tightening and no CLI contract changes.
-- Completed JVM target decomposition slices and retained deterministic behavior/signatures.
-- Split `BearCliTest` by command domain and preserved existing envelope/exit behavior expectations.
-- Landed CI hardening:
-  - `gradlew` exec bit + explicit `chmod +x` in jobs.
-  - SHA-based concurrency group to collapse duplicate push/PR runs.
-  - stable `GRADLE_USER_HOME` + cache dir precreate to remove setup-java cache-path warnings.
-- Landed Linux test/runtime hardening:
-  - Unix wrapper run via `sh <project>/gradlew`.
-  - removed strict Unix exec-bit precheck for wrapper presence-only resolution.
-  - normalized path-separator handling in docs consistency checks.
-- Fixed flaky timeout tests deterministically:
-  - command-layer timeout-outcome hook (`bear.check.test.forceTimeoutOutcome`).
-  - pre-start synthetic timeout path in `ProjectTestRunner.runProjectTestsOnce` to avoid process-kill/stream races.
-  - targeted stress reruns and full `:app:test :kernel:test` green locally.
-- Implemented `Guardrails v2.2.6.4` docs/tests determinism lock:
-  - canonical decomposition trigger token + mode/groups/reporting coupling.
-  - stricter non-solution/remediation wording and docs consistency anchors.
-- Full historical details remain in archive docs; this file stays operational and bounded.
+  - `:kernel:test` and `:app:test` pass
+  - `:app:run --args "check --all --project ."` and `:app:run --args "pr-check --all --project . --base HEAD"` emit deterministic missing-index envelope and terminate with exit `2` (expected without repo-root index)

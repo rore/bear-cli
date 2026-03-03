@@ -33,7 +33,7 @@ public final class BearIrValidator {
         }
         validateOperationIdempotency(block, operationShapes);
 
-        validateBlockInvariantsAgainstOperations(block.invariants(), operationShapes);
+        validateBlockInvariants(block.invariants());
         validateOperationInvariants(block, operationShapes);
 
         validateEmptyEffectsPolicy(block, operationShapes);
@@ -270,16 +270,14 @@ public final class BearIrValidator {
         return false;
     }
 
-    private void validateBlockInvariantsAgainstOperations(List<BearIr.Invariant> blockInvariants, List<OperationShape> shapes) {
+    private void validateBlockInvariants(List<BearIr.Invariant> blockInvariants) {
         if (blockInvariants == null) {
             return;
         }
         for (int i = 0; i < blockInvariants.size(); i++) {
             BearIr.Invariant invariant = blockInvariants.get(i);
             String path = "block.invariants[" + i + "]";
-            for (OperationShape shape : shapes) {
-                validateInvariantRule(invariant, path, shape.outputTypes());
-            }
+            validateInvariantDefinition(invariant, path);
         }
     }
 
@@ -287,7 +285,7 @@ public final class BearIrValidator {
         TreeSet<String> blockAllowed = new TreeSet<>();
         if (block.invariants() != null) {
             for (int i = 0; i < block.invariants().size(); i++) {
-                blockAllowed.add(invariantFingerprint(block.invariants().get(i)));
+                blockAllowed.add(InvariantFingerprint.canonicalKey(block.invariants().get(i)));
             }
         }
         for (OperationShape shape : shapes) {
@@ -306,7 +304,7 @@ public final class BearIrValidator {
                 BearIr.Invariant invariant = opInvariants.get(i);
                 String path = shape.path() + ".invariants[" + i + "]";
                 validateInvariantRule(invariant, path, shape.outputTypes());
-                String fingerprint = invariantFingerprint(invariant);
+                String fingerprint = InvariantFingerprint.canonicalKey(invariant);
                 if (!blockAllowed.contains(fingerprint)) {
                     throw semantic(
                         path,
@@ -319,15 +317,9 @@ public final class BearIrValidator {
     }
 
     private void validateInvariantRule(BearIr.Invariant invariant, String path, Map<String, BearIr.FieldType> outputTypesByName) {
-        requireNonNull(invariant.kind(), path + ".kind");
-        requireNonNull(invariant.scope(), path + ".scope");
-        requireNonBlank(invariant.field(), path + ".field");
-        requireNonNull(invariant.params(), path + ".params");
+        validateInvariantDefinition(invariant, path);
         if (!outputTypesByName.containsKey(invariant.field())) {
             throw semantic(path + ".field", BearIrValidationException.Code.UNKNOWN_REFERENCE, "must reference an output field");
-        }
-        if (invariant.scope() != BearIr.InvariantScope.RESULT) {
-            throw semantic(path + ".scope", BearIrValidationException.Code.INVALID_VALUE, "scope must be result");
         }
 
         BearIr.FieldType fieldType = outputTypesByName.get(invariant.field());
@@ -336,16 +328,31 @@ public final class BearIrValidator {
                 if (fieldType != BearIr.FieldType.INT && fieldType != BearIr.FieldType.DECIMAL) {
                     throw semantic(path + ".kind", BearIrValidationException.Code.INVALID_VALUE, "non_negative requires int or decimal output");
                 }
-                if (invariant.params().value() != null || !invariant.params().values().isEmpty()) {
-                    throw semantic(path + ".params", BearIrValidationException.Code.INVALID_VALUE, "non_negative does not accept params");
-                }
             }
             case NON_EMPTY -> {
                 if (fieldType != BearIr.FieldType.STRING) {
                     throw semantic(path + ".kind", BearIrValidationException.Code.INVALID_VALUE, "non_empty requires string output");
                 }
+            }
+            case EQUALS, ONE_OF -> {
+                // No additional type restrictions beyond definition validation.
+            }
+        }
+    }
+
+    private void validateInvariantDefinition(BearIr.Invariant invariant, String path) {
+        requireNonNull(invariant.kind(), path + ".kind");
+        requireNonNull(invariant.scope(), path + ".scope");
+        requireNonBlank(invariant.field(), path + ".field");
+        requireNonNull(invariant.params(), path + ".params");
+        if (invariant.scope() != BearIr.InvariantScope.RESULT) {
+            throw semantic(path + ".scope", BearIrValidationException.Code.INVALID_VALUE, "scope must be result");
+        }
+
+        switch (invariant.kind()) {
+            case NON_NEGATIVE, NON_EMPTY -> {
                 if (invariant.params().value() != null || !invariant.params().values().isEmpty()) {
-                    throw semantic(path + ".params", BearIrValidationException.Code.INVALID_VALUE, "non_empty does not accept params");
+                    throw semantic(path + ".params", BearIrValidationException.Code.INVALID_VALUE, invariant.kind().name().toLowerCase() + " does not accept params");
                 }
             }
             case EQUALS -> {
@@ -364,9 +371,9 @@ public final class BearIrValidator {
                     throw semantic(path + ".params.values", BearIrValidationException.Code.INVALID_VALUE, "one_of requires non-empty params.values");
                 }
                 Set<String> seen = new LinkedHashSet<>();
-                for (int j = 0; j < invariant.params().values().size(); j++) {
-                    String value = invariant.params().values().get(j);
-                    String valuePath = path + ".params.values[" + j + "]";
+                for (int i = 0; i < invariant.params().values().size(); i++) {
+                    String value = invariant.params().values().get(i);
+                    String valuePath = path + ".params.values[" + i + "]";
                     requireNonNull(value, valuePath);
                     if (!seen.add(value)) {
                         throw semantic(valuePath, BearIrValidationException.Code.DUPLICATE, "duplicate params.values entry: " + value);
@@ -374,51 +381,6 @@ public final class BearIrValidator {
                 }
             }
         }
-    }
-
-    static String invariantFingerprint(BearIr.Invariant invariant) {
-        String kind = invariant.kind().name().toLowerCase();
-        String scope = invariant.scope().name().toLowerCase();
-        String field = escapeInvariantToken(invariant.field());
-        String params = canonicalInvariantParams(invariant);
-        return "kind=" + kind + "|scope=" + scope + "|field=" + field + "|params=" + params;
-    }
-
-    private static String canonicalInvariantParams(BearIr.Invariant invariant) {
-        BearIr.InvariantParams params = invariant.params();
-        String value = params == null ? null : params.value();
-        List<String> values = params == null || params.values() == null ? List.of() : params.values();
-        return switch (invariant.kind()) {
-            case NON_NEGATIVE, NON_EMPTY -> "none";
-            case EQUALS -> "value=" + escapeInvariantToken(value);
-            case ONE_OF -> {
-                ArrayList<String> sorted = new ArrayList<>(values);
-                sorted.sort(String::compareTo);
-                yield "values=" + escapeInvariantCsv(sorted);
-            }
-        };
-    }
-
-    private static String escapeInvariantCsv(List<String> values) {
-        StringBuilder out = new StringBuilder();
-        for (int i = 0; i < values.size(); i++) {
-            if (i > 0) {
-                out.append(",");
-            }
-            out.append(escapeInvariantToken(values.get(i)));
-        }
-        return out.toString();
-    }
-
-    private static String escapeInvariantToken(String value) {
-        if (value == null) {
-            return "<null>";
-        }
-        return value
-            .replace("\\", "\\\\")
-            .replace("|", "\\|")
-            .replace(",", "\\,")
-            .replace("=", "\\=");
     }
 
     private void validateImpl(BearIr.Impl impl) {

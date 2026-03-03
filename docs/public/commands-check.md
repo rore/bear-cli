@@ -15,6 +15,15 @@ bear check <ir-file> --project <path> [--strict-hygiene]
 bear check --all --project <repoRoot> [--blocks <path>] [--only <csv>] [--fail-fast] [--strict-orphans] [--strict-hygiene]
 ```
 
+If `bear.blocks.yaml` is missing for `check --all`, failure envelope is deterministic (exit `2`):
+
+```text
+index: VALIDATION_ERROR: INDEX_REQUIRED_MISSING: bear.blocks.yaml: project=.
+CODE=INDEX_REQUIRED_MISSING
+PATH=bear.blocks.yaml
+REMEDIATION=Create bear.blocks.yaml or run non---all command
+```
+
 ## Inputs and flags
 
 - Single mode uses `<ir-file>` and `--project`.
@@ -34,6 +43,22 @@ Generated logic wrappers expose a sanctioned default wiring factory: `Wrapper.of
 - Keep constructor `(ports..., Logic)` for tests/advanced injection.
 
 ## Output schema and ordering guarantees
+
+`check --all` emits deterministic progress lines on `stdout` (as an ordered subsequence; other output may interleave):
+
+```text
+check-all: START project=.
+check-all: BLOCK_START name=<block> ir=<irPath>
+check-all: ROOT_TEST_START project=<projectRoot>
+check-all: HEARTBEAT seconds=<n> phase=root_test project=<projectRoot>
+check-all: ROOT_TEST_DONE project=<projectRoot> exit=<code>
+check-all: DONE project=. exit=<code>
+```
+
+Heartbeat semantics:
+- monotonic clock only
+- first heartbeat at `30` seconds, then `60`, `90`, ...
+- `seconds=<n>` is deterministic threshold value for that cadence point
 
 Single mode deterministic order:
 
