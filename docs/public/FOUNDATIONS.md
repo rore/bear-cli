@@ -1,115 +1,71 @@
-# Foundations
+﻿# Foundations
 
 This repository is a proof-of-concept reference implementation.
-It is not a production-ready framework; it exists to validate and demonstrate deterministic boundary governance for agentic backend development.
+It validates deterministic boundary governance for agentic backend development.
 
-
-For the fastest onboarding use [QUICKSTART.md](QUICKSTART.md).
-For a one-page summary of the hypothesis and workflow, see [OVERVIEW.md](OVERVIEW.md).
+For onboarding, use [OVERVIEW.md](OVERVIEW.md), [QUICKSTART.md](QUICKSTART.md), and [PR_REVIEW.md](PR_REVIEW.md).
 
 ## Why BEAR exists
 
-BEAR exists to make AI-assisted and agentic backend development safer without killing delivery speed.
-In agent-heavy workflows, code can evolve quickly, but boundary expansion and generated-artifact drift can become hard to see.
-BEAR addresses this with deterministic contracts and deterministic gates.
+Agent-generated code can move fast and hide architectural drift.
+BEAR exists to make boundary authority changes explicit, enforceable, and CI-visible.
 
-## Core philosophy
+## How It Works
 
-- Keep implementation velocity high inside declared boundaries.
-- Make boundary power changes explicit and reviewable.
-- Prefer deterministic contract enforcement over process or prompt discipline.
-- Produce CI-friendly, machine-parseable outputs and stable exit semantics.
-- Enforce only declared semantics that are supportable by target wrappers/ports.
+1. Declare boundary in IR
+- IR defines block operations and allowed effects.
+- `port.kind` can be `external` (`ops`) or `block` (`targetBlock` + `targetOps`).
+- `block.kind` remains `logic` in v1.
 
-## BEAR IR fundamentals
+2. Generate governed surface
+- `bear compile` (or `bear fix`) emits deterministic wrappers/ports/manifests.
+- Generated manifests include governed ownership roots (`governedSourceRoots`) used by enforcement.
 
-BEAR IR is a constrained YAML contract for one governed block.
-It declares block boundary authority and one or more typed operations, then drives deterministic generation and checks.
+3. Run deterministic gates
+- `bear check` validates drift, covered bypass/reach rules, containment lanes, and project test gate.
+- `bear pr-check` compares against base and classifies boundary-expanding deltas.
 
-Typical shape:
+## Intended Workflow Loop
 
-```yaml
-version: v1
-block:
-  name: InventorySync
-  kind: logic
-  operations:
-    - name: ApplyRestock
-      contract:
-        inputs:
-          - name: restockId
-            type: string
-        outputs:
-          - name: availableUnits
-            type: int
-      uses:
-        allow:
-          - port: inventoryStore
-            ops: [getUnits, setUnits]
-          - port: idempotency
-            ops: [get, put]
-      idempotency:
-        mode: use
-        key: restockId
-  effects:
-    allow:
-      - port: inventoryStore
-        ops: [getUnits, setUnits]
-      - port: idempotency
-        ops: [get, put]
-  idempotency:
-    store:
-      port: idempotency
-      getOp: get
-      putOp: put
-```
+Agent loop:
+1. Update implementation + IR from domain intent.
+2. Run `bear validate`.
+3. Run `bear compile` or `bear fix`.
+4. Run `bear check --collect=all --agent` until status is ok.
+5. Run `bear pr-check --base <ref> --collect=all --agent` for governance classification.
 
-Key idea:
+Developer role:
+- review explicit boundary signals in PR/CI
+- accept or reject boundary expansion intentionally
 
-- IR is the declared boundary contract.
-- `compile` materializes deterministic generated artifacts from that contract.
-- `check` enforces consistency and policy against that contract.
-- `pr-check` classifies contract deltas against base branch for governance.
-- invariant/idempotency semantics in scope are enforced in BEAR-owned wrappers (not by impl conventions).
+Who edits IR:
+- in normal flow, the agent updates IR
+- developers are not expected to hand-author IR routinely
 
-## Agent workflow and developer visibility
+## Vocabulary Highlights
 
-BEAR is designed for agent-driven workflows.
-In the intended model, the agent updates IR when it needs new boundary authority; developers mostly review governance signals.
+- `drift`: generated artifacts no longer match IR-derived output.
+- `boundary bypass`: structural reach-around of governed surfaces (fails with `CODE=BOUNDARY_BYPASS`).
+- `boundary expansion`: widened declared authority in IR diff (fails `pr-check` with exit `5`).
+- `unblock`: clears advisory blocked marker after lock/bootstrap IO failures.
 
-Typical agent loop:
+See [TERMS.md](TERMS.md) for concise definitions.
 
-1. update IR and implementation from project specs
-2. run `bear validate`
-3. run `bear compile` or `bear fix`
-4. run `bear check --collect=all --agent`
-5. apply only the returned `nextAction` commands, then rerun until `status=ok`
-6. run `bear pr-check --base <ref> --collect=all --agent` for governance classification
+## Architecture
 
-Developer-facing visibility:
+BEAR CLI has two modules:
+- `kernel/`: deterministic IR and target core
+- `app/`: CLI orchestration and contract rendering
 
-- PR signal: `pr-check` classifies boundary-expanding vs ordinary changes.
-- CI signal: deterministic exit codes and failure footer let teams enforce stable merge gates.
-- Local triage signal: consistent output ordering and path normalization make failures actionable quickly.
+## Preview Scope
 
-## Preview scope mindset
-
-Preview focuses on structural contract enforcement, deterministic diagnostics, and boundary governance.
-It is intentionally not a business-rules engine and does not claim full runtime semantics.
-Enforcement coverage is intentionally bounded to supported targets/surfaces in Preview.
-
-## CLI architecture at a glance
-
-BEAR CLI is split into two modules:
-
-- `kernel/`: deterministic trusted seed for IR parsing, validation, normalization, and target abstractions.
-- `app/`: CLI orchestration (`validate`, `compile`, `fix`, `check`, `unblock`, `pr-check`) and contract rendering.
+Preview focuses on deterministic contracts, governance signaling, and bounded enforcement coverage.
+It is intentionally not full behavioral verification or runtime policy enforcement.
 
 ## Related
 
 - [OVERVIEW.md](OVERVIEW.md)
-- [MODEL.md](MODEL.md)
+- [TERMS.md](TERMS.md)
 - [ENFORCEMENT.md](ENFORCEMENT.md)
 - [PR_REVIEW.md](PR_REVIEW.md)
 - [CONTRACTS.md](CONTRACTS.md)
-

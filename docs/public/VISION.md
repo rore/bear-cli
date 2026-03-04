@@ -1,4 +1,4 @@
-# Vision (Directional, Engineering Scope)
+﻿# Vision (Directional, Engineering Scope)
 
 This page captures longer-horizon BEAR direction.
 It is not a milestone plan and it does not imply dates or active implementation.
@@ -61,7 +61,7 @@ One explicit candidate is Node.js/TypeScript, with target-specific containment c
 ## Related
 
 - [INDEX.md](INDEX.md)
+- [OVERVIEW.md](OVERVIEW.md)
 - [FOUNDATIONS.md](FOUNDATIONS.md)
-- [MODEL.md](MODEL.md)
 - [CONTRACTS.md](CONTRACTS.md)
 - [VERSIONING.md](VERSIONING.md)

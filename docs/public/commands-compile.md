@@ -1,8 +1,23 @@
-# bear compile
+﻿# bear compile
 
 ## Purpose
 
 Compile validated IR into deterministic BEAR-owned generated artifacts for one block or all indexed blocks.
+
+## Quick use
+
+Canonical invocation:
+
+```text
+bear compile <ir-file> --project <path>
+```
+
+Success looks like:
+- `compiled: OK` and exit `0`
+
+Main failure classes:
+- validation/config (`exit 2`)
+- usage/internal/IO (`64/70/74`)
 
 ## Invocation forms
 
@@ -93,10 +108,12 @@ See [output-format.md](output-format.md).
 
 ## Related
 
-- [MODEL.md](MODEL.md)
+- [FOUNDATIONS.md](FOUNDATIONS.md)
 - [commands-check.md](commands-check.md)
 - [commands-fix.md](commands-fix.md)
 - [output-format.md](output-format.md)
 - [troubleshooting.md](troubleshooting.md)
+
+
 
 

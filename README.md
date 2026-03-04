@@ -5,9 +5,42 @@
 </p>
 
 BEAR is a deterministic governance CLI for agentic backend development.
-It is a proof-of-concept reference implementation: a practical way to validate how higher-sensitivity backend work might look in an agentic world.
 
-Hypothesis:
+```mermaid
+%%{init: {"theme":"base","themeVariables":{
+  "fontFamily":"ui-sans-serif, system-ui",
+  "lineColor":"#94A3B8",
+  "textColor":"#E5E7EB",
+  "background":"#0B1220",
+  "primaryColor":"#111827",
+  "primaryBorderColor":"#334155"
+}}}%%
+flowchart LR
+  A[Agent / Dev edits code]:::actor --> B[Update BEAR IR (*.bear.yaml)]:::ir
+  B --> C[bear compile]:::cmd
+  C --> D[Generated wiring + wrappers]:::gen
+  D --> E[bear check]:::cmd
+  E --> F{CI green?}:::gate
+  F -- yes --> G[Merge]:::ok
+  F -- no --> H[Fix: code or IR]:::bad
+
+  I[bear pr-check]:::cmd --> J{Boundary delta?}:::gate
+  J -- none --> F
+  J -- expansion / bypass --> H
+
+  E -. emits .-> S1[[Signals:\nexit code + CODE/PATH/REMEDIATION]]:::signal
+  I -. emits .-> S2[[PR signals:\npr-delta + verdict + footer]]:::signal
+
+  classDef actor fill:#1E1B4B,stroke:#818CF8,color:#E5E7EB;
+  classDef ir fill:#2A1F0A,stroke:#FBBF24,color:#E5E7EB;
+  classDef cmd fill:#052E2B,stroke:#34D399,color:#E5E7EB;
+  classDef gen fill:#0F172A,stroke:#94A3B8,color:#E5E7EB;
+  classDef gate fill:#111827,stroke:#E5E7EB,color:#E5E7EB;
+  classDef ok fill:#052E16,stroke:#22C55E,color:#E5E7EB;
+  classDef bad fill:#3F0A0A,stroke:#F87171,color:#E5E7EB;
+  classDef signal fill:#2B1405,stroke:#FB923C,color:#E5E7EB;
+```
+
 - as agents write more backend code, we may need strict, deterministic enforcement to prevent silent boundary expansion and generated-artifact drift
 - governance should not depend on agent reasoning quality; it should show up as explicit PR/CI signals
 
@@ -85,18 +118,17 @@ In a real PR/CI flow, set `--base` to the merge-base target (for example `origin
 ## Links
 
 - Start here: [docs/public/INDEX.md](docs/public/INDEX.md)
-- Overview (what this is trying to prove): [docs/public/OVERVIEW.md](docs/public/OVERVIEW.md)
-- First run: [docs/public/QUICKSTART.md](docs/public/QUICKSTART.md)
-- PR/CI review model: [docs/public/PR_REVIEW.md](docs/public/PR_REVIEW.md)
-- What BEAR enforces: [docs/public/ENFORCEMENT.md](docs/public/ENFORCEMENT.md)
-- Install in another repo: [docs/public/INSTALL.md](docs/public/INSTALL.md)
-- Command contracts: [docs/public/commands-check.md](docs/public/commands-check.md), [docs/public/commands-pr-check.md](docs/public/commands-pr-check.md)
-- Machine-facing behavior: [docs/public/exit-codes.md](docs/public/exit-codes.md), [docs/public/output-format.md](docs/public/output-format.md)
-- Failure triage: [docs/public/troubleshooting.md](docs/public/troubleshooting.md)
+- Quickstart: [docs/public/QUICKSTART.md](docs/public/QUICKSTART.md)
+- PR/CI review: [docs/public/PR_REVIEW.md](docs/public/PR_REVIEW.md)
+- Guarantees and non-goals: [docs/public/ENFORCEMENT.md](docs/public/ENFORCEMENT.md)
+- Automation/reference contracts: [docs/public/CONTRACTS.md](docs/public/CONTRACTS.md)
 
 ## Supported targets
 
 - JVM/Java target in Preview.
 - Primary containment enforcement path is Java plus Gradle wrapper when `impl.allowedDeps` is declared.
+
+
+
 
 

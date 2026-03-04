@@ -10,13 +10,36 @@ PATH=<locator>
 REMEDIATION=<deterministic-step>
 ```
 
-Contract:
 
-- emitted exactly once
-- last three `stderr` lines
-- no `stderr` output after `REMEDIATION=...`
+Deterministic + parseable reporting pipeline:
 
-## `PATH` locator rules
+```mermaid
+%%{init: {"theme":"base","themeVariables":{
+  "fontFamily":"ui-sans-serif, system-ui",
+  "lineColor":"#94A3B8",
+  "textColor":"#E5E7EB",
+  "background":"#0B1220",
+  "primaryColor":"#111827",
+  "primaryBorderColor":"#334155"
+}}}%%
+sequenceDiagram
+  participant CLI as bear pr-check
+  participant Scan as scanners
+  participant Report as deterministic report
+
+  rect rgb(17,24,39)
+    CLI->>Scan: run checks (ordered)
+    Scan-->>CLI: findings (tokens + paths)
+  end
+
+  rect rgb(43,20,5)
+    CLI->>Report: format (stable ordering)
+    Report-->>CLI: lines + verdict + footer
+  end
+
+  Note over CLI: Footer contract:\nCODE / PATH / REMEDIATION
+```
+
 
 - Locator may be repo-relative path or stable pseudo-path token.
 - Absolute filesystem paths are not allowed.
@@ -173,3 +196,4 @@ Known exact infra mappings in v1:
 - [commands-pr-check.md](commands-pr-check.md)
 - [commands-validate.md](commands-validate.md)
 - [troubleshooting.md](troubleshooting.md)
+

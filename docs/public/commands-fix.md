@@ -1,8 +1,23 @@
-# bear fix
+﻿# bear fix
 
 ## Purpose
 
 Repair deterministic BEAR-owned generated artifacts from IR without mutating user-owned implementation files.
+
+## Quick use
+
+Canonical invocation:
+
+```text
+bear fix <ir-file> --project <path>
+```
+
+Success looks like:
+- `fix: OK` and exit `0`
+
+Main failure classes:
+- validation/config (`exit 2`)
+- usage/internal/IO (`64/70/74`)
 
 ## Invocation forms
 
@@ -71,5 +86,6 @@ For aggregated `--all` non-zero failures, footer code is `REPO_MULTI_BLOCK_FAILE
 - [exit-codes.md](exit-codes.md)
 - [output-format.md](output-format.md)
 - [troubleshooting.md](troubleshooting.md)
+
 
 

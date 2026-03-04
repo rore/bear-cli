@@ -1,4 +1,4 @@
-# bear pr-check
+﻿# bear pr-check
 
 ## Purpose
 
@@ -6,6 +6,23 @@ Run deterministic PR governance checks:
 - classify normalized IR deltas versus merge-base (boundary expansion signaling)
 - enforce generated-port implementation containment boundaries
 - provide completion counterpart to `check --all` for local agent evidence before CI enforcement
+
+## Quick use
+
+Canonical invocation:
+
+```text
+bear pr-check --all --project <repoRoot> --base <ref>
+```
+
+Success looks like:
+- `pr-check: OK: NO_BOUNDARY_EXPANSION` and exit `0`
+
+Main failure classes:
+- boundary expansion (`exit 5`)
+- boundary bypass (`exit 7`)
+- validation (`exit 2`)
+- usage/internal/IO/git (`64/70/74`)
 
 ## Invocation forms
 
@@ -107,7 +124,7 @@ For aggregated `--all` non-zero failures, footer code is `REPO_MULTI_BLOCK_FAILE
 
 ## Related
 
-- [MODEL.md](MODEL.md)
+- [FOUNDATIONS.md](FOUNDATIONS.md)
 - [commands-check.md](commands-check.md)
 - [exit-codes.md](exit-codes.md)
 - [output-format.md](output-format.md)
@@ -121,3 +138,4 @@ For aggregated `--all` non-zero failures, footer code is `REPO_MULTI_BLOCK_FAILE
 - `--agent` writes JSON to stdout only (no prose output mixed into stdout).
 - JSON includes deterministic `problems`, `clusters`, and one `nextAction` item selected by severity/rank rules.
 - stream contract: BEAR itself emits no normal prose lines to stderr on normal command completion paths.
+

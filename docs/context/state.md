@@ -48,9 +48,35 @@ Deterministic agent diagnostics v1 for `check` / `pr-check` (`--agent` JSON mode
 - Expanded docs with explicit deterministic agent-loop semantics and `nextAction` mapping/fallback contract:
   - `docs/public/output-format.md`
   - `docs/public/FOUNDATIONS.md`
-  - `docs/public/MODEL.md`
+  - `docs/public/FOUNDATIONS.md`
   - `docs/bear-package/.bear/agent/TROUBLESHOOTING.md`
 - Additional verification runs (post-fix):
   - `./gradlew.bat :app:test --tests com.bear.app.AgentDiagnosticsTest --tests com.bear.app.BearCliAgentModeTest`
   - `./gradlew.bat :app:test`
   - `./gradlew.bat :app:test --tests com.bear.app.ContextDocsConsistencyTest --tests com.bear.app.BearPackageDocsConsistencyTest`
+
+- Public docs structure cleanup (no new folders):
+  - guide path now explicit in `docs/public/INDEX.md` (OVERVIEW -> QUICKSTART -> PR_REVIEW)
+  - `docs/public/CONTRACTS.md` now acts as the single reference gateway
+  - merged model mechanics into `docs/public/FOUNDATIONS.md` and removed redundant `docs/public/MODEL.md`
+  - tightened `docs/public/TERMS.md` to minimal reader vocabulary
+  - updated command pages with short `Quick use` sections before full contract details
+- Guardrail respected: no edits were made under `docs/bear-package/.bear/agent/*` in this change set.
+- Verification:
+  - `./gradlew.bat --no-daemon :app:test --tests com.bear.app.ContextDocsConsistencyTest --tests com.bear.app.BearPackageDocsConsistencyTest`
+- Added Mermaid workflow diagrams to public docs for operator-facing visualization:
+  - `README.md` (top workflow overview)
+  - `docs/public/PR_REVIEW.md` (governed roots / generated artifacts / app boundary sketch)
+  - `docs/public/output-format.md` (deterministic reporting sequence)
+- Verification: `./gradlew.bat --no-daemon :app:test --tests com.bear.app.ContextDocsConsistencyTest --tests com.bear.app.BearPackageDocsConsistencyTest`
+- Agent-package protocol refactor completed:
+  - `BOOTSTRAP.md` reduced to command-centric protocol (pre-failure vs post-failure behavior + command whitelist).
+  - `REPORTING.md` now states JSON-first automation rule and stderr-as-evidence behavior.
+  - `TROUBLESHOOTING.md` now includes registry-synced template key tables (exact + failure defaults).
+- Added package quickrefs:
+  - `.bear/agent/ref/AGENT_JSON_QUICKREF.md`
+  - `.bear/agent/ref/WINDOWS_QUICKREF.md`
+- Added deterministic sync test in `BearPackageDocsConsistencyTest` to assert troubleshooting key tables match `AgentTemplateRegistry` maps.
+- Verification:
+  - `./gradlew.bat :app:test --tests com.bear.app.BearPackageDocsConsistencyTest --tests com.bear.app.ContextDocsConsistencyTest --tests com.bear.app.RepoArtifactPolicyTest`
+  - `./gradlew.bat :app:test`- Removed redundant public page `docs/public/MODEL.md` again to keep the guide/reference structure aligned and avoid dead pages.

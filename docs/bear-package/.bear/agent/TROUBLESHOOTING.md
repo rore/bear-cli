@@ -4,6 +4,16 @@ Purpose:
 - Deterministic troubleshooting router for BEAR gate failures.
 - Consult only when command output is non-zero or blocked.
 
+
+## Agent JSON-First Protocol
+
+When running machine loops with `--agent`:
+1. Parse only stdout JSON; do not parse human prose output for control decisions.
+2. On failure, use `nextAction` first.
+3. If `nextAction.commands` exists, execute only those commands.
+4. If `nextAction` is `null`, route by `(category, failureCode, ruleId|reasonKey)` and escalate as required.
+5. Treat stderr as evidence only.
+
 ## Triage Router
 
 1. Usage/args issue (`64`) -> fix invocation/arguments and rerun same command.
@@ -128,25 +138,43 @@ Escalation threshold:
 2. Include pre/post `bear check` outputs and pre/post containment snapshots in escalation.
 
 
-## Deterministic `nextAction` Mapping (v1)
+## Registry-Synced Template Keys
 
-When running `bear check` / `bear pr-check` with `--agent`, `nextAction` resolves by strict order:
-
+Lookup contract:
 1. exact key `(category, failureCode, ruleId|reasonKey)`
 2. failure default `(category, failureCode, *)`
 3. category fallback (`INFRA` or `GOVERNANCE`)
 
-Known exact infra keys:
-1. `INFRA|IO_ERROR|PROJECT_TEST_LOCK`
-2. `INFRA|IO_ERROR|PROJECT_TEST_BOOTSTRAP`
-3. `INFRA|IO_GIT|MERGE_BASE_FAILED`
-4. `INFRA|IO_GIT|NOT_A_GIT_REPO`
-5. `INFRA|IO_ERROR|READ_HEAD_FAILED`
+This table is synchronized with runtime template maps by test coverage in `BearPackageDocsConsistencyTest`.
 
-Routing intent:
-1. use BEAR-supported bounded commands only (`bear unblock`, `bear compile`, rerun command)
-2. no destructive cleanup advice
-3. if key is unknown, use safe fallback template and escalate with CODE/PATH/REMEDIATION evidence
+### Exact Template Keys (AgentTemplateRegistry.EXACT)
+
+- `GOVERNANCE|BOUNDARY_BYPASS|DIRECT_IMPL_USAGE`
+- `GOVERNANCE|BOUNDARY_BYPASS|IMPL_CONTAINMENT_BYPASS`
+- `GOVERNANCE|UNDECLARED_REACH|UNDECLARED_REACH`
+- `GOVERNANCE|REFLECTION_DISPATCH_FORBIDDEN|REFLECTION_DISPATCH_FORBIDDEN`
+- `INFRA|DRIFT_MISSING_BASELINE|DRIFT_MISSING_BASELINE`
+- `INFRA|IO_ERROR|PROJECT_TEST_LOCK`
+- `INFRA|IO_ERROR|PROJECT_TEST_BOOTSTRAP`
+- `INFRA|IO_GIT|MERGE_BASE_FAILED`
+- `INFRA|IO_GIT|NOT_A_GIT_REPO`
+- `INFRA|IO_ERROR|READ_HEAD_FAILED`
+- `INFRA|MANIFEST_INVALID|MANIFEST_INVALID`
+
+### Failure Default Keys (AgentTemplateRegistry.FAILURE_DEFAULTS)
+
+- `GOVERNANCE|BOUNDARY_BYPASS|`
+- `GOVERNANCE|BOUNDARY_EXPANSION|`
+- `INFRA|IR_VALIDATION|`
+- `INFRA|POLICY_INVALID|`
+- `INFRA|DRIFT_DETECTED|`
+- `INFRA|IO_ERROR|`
+- `INFRA|IO_GIT|`
+- `INFRA|TEST_FAILURE|`
+- `INFRA|COMPILE_FAILURE|`
+- `INFRA|TEST_TIMEOUT|`
+- `INFRA|INVARIANT_VIOLATION|`
+
 ## Forbidden Actions
 
 1. Do not edit `build.gradle`, `settings.gradle`, `gradlew`, `gradlew.bat`, `.bear/**`, or `bin/bear*` unless explicitly instructed.

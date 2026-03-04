@@ -28,6 +28,8 @@ Minimum agent context carried by the package:
 - IR authority (`.bear/agent/ref/IR_REFERENCE.md`)
 - index rules (`.bear/agent/ref/BLOCK_INDEX_QUICKREF.md`)
 - conceptual framing (`.bear/agent/ref/BEAR_PRIMER.md`)
+- agent JSON field quickref (`.bear/agent/ref/AGENT_JSON_QUICKREF.md`)
+- PowerShell command quickref (`.bear/agent/ref/WINDOWS_QUICKREF.md`)
 - required project-local inspection targets (`spec/*.bear.yaml`, `bear.blocks.yaml`, `build/generated/bear/**` when present)
 - vendored CLI runtime (`.bear/tools/bear-cli/**`)
 
@@ -37,6 +39,7 @@ Canonical command surface expected by the package:
 - `bear fix`
 - `bear check`
 - `bear pr-check`
+- `bear unblock`
 
 ## Expected Agent Loop
 
@@ -71,6 +74,8 @@ Canonical layout in adopter repos:
   ref/BEAR_PRIMER.md
   ref/IR_REFERENCE.md
   ref/BLOCK_INDEX_QUICKREF.md
+  ref/AGENT_JSON_QUICKREF.md
+  ref/WINDOWS_QUICKREF.md
 <repoRoot>/.bear/policy/
   reflection-allowlist.txt
   hygiene-allowlist.txt
@@ -95,6 +100,8 @@ Required package files:
 - `.bear/agent/ref/BEAR_PRIMER.md`
 - `.bear/agent/ref/IR_REFERENCE.md`
 - `.bear/agent/ref/BLOCK_INDEX_QUICKREF.md`
+- `.bear/agent/ref/AGENT_JSON_QUICKREF.md`
+- `.bear/agent/ref/WINDOWS_QUICKREF.md`
 - `.bear/policy/reflection-allowlist.txt`
 - `.bear/policy/hygiene-allowlist.txt`
 - `.bear/tools/bear-cli/bin/bear` / `.bear/tools/bear-cli/bin/bear.bat`

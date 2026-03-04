@@ -1,75 +1,57 @@
-# Quickstart
+﻿# Quickstart
 
-This quickstart runs BEAR on the demo repo.
-The intended workflow is agent-first: the agent updates code and IR as needed; humans review deterministic gate output.
+This quickstart runs BEAR on the demo repo with the minimal command path.
 
 Prerequisites:
 
 - Demo repo is present at `../bear-account-demo`.
 - Demo repo contains vendored BEAR CLI at `.bear/tools/bear-cli`.
-- Canonical `--all` gate requires `bear.blocks.yaml`.
+- Canonical `--all` flows require `bear.blocks.yaml`.
 
-## Try BEAR on the demo repo
+## Run on the demo repo
 
-1. Enter the demo repository.
+1. Enter the demo repo.
 
 ```powershell
 Set-Location ..\bear-account-demo
 ```
 
-Expected outcome: shell is at demo repo root.
-
-2. Verify vendored BEAR CLI is available.
-
-Windows (PowerShell):
+2. Verify the vendored CLI.
 
 ```powershell
 .\.bear\tools\bear-cli\bin\bear.bat --help
 ```
 
-macOS/Linux (bash/zsh):
-
-```sh
-./.bear/tools/bear-cli/bin/bear --help
-```
-
-Expected outcome: CLI usage/help output is displayed.
-
-3. Let your agent implement the project specs.
+3. Let your agent implement the spec.
 
 ```text
 Implement the specs.
 ```
 
-Expected outcome: agent creates/updates governed code and IR under the repo.
+4. Compile deterministic generated artifacts.
 
-4. Run the deterministic enforcement gate.
+```powershell
+.\.bear\tools\bear-cli\bin\bear.bat compile --all --project .
+```
 
-Windows (PowerShell):
+Expected outcome: all selected blocks compile and summary `EXIT_CODE: 0`.
+
+5. Run enforcement.
 
 ```powershell
 .\.bear\tools\bear-cli\bin\bear.bat check --all --project .
 ```
 
-macOS/Linux (bash/zsh):
+Expected outcome: all selected blocks pass and summary `EXIT_CODE: 0`.
 
-```sh
-./.bear/tools/bear-cli/bin/bear check --all --project .
-```
-
-Expected outcome: all selected blocks are `PASS`, summary `EXIT_CODE: 0`.
-
-5. Run the PR governance gate.
-
-For a quick local sanity run, compare against `HEAD`:
+6. Run PR governance.
 
 ```powershell
 .\.bear\tools\bear-cli\bin\bear.bat pr-check --all --project . --base HEAD
 ```
 
 Expected outcome: `pr-check: OK: NO_BOUNDARY_EXPANSION` and exit `0`.
-
-In a real PR/CI flow, set `--base` to the merge-base target (for example `origin/main`).
+For real PR/CI, set `--base` to the target merge base (for example `origin/main`).
 
 ## If `bear.blocks.yaml` is missing
 
@@ -78,28 +60,26 @@ All `--all` commands require `bear.blocks.yaml`.
 Minimal valid example:
 
 ```yaml
-version: v1
+version: v0
 blocks:
   - name: inventory-sync
     ir: spec/inventory-sync.bear.yaml
     projectRoot: .
 ```
 
-Fallback if you do not want `--all` yet:
+Fallback single-file path:
 
 ```powershell
+.\.bear\tools\bear-cli\bin\bear.bat compile spec\<block>.bear.yaml --project .
 .\.bear\tools\bear-cli\bin\bear.bat check spec\<block>.bear.yaml --project .
 .\.bear\tools\bear-cli\bin\bear.bat pr-check spec\<block>.bear.yaml --project . --base HEAD
 ```
 
-For single-file IR with `kind=block` effects, index defaults to `./bear.blocks.yaml` (see command docs for override and failure details).
+If something fails, go to [troubleshooting.md](troubleshooting.md).
 
 ## Related
 
 - [OVERVIEW.md](OVERVIEW.md)
 - [PR_REVIEW.md](PR_REVIEW.md)
 - [ENFORCEMENT.md](ENFORCEMENT.md)
-- [commands-check.md](commands-check.md)
-- [commands-pr-check.md](commands-pr-check.md)
-- [troubleshooting.md](troubleshooting.md)
-
+- [CONTRACTS.md](CONTRACTS.md)

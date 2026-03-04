@@ -1,8 +1,23 @@
-# bear unblock
+﻿# bear unblock
 
 ## Purpose
 
 Clear `check` blocked marker after lock/bootstrap IO failures so deterministic check gates can be retried.
+
+## Quick use
+
+Canonical invocation:
+
+```text
+bear unblock --project <path>
+```
+
+Success looks like:
+- `unblock: OK` and exit `0`
+
+Main failure classes:
+- usage/internal (`64/70`)
+- IO/lock (`74`)
 
 ## Invocation forms
 
@@ -52,3 +67,4 @@ See [output-format.md](output-format.md).
 - [exit-codes.md](exit-codes.md)
 - [output-format.md](output-format.md)
 - [troubleshooting.md](troubleshooting.md)
+

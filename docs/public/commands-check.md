@@ -1,8 +1,27 @@
-# bear check
+﻿# bear check
 
 ## Purpose
 
 Run deterministic enforcement for one block or all indexed blocks: drift, static boundary checks, and project test gate.
+
+## Quick use
+
+Canonical invocation:
+
+```text
+bear check --all --project <repoRoot>
+```
+
+Success looks like:
+- all selected blocks pass and summary `EXIT_CODE: 0`
+
+Main failure classes:
+- validation/config (`exit 2`)
+- drift (`exit 3`)
+- test failure/timeout (`exit 4`)
+- reach/hygiene (`exit 6`)
+- boundary bypass (`exit 7`)
+- usage/internal/IO (`64/70/74`)
 
 Completion pairing note:
 - `check --all` is the local integrity gate.
@@ -228,3 +247,4 @@ For aggregated `--all` non-zero failures, footer code is `REPO_MULTI_BLOCK_FAILE
 - `--agent` writes JSON to stdout only (no prose output mixed into stdout).
 - `collectMode` in JSON is `first` by default and `all` when `--collect=all` is set.
 - stream contract: BEAR itself emits no normal prose lines to stderr on normal command completion paths.
+

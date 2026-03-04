@@ -2,9 +2,13 @@ package com.bear.app;
 
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -30,7 +34,9 @@ class BearPackageDocsConsistencyTest {
             "REPORTING.md",
             "ref/IR_REFERENCE.md",
             "ref/BEAR_PRIMER.md",
-            "ref/BLOCK_INDEX_QUICKREF.md"
+            "ref/BLOCK_INDEX_QUICKREF.md",
+            "ref/AGENT_JSON_QUICKREF.md",
+            "ref/WINDOWS_QUICKREF.md"
         );
 
         assertEquals(expected, actual, "Agent package file set must match the canonical hard-cut layout");
@@ -57,52 +63,45 @@ class BearPackageDocsConsistencyTest {
         String bootstrap = Files.readString(repoRoot.resolve("docs/bear-package/.bear/agent/BOOTSTRAP.md"));
         String troubleshooting = Files.readString(repoRoot.resolve("docs/bear-package/.bear/agent/TROUBLESHOOTING.md"));
         String reporting = Files.readString(repoRoot.resolve("docs/bear-package/.bear/agent/REPORTING.md"));
+        String contracts = Files.readString(repoRoot.resolve("docs/bear-package/.bear/agent/CONTRACTS.md"));
 
-        assertMatchesHeading(bootstrap, "(?m)^##\\s+AGENT_PACKAGE_PARITY_PRECONDITION\\s*$");
-        assertMatchesHeading(bootstrap, "(?m)^##\\s+GREENFIELD_HARD_STOP\\s*$");
-        assertMatchesHeading(bootstrap, "(?m)^##\\s+INDEX_REQUIRED_PREFLIGHT\\s*$");
-        assertMatchesHeading(bootstrap, "(?m)^##\\s+GREENFIELD_PR_CHECK_POLICY\\s*$");
-        assertMatchesHeading(bootstrap, "(?m)^##\\s+DECOMPOSITION_DEFAULT\\s*$");
-        assertMatchesHeading(bootstrap, "(?m)^##\\s+DECOMPOSITION_SPLIT_TRIGGERS\\s*$");
-        assertMatchesHeading(bootstrap, "(?m)^##\\s+POLICY_SCOPE_MISMATCH\\s*$");
-        assertMatchesHeading(bootstrap, "(?m)^##\\s+GREENFIELD_ARTIFACT_SOURCE_RULE\\s*$");
-        assertMatchesHeading(troubleshooting, "(?m)^##\\s+IO_LOCK\\s*$");
-        assertMatchesHeading(troubleshooting, "(?m)^##\\s+PR_CHECK_EXIT_ENVELOPE_ANOMALY\\s*$");
-        assertMatchesHeading(troubleshooting, "(?m)^##\\s+GREENFIELD_BASELINE_PR\\s*$");
-        assertMatchesHeading(troubleshooting, "(?m)^##\\s+POLICY_SCOPE_MISMATCH\\s*$");
-        assertMatchesHeading(troubleshooting, "(?m)^##\\s+PROCESS_VIOLATION\\s*$");
-        assertMatchesHeading(troubleshooting, "(?m)^##\\s+REACH_REMEDIATION_NON_SOLUTIONS\\s*$");
-        assertMatchesHeading(troubleshooting, "(?m)^##\\s+TOOLING_ANOMALY_HARD_STOP\\s*$");
-        assertMatchesHeading(reporting, "(?m)^##\\s+DEVELOPER_SUMMARY\\s*$");
-        assertMatchesHeading(reporting, "(?m)^##\\s+GREENFIELD_BASELINE_WAITING_SEMANTICS\\s*$");
-        assertMatchesHeading(reporting, "(?m)^##\\s+Blocker\\s+And\\s+Anomaly\\s+Reporting\\s*$");
-        assertMatchesHeading(reporting, "(?m)^##\\s+Tooling\\s+Anomaly\\s+Reporting\\s*$");
+        assertMatchesHeading(bootstrap, "(?m)^##\\s+Command\\s+Surface\\s*$");
+        assertMatchesHeading(bootstrap, "(?m)^##\\s+Machine\\s+Gate\\s+Loop\\s*$");
+        assertMatchesHeading(bootstrap, "(?m)^##\\s+Routing\\s+Map\\s*$");
+        assertMatchesHeading(bootstrap, "(?m)^##\\s+Hard-Stop\\s+Routing\\s*$");
 
-        assertContains(
-            reporting,
-            "Decomposition rubric: state_domain_<same|split>; effects_<read_only|write>; idempotency_<same|split|n/a>; lifecycle_<same|split>; authority_<same|split>"
-        );
-        assertContains(
-            reporting,
-            "`Decomposition mode: grouped` => `Groups: [<group_name>:{<block1>,<block2>}; <group_name>:{<block3>}]`"
-        );
-        assertContains(reporting, "`Decomposition mode: single|multi` => `Groups: n/a`");
-        assertContains(
-            reporting,
-            "first two entries are exactly `bear.blocks.yaml`, `spec/*.bear.yaml`"
-        );
-        assertContains(reporting, "`Tooling anomaly: yes|no`");
-        assertContains(reporting, "`Tooling anomaly exit code: <code>|n/a`");
-        assertContains(bootstrap, "Hard-stop on BEAR tooling anomalies:");
-        assertContains(bootstrap, "`src/main/java/com/bear/generated/**`");
+        assertMatchesHeading(reporting, "(?m)^##\\s+Agent\\s+Loop\\s+Contract\\s*$");
+        assertContains(reporting, "Automation MUST parse only stdout JSON in `--agent` mode");
+        assertContains(reporting, "If `status=fail` and `nextAction.commands` exists, execute only those BEAR commands");
+        assertContains(reporting, "If `status=fail` and `nextAction` is `null`, route to `.bear/agent/TROUBLESHOOTING.md`");
 
-        assertContains(bootstrap, "1. `state_domain_split`");
-        assertContains(bootstrap, "2. `effects_split`");
-        assertContains(bootstrap, "3. `idempotency_split`");
-        assertContains(bootstrap, "4. `lifecycle_split`");
-        assertContains(bootstrap, "5. `authority_split`");
-        assertContains(bootstrap, "6. `operation_multiplexer_anti_pattern`");
-        assertContains(bootstrap, "Non-whitelisted trigger names are invalid in reports.");
+        assertMatchesHeading(troubleshooting, "(?m)^##\\s+Agent\\s+JSON-First\\s+Protocol\\s*$");
+        assertMatchesHeading(troubleshooting, "(?m)^##\\s+Registry-Synced\\s+Template\\s+Keys\\s*$");
+        assertMatchesHeading(troubleshooting, "(?m)^###\\s+Exact\\s+Template\\s+Keys\\s+\\(AgentTemplateRegistry\\.EXACT\\)\\s*$");
+        assertMatchesHeading(troubleshooting, "(?m)^###\\s+Failure\\s+Default\\s+Keys\\s+\\(AgentTemplateRegistry\\.FAILURE_DEFAULTS\\)\\s*$");
+
+        assertContains(contracts, "In automation, `--agent` JSON on stdout is the authoritative control interface.");
+    }
+
+    @Test
+    void troubleshootingTemplateKeyTablesStayInSyncWithRegistry() throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        String troubleshooting = Files.readString(repoRoot.resolve("docs/bear-package/.bear/agent/TROUBLESHOOTING.md"));
+
+        Set<String> documentedExact = parseBacktickKeysFromSection(
+            troubleshooting,
+            "### Exact Template Keys (AgentTemplateRegistry.EXACT)"
+        );
+        Set<String> documentedDefaults = parseBacktickKeysFromSection(
+            troubleshooting,
+            "### Failure Default Keys (AgentTemplateRegistry.FAILURE_DEFAULTS)"
+        );
+
+        Set<String> runtimeExact = new TreeSet<>(templateMap("EXACT").keySet());
+        Set<String> runtimeDefaults = new TreeSet<>(templateMap("FAILURE_DEFAULTS").keySet());
+
+        assertEquals(runtimeExact, documentedExact, "Exact template key docs must match AgentTemplateRegistry.EXACT");
+        assertEquals(runtimeDefaults, documentedDefaults, "Failure default key docs must match AgentTemplateRegistry.FAILURE_DEFAULTS");
     }
 
     @Test
@@ -112,6 +111,41 @@ class BearPackageDocsConsistencyTest {
         String normalized = bootstrap.replace("\r\n", "\n");
         int lineCount = normalized.split("\n", -1).length;
         assertTrue(lineCount <= 200, "BOOTSTRAP.md must stay within 200 lines; found " + lineCount);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> templateMap(String fieldName) throws Exception {
+        Field field = AgentTemplateRegistry.class.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return (Map<String, Object>) field.get(null);
+    }
+
+    private static Set<String> parseBacktickKeysFromSection(String markdown, String heading) {
+        String normalized = markdown.replace("\r\n", "\n");
+        int start = normalized.indexOf(heading);
+        assertTrue(start >= 0, "Missing section heading: " + heading);
+
+        int contentStart = normalized.indexOf('\n', start);
+        assertTrue(contentStart >= 0, "Malformed heading block: " + heading);
+        String remainder = normalized.substring(contentStart + 1);
+
+        int nextH3 = remainder.indexOf("\n### ");
+        int nextH2 = remainder.indexOf("\n## ");
+        int end = remainder.length();
+        if (nextH3 >= 0) {
+            end = Math.min(end, nextH3);
+        }
+        if (nextH2 >= 0) {
+            end = Math.min(end, nextH2);
+        }
+
+        String block = remainder.substring(0, end);
+        Matcher matcher = Pattern.compile("`([^`]+)`").matcher(block);
+        Set<String> keys = new TreeSet<>();
+        while (matcher.find()) {
+            keys.add(matcher.group(1));
+        }
+        return keys;
     }
 
     private static void assertMatchesHeading(String content, String headingRegex) {

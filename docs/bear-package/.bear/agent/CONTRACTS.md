@@ -10,6 +10,11 @@ This file is contract-only.
 - Contains: definitions, MUST/MUST NOT rules, canonical paths, canonical formats, frozen semantics.
 - Excludes: troubleshooting flows, failure triage playbooks, procedural step-by-step runbooks.
 
+
+Automation interface contract:
+1. In automation, `--agent` JSON on stdout is the authoritative control interface.
+2. Procedural loop behavior belongs in `.bear/agent/REPORTING.md` and troubleshooting flow belongs in `.bear/agent/TROUBLESHOOTING.md`.
+
 ## Conflict Definition (Normative)
 
 Conflict definition:

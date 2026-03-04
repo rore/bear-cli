@@ -1,8 +1,23 @@
-# bear validate
+﻿# bear validate
 
 ## Purpose
 
 Validate one IR file, enforce schema and semantic rules, and print canonical normalized YAML on success.
+
+## Quick use
+
+Canonical invocation:
+
+```text
+bear validate <ir-file>
+```
+
+Success looks like:
+- canonical normalized YAML on `stdout` and exit `0`
+
+Main failure classes:
+- validation (`exit 2`)
+- usage/internal/IO (`64/70/74`)
 
 ## Invocation forms
 
@@ -54,5 +69,3 @@ See [output-format.md](output-format.md).
 - [exit-codes.md](exit-codes.md)
 - [output-format.md](output-format.md)
 - [troubleshooting.md](troubleshooting.md)
-
-

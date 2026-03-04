@@ -1,10 +1,51 @@
-﻿# PR / CI Review Guide
+# PR / CI Review Guide
 
 BEAR is designed so humans can review agent changes via deterministic signals, without needing to understand every implementation detail.
 
-If you are new to BEAR vocabulary (effects/ports/ops), start with [TERMS.md](TERMS.md).
 
-## The two gates
+```mermaid
+%%{init: {"theme":"base","themeVariables":{
+  "fontFamily":"ui-sans-serif, system-ui",
+  "lineColor":"#94A3B8",
+  "textColor":"#E5E7EB",
+  "background":"#0B1220",
+  "primaryColor":"#111827",
+  "primaryBorderColor":"#334155"
+}}}%%
+flowchart LR
+  GOV[Governed source roots]:::groupGov
+  GEN[Generated artifacts]:::groupGen
+  APP[App / adapters]:::groupApp
+
+  GOV -->|compile uses IR| GEN
+  APP -->|implements ports| GEN
+  GOV -->|calls only declared ports| GEN
+
+  B1[blocks/blockA/...]:::gov --> GOV
+  B2[blocks/blockB/...]:::gov --> GOV
+  SH[blocks/_shared/...]:::gov --> GOV
+
+  W[wiring files]:::gen --> GEN
+  P[ports + wrappers]:::gen --> GEN
+
+  A1[framework + infra]:::app --> APP
+  A2[external clients]:::app --> APP
+
+  X((Violation)):::bad
+  GOV -->|undeclared reach| X
+  APP -->|bypass into governed| X
+
+  classDef groupGov fill:#111827,stroke:#818CF8,color:#E5E7EB;
+  classDef groupGen fill:#111827,stroke:#94A3B8,color:#E5E7EB;
+  classDef groupApp fill:#111827,stroke:#34D399,color:#E5E7EB;
+
+  classDef gov fill:#0B1220,stroke:#818CF8,color:#E5E7EB;
+  classDef gen fill:#0B1220,stroke:#94A3B8,color:#E5E7EB;
+  classDef app fill:#0B1220,stroke:#34D399,color:#E5E7EB;
+
+  classDef bad fill:#3F0A0A,stroke:#F87171,color:#E5E7EB;
+```
+
 
 In a PR or CI job, the canonical pair is:
 
@@ -57,3 +98,5 @@ Action:
 - Exit code registry: [exit-codes.md](exit-codes.md)
 - Full `pr-check` contract: [commands-pr-check.md](commands-pr-check.md)
 - Governance policy (normative, maintainer doc): [docs/context/governance.md](../context/governance.md)
+
+

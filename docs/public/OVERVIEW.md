@@ -1,46 +1,39 @@
 ﻿# Overview (Proof of Concept)
 
-BEAR is a proof-of-concept reference implementation exploring a specific hypothesis:
+BEAR is a proof-of-concept reference implementation testing a practical idea:
 
-> In an agentic development world, teams building higher-sensitivity services may need strict, deterministic enforcement so an agent cannot expand external power or bypass architecture constraints silently.
+> In agentic backend development, teams working on higher-sensitivity services may need deterministic enforcement so agents cannot expand boundary authority silently.
 
-BEAR tries to make that practical by moving trust from "agent reasoning" to deterministic, machine-checkable gates.
+The goal is to move trust from intent to machine-checkable gates and explicit governance signals.
 
 ## What BEAR does
 
-New to BEAR vocabulary (effects/ports/ops)? See [TERMS.md](TERMS.md).
+- **Agent updates** code and IR when boundary authority must change.
+- **BEAR compiles** deterministic wrappers/ports/manifests from IR.
+- **BEAR checks** repo state for drift and covered boundary bypasses.
+- **BEAR governs PR deltas** with explicit boundary-expansion classification.
 
-- **Agent updates**: the agent changes code and (when needed) a small YAML IR contract.
-- **BEAR generates**: deterministic wrappers/ports from the IR (the governed integration surface).
-- **BEAR enforces**: local/CI gates detect drift and covered boundary-bypass patterns.
-- **BEAR signals governance**: `pr-check` classifies boundary-expanding changes vs ordinary refactors.
+New to vocabulary? See [TERMS.md](TERMS.md).
 
-The goal is fast iteration inside a declared boundary, with explicit review signals when that boundary changes.
-
-## What BEAR is (and isn't)
+## What BEAR is and is not
 
 BEAR is:
-- a deterministic CLI that produces CI-friendly signals (exit codes + stable `CODE/PATH/REMEDIATION` footer)
-- a compiler-style generator for a narrow, enforceable semantic slice (wrapper-owned where possible)
+- a deterministic governance CLI for backend boundaries
+- a CI-friendly signal producer (`exit` + stable footer contract)
 
 BEAR is not:
-- a full business correctness verifier
-- a runtime sandbox / IAM system
+- a business-rule correctness engine
+- a runtime sandbox/IAM framework
 - an agent orchestrator
 
 ## Who edits IR?
 
-In the intended workflow, **developers do not hand-author IR in routine usage**.
-The agent updates IR when it needs new boundary authority (new ports/ops, invariants, idempotency usage, etc.).
-Humans primarily review the resulting governance signals.
+In the intended workflow, developers do not hand-author IR routinely.
+The agent updates IR as needed; developers review resulting governance signals.
 
-If you want the details anyway, see:
-- IR reference (agent package): [IR_REFERENCE.md](../bear-package/.bear/agent/ref/IR_REFERENCE.md)
-- Canonical IR spec (bear-cli maintainer): [docs/context/ir-spec.md](../context/ir-spec.md)
+## Read next
 
-## Where to go next
-
-- First run: [QUICKSTART.md](QUICKSTART.md)
-- What to look for in PRs/CI: [PR_REVIEW.md](PR_REVIEW.md)
-- What BEAR enforces vs only alerts on: [ENFORCEMENT.md](ENFORCEMENT.md)
-- Debug a failure by `CODE`: [troubleshooting.md](troubleshooting.md)
+- [QUICKSTART.md](QUICKSTART.md)
+- [PR_REVIEW.md](PR_REVIEW.md)
+- [FOUNDATIONS.md](FOUNDATIONS.md) for full mechanics
+- [ENFORCEMENT.md](ENFORCEMENT.md) for guarantees and non-goals
