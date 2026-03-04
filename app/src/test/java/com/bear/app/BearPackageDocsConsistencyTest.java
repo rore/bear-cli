@@ -75,6 +75,8 @@ class BearPackageDocsConsistencyTest {
         assertContains(reporting, "If `status=fail` and `nextAction.commands` exists, execute only those BEAR commands");
         assertContains(reporting, "If `status=fail` and `nextAction` is `null`, route to `.bear/agent/TROUBLESHOOTING.md`");
         assertContains(reporting, "Field-level quickref: `.bear/agent/ref/AGENT_JSON_QUICKREF.md`.");
+        assertContains(reporting, "`Decomposition contract consulted: yes (before IR authoring)` is required when `IR delta` indicates `spec/*.bear.yaml` authoring/modification.");
+        assertContains(reporting, "When `Run outcome: COMPLETE`, `Gate results` must include canonical repo-level done gates");
 
         assertMatchesHeading(troubleshooting, "(?m)^##\\s+Agent\\s+JSON-First\\s+Protocol\\s*$");
         assertMatchesHeading(troubleshooting, "(?m)^##\\s+Registry-Synced\\s+Template\\s+Keys\\s*$");
@@ -163,3 +165,5 @@ class BearPackageDocsConsistencyTest {
         assertTrue(content.contains(token), "Expected exact token missing: " + token);
     }
 }
+
+

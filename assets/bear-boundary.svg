@@ -1,0 +1,122 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">BEAR boundary model</title>
+  <desc id="desc">BEAR governs code inside blocks. Blocks interact through declared ports. Boundary crossings outside ports are violations.</desc>
+
+  <defs>
+    <style>
+      :root {
+        --bg: #FFFFFF;
+        --frame: #CBD5E1;
+        --text: #0F172A;
+        --muted: #475569;
+        --boundary: #94A3B8;
+        --boundaryLabelBg: #F8FAFC;
+        --boundaryLabelBorder: #CBD5E1;
+
+        --governedFill: #EEF2FF;
+        --governedStroke: #6366F1;
+
+        --portFill: #FFFBEB;
+        --portStroke: #F59E0B;
+
+        --adapterFill: #F1F5F9;
+        --adapterStroke: #64748B;
+
+        --ok: #16A34A;
+        --bad: #DC2626;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0B1220;
+          --frame: #334155;
+          --text: #E2E8F0;
+          --muted: #94A3B8;
+          --boundary: #64748B;
+          --boundaryLabelBg: #111827;
+          --boundaryLabelBorder: #475569;
+
+          --governedFill: #1E1B4B;
+          --governedStroke: #818CF8;
+
+          --portFill: #2A1F0A;
+          --portStroke: #F59E0B;
+
+          --adapterFill: #0F172A;
+          --adapterStroke: #64748B;
+
+          --ok: #22C55E;
+          --bad: #F87171;
+        }
+      }
+
+      .t { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; fill: var(--text); }
+      .h { font-size: 42px; font-weight: 700; }
+      .m { font-size: 28px; font-weight: 600; }
+      .s { font-size: 22px; font-weight: 500; }
+      .muted { fill: var(--muted); }
+      .box { stroke-width: 3; }
+    </style>
+
+    <marker id="arrowOk" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,5 L0,10 Z" fill="var(--ok)"/>
+    </marker>
+    <marker id="arrowNeutral" markerWidth="14" markerHeight="14" refX="11" refY="7" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L14,7 L0,14 Z" fill="var(--adapterStroke)"/>
+    </marker>
+    <marker id="arrowBad" markerWidth="14" markerHeight="14" refX="11" refY="7" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L14,7 L0,14 Z" fill="var(--bad)"/>
+    </marker>
+  </defs>
+
+  <rect x="8" y="8" width="1584" height="884" rx="24" ry="24" fill="var(--bg)" stroke="var(--frame)" stroke-width="2"/>
+
+  <rect x="180" y="160" width="1240" height="440" rx="44" ry="44"
+        fill="none" stroke="var(--boundary)" stroke-width="3" stroke-dasharray="10 10"/>
+
+  <rect x="560" y="118" width="480" height="54" rx="18" ry="18"
+        fill="var(--boundaryLabelBg)" stroke="var(--boundaryLabelBorder)" stroke-width="2"/>
+  <text x="800" y="154" text-anchor="middle" class="t s muted">Governed roots and enforced boundary</text>
+
+  <rect x="260" y="320" width="360" height="170" rx="30" ry="30"
+        fill="var(--governedFill)" stroke="var(--governedStroke)" class="box"/>
+  <text x="440" y="390" text-anchor="middle" class="t h">Block A</text>
+  <text x="440" y="430" text-anchor="middle" class="t s">governed</text>
+
+  <rect x="980" y="320" width="360" height="170" rx="30" ry="30"
+        fill="var(--governedFill)" stroke="var(--governedStroke)" class="box"/>
+  <text x="1160" y="390" text-anchor="middle" class="t h">Block B</text>
+  <text x="1160" y="430" text-anchor="middle" class="t s">governed</text>
+
+  <rect x="700" y="270" width="200" height="120" rx="22" ry="22"
+        fill="var(--portFill)" stroke="var(--portStroke)" class="box"/>
+  <text x="800" y="318" text-anchor="middle" class="t m">Declared port</text>
+  <text x="800" y="352" text-anchor="middle" class="t s">defined in IR</text>
+
+  <rect x="670" y="660" width="260" height="120" rx="22" ry="22"
+        fill="var(--adapterFill)" stroke="var(--adapterStroke)" class="box"/>
+  <text x="800" y="712" text-anchor="middle" class="t m">Adapter or impl</text>
+  <text x="800" y="746" text-anchor="middle" class="t s muted">outside blocks</text>
+
+  <line x1="620" y1="405" x2="700" y2="330"
+        stroke="var(--ok)" stroke-width="6" marker-end="url(#arrowOk)"/>
+  <line x1="900" y1="330" x2="980" y2="405"
+        stroke="var(--ok)" stroke-width="6" marker-end="url(#arrowOk)"/>
+  <text x="800" y="245" text-anchor="middle" class="t s" fill="var(--ok)">Allowed only through declared port</text>
+
+  <line x1="800" y1="660" x2="800" y2="390"
+        stroke="var(--adapterStroke)" stroke-width="4" marker-end="url(#arrowNeutral)"/>
+  <text x="820" y="540" class="t s muted">Adapter implements port</text>
+
+  <path d="M600 285 C760 200 1000 200 1120 285"
+        stroke="var(--bad)" stroke-width="3" stroke-dasharray="8 8"
+        fill="none" marker-end="url(#arrowBad)"/>
+  <text x="930" y="212" class="t s" fill="var(--bad)">Violation: direct cross-block call</text>
+
+  <path d="M930 720 C1110 690 1160 610 1160 490"
+        stroke="var(--bad)" stroke-width="3" stroke-dasharray="8 8"
+        fill="none" marker-end="url(#arrowBad)"/>
+  <text x="1180" y="635" class="t s" fill="var(--bad)">Violation: boundary bypass</text>
+
+  <text x="800" y="850" text-anchor="middle" class="t s muted">BEAR: declare boundaries in IR, enforce in CI</text>
+</svg>

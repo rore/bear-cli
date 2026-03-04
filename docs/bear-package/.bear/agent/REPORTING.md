@@ -52,44 +52,45 @@ Run report MUST include:
 5. `Decomposition mode: single|grouped|multi`
 6. `Groups: n/a` OR `Groups: [<group_name>:{<block1>,<block2>}; <group_name>:{<block3>}]`
 7. `Decomposition reason: default|trigger:<canonical_name>|spec_explicit`
-8. `Blocks added: [...]`
-9. `Grouped operations: n/a` OR `Grouped operations: [<block>:{<op1>,<op2>}; ...]`
-10. `IR delta: <files + boundary notes>`
-11. `Implementation delta: <files>`
-12. `Tests delta: <files>`
-13. `Surface evidence: n/a (spec does not require an API surface)` OR
-14. `Surface evidence: <file1>,<file2>,...` OR
-15. `Surface deferred: <reason_token>`
-16. `Gate results:`
-17. `- bear check --all --project <repoRoot> [--collect=all] [--agent] => <exit>`
-18. `- bear pr-check --all --project <repoRoot> --base <ref> [--collect=all] [--agent] => <exit>`
-19. `Gate run order: <ordered list of executed gates>`
-20. `Run outcome: COMPLETE|BLOCKED|WAITING_FOR_BASELINE_REVIEW`
-21. `Required next action: <...>` (required when `Run outcome` is `BLOCKED` or `WAITING_FOR_BASELINE_REVIEW`)
-22. `Gate blocker: IO_LOCK | TEST_FAILURE | BOUNDARY_EXPANSION | OTHER`
-23. `Stopped after blocker: yes|no`
-24. `First failing command: <exact command line>|none (preflight)`
-25. `First failure signature: <one copied verbatim line>`
-26. `Tooling anomaly: yes|no`
-27. `Tooling anomaly first command: <exact command>|n/a`
-28. `Tooling anomaly exit code: <code>|n/a`
-29. `Tooling anomaly signature: <first crash/timeout/internal line>|n/a`
-30. `Repro case: ir=<file(s)>; command=<exact>; expected=<...>; actual=<...>; clean_state=<yes|no>`
-31. `PR base used: <ref>`
-32. `PR base rationale: <merge-base against target branch OR user-provided base SHA>`
-33. `PR classification interpretation: <expected|unintended> - <brief rationale>`
-34. `Baseline review scope: <required for WAITING_FOR_BASELINE_REVIEW; must include bear.blocks.yaml and spec/*.bear.yaml>`
-35. `Constraint conflicts encountered: none|<list>`
-36. `Escalation decision: none|<reason>`
-37. `Containment sanity check: pass|fail|n/a - <evidence>`
-38. `Infra edits: none|<list>`
-39. `Unblock used: no|yes - <reason>`
-40. `Gate policy acknowledged: yes|no`
-41. `Final git status: <git status --short summary>`
-42. `GOVERNANCE_SIGNAL_DISPOSITION`
-43. `MULTI_BLOCK_PORT_IMPL_ALLOWED: none|<count>`
-44. `JUSTIFICATION: <required when count > 0>`
-45. `TRADEOFF: <required when count > 0>`
+8. `Decomposition contract consulted: yes (before IR authoring)` OR `Decomposition contract consulted: n/a (no IR authoring/change in this run)`
+9. `Blocks added: [...]`
+10. `Grouped operations: n/a` OR `Grouped operations: [<block>:{<op1>,<op2>}; ...]`
+11. `IR delta: <files + boundary notes>`
+12. `Implementation delta: <files>`
+13. `Tests delta: <files>`
+14. `Surface evidence: n/a (spec does not require an API surface)` OR
+15. `Surface evidence: <file1>,<file2>,...` OR
+16. `Surface deferred: <reason_token>`
+17. `Gate results:`
+18. `- bear check --all --project <repoRoot> [--collect=all] [--agent] => <exit>`
+19. `- bear pr-check --all --project <repoRoot> --base <ref> [--collect=all] [--agent] => <exit>`
+20. `Gate run order: <ordered list of executed gates>`
+21. `Run outcome: COMPLETE|BLOCKED|WAITING_FOR_BASELINE_REVIEW`
+22. `Required next action: <...>` (required when `Run outcome` is `BLOCKED` or `WAITING_FOR_BASELINE_REVIEW`)
+23. `Gate blocker: IO_LOCK | TEST_FAILURE | BOUNDARY_EXPANSION | OTHER`
+24. `Stopped after blocker: yes|no`
+25. `First failing command: <exact command line>|none (preflight)`
+26. `First failure signature: <one copied verbatim line>`
+27. `Tooling anomaly: yes|no`
+28. `Tooling anomaly first command: <exact command>|n/a`
+29. `Tooling anomaly exit code: <code>|n/a`
+30. `Tooling anomaly signature: <first crash/timeout/internal line>|n/a`
+31. `Repro case: ir=<file(s)>; command=<exact>; expected=<...>; actual=<...>; clean_state=<yes|no>`
+32. `PR base used: <ref>`
+33. `PR base rationale: <merge-base against target branch OR user-provided base SHA>`
+34. `PR classification interpretation: <expected|unintended> - <brief rationale>`
+35. `Baseline review scope: <required for WAITING_FOR_BASELINE_REVIEW; must include bear.blocks.yaml and spec/*.bear.yaml>`
+36. `Constraint conflicts encountered: none|<list>`
+37. `Escalation decision: none|<reason>`
+38. `Containment sanity check: pass|fail|n/a - <evidence>`
+39. `Infra edits: none|<list>`
+40. `Unblock used: no|yes - <reason>`
+41. `Gate policy acknowledged: yes|no`
+42. `Final git status: <git status --short summary>`
+43. `GOVERNANCE_SIGNAL_DISPOSITION`
+44. `MULTI_BLOCK_PORT_IMPL_ALLOWED: none|<count>`
+45. `JUSTIFICATION: <required when count > 0>`
+46. `TRADEOFF: <required when count > 0>`
 
 ## Decomposition Field Rules
 
@@ -106,6 +107,8 @@ Run report MUST include:
 - operation names are block-local; do not key contract fields across different operations
 4. `idempotency_n/a` is valid only when no operation in the decomposition is idempotent.
 5. `Decomposition reason: trigger:<canonical_name>` must use only canonical split-trigger tokens defined in `.bear/agent/CONTRACTS.md` (`Decomposition Signals (Normative)`).
+6. `Decomposition contract consulted: yes (before IR authoring)` is required when `IR delta` indicates `spec/*.bear.yaml` authoring/modification.
+7. `Decomposition contract consulted: n/a (no IR authoring/change in this run)` is required when `IR delta` has no authored/modified IR evidence.
 
 PR delta interpretation addendum:
 1. Operation add/remove must be interpreted as `BOUNDARY_EXPANDING` surface expansion.
@@ -129,6 +132,7 @@ Surface contract notes:
 7. If `Gate blocker` is `IO_LOCK`, `Stopped after blocker` MUST be `yes`.
 8. If `pr-check` prints `BOUNDARY_EXPANSION_DETECTED` but exit is not `5`, classify `Gate blocker` as `OTHER` and stop.
 9. For this anomaly, `First failure signature` must include both marker text and observed exit code.
+10. When `Run outcome: COMPLETE`, `Gate results` must include canonical repo-level done gates (`bear check --all --project ...` and `bear pr-check --all --project ... --base ...`).
 
 ## GREENFIELD_BASELINE_WAITING_SEMANTICS
 
@@ -209,6 +213,7 @@ Decomposition rubric: state_domain_same; effects_write; idempotency_n/a; lifecyc
 Decomposition mode: grouped
 Groups: [wallet_write_flow:{withdraw}]
 Decomposition reason: default
+Decomposition contract consulted: yes (before IR authoring)
 Blocks added: []
 IR delta: spec/withdraw.bear.yaml (invariants updated)
 Implementation delta: src/main/java/blocks/withdraw/impl/WithdrawImpl.java
@@ -256,6 +261,7 @@ Decomposition rubric: state_domain_split; effects_write; idempotency_split; life
 Decomposition mode: multi
 Groups: n/a
 Decomposition reason: trigger:effects_split
+Decomposition contract consulted: yes (before IR authoring)
 Blocks added: [create-wallet, deposit-to-wallet, withdraw-from-wallet, get-wallet-balance, get-wallet-statement]
 IR delta: spec/*.bear.yaml, bear.blocks.yaml
 Implementation delta: src/main/java/blocks/**, src/main/java/com/bear/account/demo/WalletService.java
@@ -304,6 +310,7 @@ Decomposition rubric: state_domain_split; effects_write; idempotency_n/a; lifecy
 Decomposition mode: multi
 Groups: n/a
 Decomposition reason: spec_explicit
+Decomposition contract consulted: yes (before IR authoring)
 Blocks added: [wallet]
 IR delta: spec/wallet.bear.yaml, bear.blocks.yaml
 Implementation delta: src/main/java/blocks/wallet/impl/WalletImpl.java

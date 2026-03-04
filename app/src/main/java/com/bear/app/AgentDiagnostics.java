@@ -44,6 +44,10 @@ final class AgentDiagnostics {
         String normalizedFile = file == null || file.isBlank() ? null : file.replace('\\', '/');
         Map<String, String> normalizedEvidence = normalizeEvidence(evidence);
         String templateVariant = normalizedEvidence.getOrDefault("templateVariant", "");
+        String identityKey = normalizedEvidence.getOrDefault("identityKey", "");
+        if (RepeatableRuleRegistry.requiresIdentityKey(normalizedRuleId) && identityKey.isBlank()) {
+            throw new IllegalArgumentException("Repeatable governance rule must set evidence.identityKey: " + normalizedRuleId);
+        }
         String id = problemId(
             category,
             failureCode,
@@ -53,6 +57,7 @@ final class AgentDiagnostics {
             normalizedFile,
             span,
             templateVariant,
+            identityKey,
             messageKey
         );
         return new AgentProblem(
@@ -71,11 +76,17 @@ final class AgentDiagnostics {
         );
     }
 
+    static AgentPayload payloadForCheck(CheckResult result, AgentCommandContext commandContext) {
+        return payload(commandContext, result.exitCode(), result.problems(), true);
+    }
+
+    static AgentPayload payloadForPrCheck(PrCheckResult result, AgentCommandContext commandContext) {
+        return payload(commandContext, result.exitCode(), result.problems(), true);
+    }
+
     static AgentPayload payloadForCheck(CheckResult result, String mode, boolean collectAll) {
         return payload(
-            "check",
-            mode,
-            collectAll ? "all" : "first",
+            AgentCommandContext.minimal("check", mode, collectAll ? "all" : "first", true),
             result.exitCode(),
             result.problems(),
             true
@@ -84,9 +95,7 @@ final class AgentDiagnostics {
 
     static AgentPayload payloadForPrCheck(PrCheckResult result, String mode, boolean collectAll) {
         return payload(
-            "pr-check",
-            mode,
-            collectAll ? "all" : "first",
+            AgentCommandContext.minimal("pr-check", mode, collectAll ? "all" : "first", true),
             result.exitCode(),
             result.problems(),
             true
@@ -111,6 +120,16 @@ final class AgentDiagnostics {
         List<AgentProblem> problems,
         boolean agentMode
     ) {
+        AgentCommandContext context = AgentCommandContext.minimal(command, mode, collectMode, agentMode);
+        return payload(context, exitCode, problems, agentMode);
+    }
+
+    static AgentPayload payload(
+        AgentCommandContext commandContext,
+        int exitCode,
+        List<AgentProblem> problems,
+        boolean agentMode
+    ) {
         List<AgentProblem> source = problems == null ? List.of() : List.copyOf(problems);
         List<AgentProblem> normalized = new ArrayList<>(source.size());
         for (AgentProblem problem : source) {
@@ -128,20 +147,19 @@ final class AgentDiagnostics {
                 problem.evidence()
             ));
         }
-        normalized.sort(problemComparator(command));
-        List<ClusterInternal> fullClusters = cluster(command, normalized);
-        ClusterInternal primaryCluster = selectPrimaryCluster(command, fullClusters);
+        normalized.sort(problemComparator(commandContext.command()));
+        List<ClusterInternal> fullClusters = cluster(commandContext.command(), normalized);
+        ClusterInternal primaryCluster = selectPrimaryCluster(commandContext.command(), fullClusters);
 
-        List<AgentProblem> retained = retainProblems(command, normalized, fullClusters, primaryCluster, MAX_VIOLATIONS);
-        List<ClusterInternal> retainedClusters = cluster(command, retained);
+        List<AgentProblem> retained = retainProblems(commandContext.command(), normalized, fullClusters, primaryCluster, MAX_VIOLATIONS);
         AgentNextAction nextAction = primaryCluster == null
             ? null
-            : AgentTemplateRegistry.render(command, mode, collectMode, agentMode, primaryCluster.toPublicCluster());
+            : AgentTemplateRegistry.render(commandContext, primaryCluster.toPublicCluster());
         return new AgentPayload(
             SCHEMA_VERSION,
-            command,
-            mode,
-            collectMode,
+            commandContext.command(),
+            commandContext.mode(),
+            commandContext.collectMode(),
             exitCode == CliCodes.EXIT_OK ? "ok" : "fail",
             exitCode,
             retained.size() < normalized.size(),
@@ -153,7 +171,6 @@ final class AgentDiagnostics {
             Map.of()
         );
     }
-
     static String toJson(AgentPayload payload) {
         StringBuilder out = new StringBuilder(4096);
         JsonWriter writer = new JsonWriter(out);
@@ -525,6 +542,7 @@ final class AgentDiagnostics {
         String file,
         AgentSpan span,
         String templateVariant,
+        String identityKey,
         String messageKey
     ) {
         String tuple = String.join(
@@ -540,6 +558,7 @@ final class AgentDiagnostics {
             span == null ? "" : Integer.toString(span.endLine()),
             span == null ? "" : Integer.toString(span.endCol()),
             nullToEmpty(templateVariant),
+            nullToEmpty(identityKey),
             nullToEmpty(messageKey)
         );
         return shortHash("problem", tuple);

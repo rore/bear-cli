@@ -721,9 +721,7 @@ final class CheckAllCommandService {
                 }
             }
             AgentDiagnostics.AgentPayload payload = AgentDiagnostics.payload(
-                "check",
-                "all",
-                options.collectAll() ? "all" : "first",
+                AgentCommandContext.forCheckAll(options),
                 summary.exitCode(),
                 problems,
                 true

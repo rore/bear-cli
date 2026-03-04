@@ -40,10 +40,15 @@ flowchart LR
 ## What BEAR does (plain terms)
 
 - An agent updates code and (when needed) a small YAML IR contract (BEAR IR).
-- A block is a governed backend unit; its operations and allowed effects are declared in BEAR IR.
+- A block is a governed backend unit; its operations, allowed effects, and ports are declared in BEAR IR.
 - BEAR generates deterministic guardrails (wrappers/ports) from that declaration.
+- Blocks interact only through declared ports; cross-boundary access outside a declared port is flagged as a violation (or PR signal).
 - Implementation can evolve freely inside those guardrails.
 - CI gets deterministic governance signals from `check` and `pr-check`.
+
+<p align="center">
+  <img src="assets/bear-boundary.svg" alt="BEAR boundaries: blocks interact through declared ports; direct cross-boundary calls are violations" width="100%" />
+</p>
 
 ## What you get
 
@@ -129,6 +134,7 @@ In a real PR/CI flow, set `--base` to the merge-base target (for example `origin
 
 - JVM/Java target in Preview.
 - Primary containment enforcement path is Java plus Gradle wrapper when `impl.allowedDeps` is declared.
+
 
 
 

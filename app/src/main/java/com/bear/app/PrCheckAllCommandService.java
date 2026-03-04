@@ -226,9 +226,7 @@ final class PrCheckAllCommandService {
                 }
             }
             AgentDiagnostics.AgentPayload payload = AgentDiagnostics.payload(
-                "pr-check",
-                "all",
-                options.collectAll() ? "all" : "first",
+                AgentCommandContext.forPrCheckAll(options),
                 summary.exitCode(),
                 problems,
                 true

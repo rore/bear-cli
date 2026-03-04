@@ -2,6 +2,7 @@ package com.bear.app;
 
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -49,7 +50,7 @@ class AgentDiagnosticsTest {
                 null,
                 "DIRECT_IMPL_USAGE_" + i,
                 "DIRECT_IMPL_USAGE_" + i,
-                java.util.Map.of("templateVariant", "direct_" + i)
+                java.util.Map.of("templateVariant", "direct_" + i, "identityKey", "direct_" + i)
             ));
             problems.add(AgentDiagnostics.problem(
                 AgentDiagnostics.AgentCategory.GOVERNANCE,
@@ -62,7 +63,7 @@ class AgentDiagnosticsTest {
                 null,
                 "IMPL_CONTAINMENT_BYPASS_" + i,
                 "IMPL_CONTAINMENT_BYPASS_" + i,
-                java.util.Map.of("templateVariant", "containment_" + i)
+                java.util.Map.of("templateVariant", "containment_" + i, "identityKey", "containment_" + i)
             ));
             problems.add(AgentDiagnostics.problem(
                 AgentDiagnostics.AgentCategory.GOVERNANCE,
@@ -75,7 +76,7 @@ class AgentDiagnosticsTest {
                 null,
                 "BLOCK_PORT_IMPL_INVALID_" + i,
                 "BLOCK_PORT_IMPL_INVALID_" + i,
-                java.util.Map.of("templateVariant", "port_" + i)
+                java.util.Map.of("templateVariant", "port_" + i, "identityKey", "port_" + i)
             ));
         }
 
@@ -145,18 +146,102 @@ class AgentDiagnosticsTest {
     }
 
     @Test
-    void rerunCommandPreservesModeCollectAndAgentFlagsWhenRequested() {
+    void rerunCommandRoundTripsViaCliParserForCheckSingle() {
+        AgentCommandContext expected = AgentCommandContext.forCheckSingle(
+            Path.of("spec/withdraw.bear.yaml"),
+            Path.of("."),
+            Path.of("bear.blocks.yaml"),
+            true,
+            true,
+            true
+        );
         AgentDiagnostics.AgentPayload payload = AgentDiagnostics.payload(
-            "check",
-            "all",
-            "all",
+            expected,
             CliCodes.EXIT_IO,
-            List.of(problem(AgentDiagnostics.AgentCategory.INFRA, CliCodes.IO_ERROR, null, "PROJECT_TEST_LOCK", "project.tests")),
+            List.of(problem(AgentDiagnostics.AgentCategory.INFRA, CliCodes.IO_ERROR, null, "UNMAPPED_REASON", "project.tests")),
             true
         );
 
         assertNotNull(payload.nextAction());
-        assertTrue(payload.nextAction().commands().contains("bear check --all --collect=all --agent"));
+        String rerun = payload.nextAction().commands().get(0);
+        AgentCommandContext reparsed = AgentCommandContextTestSupport.parseCommandContext(rerun);
+        AgentCommandContextTestSupport.assertEquivalent(expected, reparsed);
+    }
+
+    @Test
+    void rerunCommandRoundTripsViaCliParserForPrCheckSingle() {
+        AgentCommandContext expected = AgentCommandContext.forPrCheckSingle(
+            "spec/withdraw.bear.yaml",
+            Path.of("."),
+            "origin/main",
+            Path.of("bear.blocks.yaml"),
+            true,
+            true
+        );
+        AgentDiagnostics.AgentPayload payload = AgentDiagnostics.payload(
+            expected,
+            CliCodes.EXIT_IO,
+            List.of(problem(AgentDiagnostics.AgentCategory.INFRA, CliCodes.IO_GIT, null, "UNMAPPED_REASON", "git.repo")),
+            true
+        );
+
+        assertNotNull(payload.nextAction());
+        String rerun = payload.nextAction().commands().get(0);
+        AgentCommandContext reparsed = AgentCommandContextTestSupport.parseCommandContext(rerun);
+        AgentCommandContextTestSupport.assertEquivalent(expected, reparsed);
+    }
+
+    @Test
+    void rerunCommandRoundTripsViaCliParserForCheckAllAndPrCheckAll() {
+        AgentCommandContext expectedCheckAll = new AgentCommandContext(
+            "check",
+            "all",
+            null,
+            ".",
+            null,
+            true,
+            true,
+            true,
+            true,
+            true,
+            null,
+            "bear.blocks.yaml",
+            java.util.Set.of("alpha", "beta")
+        );
+        AgentDiagnostics.AgentPayload checkAllPayload = AgentDiagnostics.payload(
+            expectedCheckAll,
+            CliCodes.EXIT_IO,
+            List.of(problem(AgentDiagnostics.AgentCategory.INFRA, CliCodes.IO_ERROR, null, "UNMAPPED_REASON", "project.tests")),
+            true
+        );
+        String checkAllRerun = checkAllPayload.nextAction().commands().get(0);
+        AgentCommandContext reparsedCheckAll = AgentCommandContextTestSupport.parseCommandContext(checkAllRerun);
+        AgentCommandContextTestSupport.assertEquivalent(expectedCheckAll, reparsedCheckAll);
+
+        AgentCommandContext expectedPrAll = new AgentCommandContext(
+            "pr-check",
+            "all",
+            null,
+            ".",
+            "origin/main",
+            true,
+            true,
+            false,
+            true,
+            false,
+            null,
+            "bear.blocks.yaml",
+            java.util.Set.of("alpha", "beta")
+        );
+        AgentDiagnostics.AgentPayload prAllPayload = AgentDiagnostics.payload(
+            expectedPrAll,
+            CliCodes.EXIT_IO,
+            List.of(problem(AgentDiagnostics.AgentCategory.INFRA, CliCodes.IO_GIT, null, "UNMAPPED_REASON", "git.repo")),
+            true
+        );
+        String prAllRerun = prAllPayload.nextAction().commands().get(0);
+        AgentCommandContext reparsedPrAll = AgentCommandContextTestSupport.parseCommandContext(prAllRerun);
+        AgentCommandContextTestSupport.assertEquivalent(expectedPrAll, reparsedPrAll);
     }
 
     @Test
@@ -177,6 +262,87 @@ class AgentDiagnosticsTest {
         assertTrue(ex.getMessage().contains("INFRA"));
     }
 
+    @Test
+    void repeatableRulesRequireIdentityKey() {
+        for (String ruleId : RepeatableRuleRegistry.RULE_IDS) {
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> AgentDiagnostics.problem(
+                AgentDiagnostics.AgentCategory.GOVERNANCE,
+                CliCodes.BOUNDARY_BYPASS,
+                ruleId,
+                null,
+                AgentDiagnostics.AgentSeverity.ERROR,
+                "alpha",
+                "src/main/java/blocks/a/impl/A.java",
+                null,
+                ruleId,
+                "detail",
+                java.util.Map.of()
+            ));
+            assertTrue(ex.getMessage().contains("identityKey"));
+        }
+    }
+
+    @Test
+    void repeatedPortImplFindingsHaveDistinctStableIds() {
+        AgentDiagnostics.AgentProblem first = AgentDiagnostics.problem(
+            AgentDiagnostics.AgentCategory.GOVERNANCE,
+            CliCodes.BOUNDARY_BYPASS,
+            "PORT_IMPL_OUTSIDE_GOVERNED_ROOT",
+            null,
+            AgentDiagnostics.AgentSeverity.ERROR,
+            "alpha",
+            "src/main/java/com/bear/account/demo/App.java",
+            null,
+            "PORT_IMPL_OUTSIDE_GOVERNED_ROOT",
+            "detail 1",
+            java.util.Map.of("identityKey", "AccountStorePort->InMemoryAccountStore")
+        );
+        AgentDiagnostics.AgentProblem second = AgentDiagnostics.problem(
+            AgentDiagnostics.AgentCategory.GOVERNANCE,
+            CliCodes.BOUNDARY_BYPASS,
+            "PORT_IMPL_OUTSIDE_GOVERNED_ROOT",
+            null,
+            AgentDiagnostics.AgentSeverity.ERROR,
+            "alpha",
+            "src/main/java/com/bear/account/demo/App.java",
+            null,
+            "PORT_IMPL_OUTSIDE_GOVERNED_ROOT",
+            "detail 2",
+            java.util.Map.of("identityKey", "TransactionLogPort->InMemoryTransactionLog")
+        );
+        AgentDiagnostics.AgentProblem third = AgentDiagnostics.problem(
+            AgentDiagnostics.AgentCategory.GOVERNANCE,
+            CliCodes.BOUNDARY_BYPASS,
+            "PORT_IMPL_OUTSIDE_GOVERNED_ROOT",
+            null,
+            AgentDiagnostics.AgentSeverity.ERROR,
+            "alpha",
+            "src/main/java/com/bear/account/demo/App.java",
+            null,
+            "PORT_IMPL_OUTSIDE_GOVERNED_ROOT",
+            "detail 3",
+            java.util.Map.of("identityKey", "IdempotencyPort->InMemoryIdempotencyStore")
+        );
+
+        assertFalse(first.id().equals(second.id()));
+        assertFalse(first.id().equals(third.id()));
+        assertFalse(second.id().equals(third.id()));
+
+        AgentDiagnostics.AgentProblem firstRepeat = AgentDiagnostics.problem(
+            AgentDiagnostics.AgentCategory.GOVERNANCE,
+            CliCodes.BOUNDARY_BYPASS,
+            "PORT_IMPL_OUTSIDE_GOVERNED_ROOT",
+            null,
+            AgentDiagnostics.AgentSeverity.ERROR,
+            "alpha",
+            "src/main/java/com/bear/account/demo/App.java",
+            null,
+            "PORT_IMPL_OUTSIDE_GOVERNED_ROOT",
+            "detail 1",
+            java.util.Map.of("identityKey", "AccountStorePort->InMemoryAccountStore")
+        );
+        assertEquals(first.id(), firstRepeat.id());
+    }
     private static AgentDiagnostics.AgentProblem problem(
         AgentDiagnostics.AgentCategory category,
         String failureCode,
@@ -184,6 +350,9 @@ class AgentDiagnosticsTest {
         String reasonKey,
         String file
     ) {
+        java.util.Map<String, String> evidence = RepeatableRuleRegistry.requiresIdentityKey(ruleId)
+            ? java.util.Map.of("identityKey", (file == null ? "" : file) + "|" + ruleId)
+            : java.util.Map.of();
         return AgentDiagnostics.problem(
             category,
             failureCode,
@@ -195,7 +364,9 @@ class AgentDiagnosticsTest {
             null,
             ruleId != null ? ruleId : reasonKey,
             failureCode,
-            java.util.Map.of()
+            evidence
         );
     }
 }
+
+

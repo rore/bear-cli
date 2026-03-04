@@ -471,7 +471,8 @@ final class PrCheckCommandService {
                             "deltaClass", delta.clazz().label,
                             "deltaCategory", delta.category().label,
                             "deltaChange", delta.change().label,
-                            "deltaKey", delta.key()
+                            "deltaKey", delta.key(),
+                            "identityKey", delta.clazz().label + "|" + delta.category().label + "|" + delta.change().label + "|" + delta.key()
                         )
                     ));
                 }
@@ -690,6 +691,10 @@ final class PrCheckCommandService {
             || CliCodes.BOUNDARY_EXPANSION.equals(failureCode))
             ? AgentDiagnostics.AgentCategory.GOVERNANCE
             : AgentDiagnostics.AgentCategory.INFRA;
+        String normalizedPath = FailureEnvelopeEmitter.normalizeLocator(failurePath);
+        Map<String, String> evidence = RepeatableRuleRegistry.requiresIdentityKey(ruleId)
+            ? Map.of("identityKey", nullToEmpty(normalizedPath) + "|" + nullToEmpty(ruleId) + "|" + nullToEmpty(detail))
+            : Map.of();
         return AgentDiagnostics.problem(
             category,
             failureCode,
@@ -697,12 +702,16 @@ final class PrCheckCommandService {
             reasonKey,
             AgentDiagnostics.AgentSeverity.ERROR,
             blockId,
-            FailureEnvelopeEmitter.normalizeLocator(failurePath),
+            normalizedPath,
             null,
             ruleId != null ? ruleId : reasonKey,
             detail == null ? "" : detail,
-            Map.of()
+            evidence
         );
+    }
+
+    private static String nullToEmpty(String value) {
+        return value == null ? "" : value;
     }
 
     private static String boundaryBypassRemediation(String rule) {

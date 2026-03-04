@@ -53,7 +53,7 @@ Forbidden:
 
 ## Machine Gate Loop
 
-1. Update IR/implementation from spec intent.
+1. Evaluate decomposition contract before authoring/changing `spec/*.bear.yaml`; then update IR/implementation from spec intent.
 2. Run pre-gate sequence as needed:
 - `bear validate <ir-file>`
 - `bear compile <ir-file> --project <repoRoot>` or `bear compile --all --project <repoRoot>`

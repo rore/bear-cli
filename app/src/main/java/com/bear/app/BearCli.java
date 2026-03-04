@@ -661,18 +661,23 @@ public final class BearCli {
         AgentDiagnostics.AgentCategory agentCategory = isGovernanceCode(blockCode)
             ? AgentDiagnostics.AgentCategory.GOVERNANCE
             : AgentDiagnostics.AgentCategory.INFRA;
+        String normalizedBlockCode = blockCode == null ? CliCodes.REPO_MULTI_BLOCK_FAILED : blockCode;
+        String normalizedPath = normalizeLocator(blockPath);
+        Map<String, String> evidence = RepeatableRuleRegistry.requiresIdentityKey(normalizedBlockCode)
+            ? Map.of("identityKey", nullToEmpty(normalizedPath) + "|" + nullToEmpty(normalizedBlockCode) + "|" + nullToEmpty(detail))
+            : Map.of();
         AgentDiagnostics.AgentProblem problem = AgentDiagnostics.problem(
             agentCategory,
-            blockCode == null ? CliCodes.REPO_MULTI_BLOCK_FAILED : blockCode,
-            agentCategory == AgentDiagnostics.AgentCategory.GOVERNANCE ? blockCode : null,
-            agentCategory == AgentDiagnostics.AgentCategory.INFRA ? (blockCode == null ? CliCodes.REPO_MULTI_BLOCK_FAILED : blockCode) : null,
+            normalizedBlockCode,
+            agentCategory == AgentDiagnostics.AgentCategory.GOVERNANCE ? normalizedBlockCode : null,
+            agentCategory == AgentDiagnostics.AgentCategory.INFRA ? normalizedBlockCode : null,
             AgentDiagnostics.AgentSeverity.ERROR,
             base.name(),
-            normalizeLocator(blockPath),
+            normalizedPath,
             null,
-            blockCode == null ? CliCodes.REPO_MULTI_BLOCK_FAILED : blockCode,
+            normalizedBlockCode,
             detail == null ? "" : detail,
-            Map.of()
+            evidence
         );
         return new BlockExecutionResult(
             base.name(),
@@ -911,10 +916,15 @@ public final class BearCli {
             || code.equals(CliCodes.MULTI_BLOCK_PORT_IMPL_FORBIDDEN)
             || GovernanceRuleRegistry.PUBLIC_RULE_IDS.contains(code);
     }
+    private static String nullToEmpty(String text) {
+        return text == null ? "" : text;
+    }
+
     private static String normalizeLocator(String raw) {
         return FailureEnvelopeEmitter.normalizeLocator(raw);
     }
 }
+
 
 
 

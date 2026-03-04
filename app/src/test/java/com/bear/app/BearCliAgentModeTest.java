@@ -29,7 +29,17 @@ class BearCliAgentModeTest {
 
         assertEquals(CliCodes.EXIT_IO, run.exitCode());
         assertTrue(run.stdout().startsWith("{\"schemaVersion\":\"bear.nextAction.v1\""));
-        assertTrue(run.stdout().contains("bear check --agent"), run.stdout());
+        String rerun = AgentCommandContextTestSupport.firstRerunCommand(run.stdout());
+        AgentCommandContext reparsed = AgentCommandContextTestSupport.parseCommandContext(rerun);
+        AgentCommandContext expected = AgentCommandContext.forCheckSingle(
+            Path.of("missing-file.bear.yaml"),
+            tempDir,
+            null,
+            false,
+            false,
+            true
+        );
+        AgentCommandContextTestSupport.assertEquivalent(expected, reparsed);
         assertEquals("", run.stderr());
     }
 
@@ -45,7 +55,17 @@ class BearCliAgentModeTest {
         });
 
         assertEquals(CliCodes.EXIT_IO, run.exitCode());
-        assertTrue(run.stdout().contains("bear check --collect=all --agent"), run.stdout());
+        String rerun = AgentCommandContextTestSupport.firstRerunCommand(run.stdout());
+        AgentCommandContext reparsed = AgentCommandContextTestSupport.parseCommandContext(rerun);
+        AgentCommandContext expected = AgentCommandContext.forCheckSingle(
+            Path.of("missing-file.bear.yaml"),
+            tempDir,
+            null,
+            false,
+            true,
+            true
+        );
+        AgentCommandContextTestSupport.assertEquivalent(expected, reparsed);
         assertEquals("", run.stderr());
     }
 
@@ -78,7 +98,17 @@ class BearCliAgentModeTest {
             assertTrue(run.stdout().contains("\"reasonKey\":\"PROJECT_TEST_LOCK\""), run.stdout());
             assertTrue(run.stdout().contains("\"title\":\"Clear blocked check marker and retry\""));
             assertTrue(run.stdout().contains("bear unblock"));
-            assertTrue(run.stdout().contains("bear check --collect=all --agent"));
+            String rerun = AgentCommandContextTestSupport.firstRerunCommand(run.stdout());
+            AgentCommandContext reparsed = AgentCommandContextTestSupport.parseCommandContext(rerun);
+            AgentCommandContext expected = AgentCommandContext.forCheckSingle(
+                fixture,
+                tempDir,
+                null,
+                false,
+                true,
+                true
+            );
+            AgentCommandContextTestSupport.assertEquivalent(expected, reparsed);
             assertEquals("", run.stderr());
         } finally {
             restoreSystemProperty(key, previous);
@@ -133,10 +163,148 @@ class BearCliAgentModeTest {
         assertEquals(CliCodes.EXIT_IO, run.exitCode());
         assertTrue(run.stdout().contains("\"reasonKey\":\"MERGE_BASE_FAILED\""), run.stdout());
         assertTrue(run.stdout().contains("\"title\":\"Capture base-resolution diagnostics and escalate\""));
-        assertTrue(run.stdout().contains("bear pr-check --collect=all --agent"));
+        String rerun = AgentCommandContextTestSupport.firstRerunCommand(run.stdout());
+        AgentCommandContext reparsed = AgentCommandContextTestSupport.parseCommandContext(rerun);
+        AgentCommandContext expected = AgentCommandContext.forPrCheckSingle(
+            "spec/withdraw.bear.yaml",
+            repo,
+            "origin/does-not-exist",
+            null,
+            true,
+            true
+        );
+        AgentCommandContextTestSupport.assertEquivalent(expected, reparsed);
         assertEquals("", run.stderr());
     }
 
+    @Test
+    void checkAgentModeEmitsProjectTestBootstrapReasonKey(@TempDir Path tempDir) throws Exception {
+        Path fixture = TestRepoPaths.repoRoot().resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode());
+        writeWorkingWithdrawImpl(tempDir);
+
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho unable to unzip gradle-8.12.1-bin.zip\r\nexit /b 1\r\n",
+            "#!/usr/bin/env sh\necho \"unable to unzip gradle-8.12.1-bin.zip\"\nexit 1\n"
+        );
+
+        String key = "bear.cli.test.gradleUserHomeOverride";
+        String previous = System.getProperty(key);
+        try {
+            System.setProperty(key, "NONE");
+            CliRunResult run = runCli(new String[] {
+                "check",
+                fixture.toString(),
+                "--project",
+                tempDir.toString(),
+                "--collect=all",
+                "--agent"
+            });
+
+            assertEquals(CliCodes.EXIT_IO, run.exitCode());
+            assertTrue(run.stdout().contains("\"reasonKey\":\"PROJECT_TEST_BOOTSTRAP\""), run.stdout());
+            String rerun = AgentCommandContextTestSupport.firstRerunCommand(run.stdout());
+            AgentCommandContext reparsed = AgentCommandContextTestSupport.parseCommandContext(rerun);
+            AgentCommandContext expected = AgentCommandContext.forCheckSingle(
+                fixture,
+                tempDir,
+                null,
+                false,
+                true,
+                true
+            );
+            AgentCommandContextTestSupport.assertEquivalent(expected, reparsed);
+            assertEquals("", run.stderr());
+        } finally {
+            restoreSystemProperty(key, previous);
+        }
+    }
+
+    @Test
+    void prCheckAgentModeEmitsReadHeadFailedReasonKey(@TempDir Path tempDir) {
+        CliRunResult run = runCli(new String[] {
+            "pr-check",
+            "spec/missing.bear.yaml",
+            "--project",
+            tempDir.toString(),
+            "--base",
+            "HEAD",
+            "--collect=all",
+            "--agent"
+        });
+
+        assertEquals(CliCodes.EXIT_IO, run.exitCode());
+        assertTrue(run.stdout().contains("\"reasonKey\":\"READ_HEAD_FAILED\""), run.stdout());
+        String rerun = AgentCommandContextTestSupport.firstRerunCommand(run.stdout());
+        AgentCommandContext reparsed = AgentCommandContextTestSupport.parseCommandContext(rerun);
+        AgentCommandContext expected = AgentCommandContext.forPrCheckSingle(
+            "spec/missing.bear.yaml",
+            tempDir,
+            "HEAD",
+            null,
+            true,
+            true
+        );
+        AgentCommandContextTestSupport.assertEquivalent(expected, reparsed);
+        assertEquals("", run.stderr());
+    }
+
+    @Test
+    void documentedExactInfraReasonKeysAreReachableFromOriginSites(@TempDir Path tempDir) throws Exception {
+        java.util.Set<String> observed = new java.util.HashSet<>();
+
+        Path fixture = TestRepoPaths.repoRoot().resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode());
+        writeWorkingWithdrawImpl(tempDir);
+
+        String key = "bear.cli.test.gradleUserHomeOverride";
+        String previous = System.getProperty(key);
+        try {
+            System.setProperty(key, "NONE");
+            writeProjectWrapper(
+                tempDir,
+                "@echo off\r\necho java.io.FileNotFoundException: C:\\\\tmp\\\\gradle-8.12.1-bin.zip.lck (Access is denied)\r\nexit /b 1\r\n",
+                "#!/usr/bin/env sh\necho \"java.io.FileNotFoundException: /tmp/gradle-8.12.1-bin.zip.lck (Access is denied)\"\nexit 1\n"
+            );
+            observed.addAll(extractReasonKeys(runCli(new String[] {
+                "check", fixture.toString(), "--project", tempDir.toString(), "--collect=all", "--agent"
+            }).stdout()));
+
+            writeProjectWrapper(
+                tempDir,
+                "@echo off\r\necho unable to unzip gradle-8.12.1-bin.zip\r\nexit /b 1\r\n",
+                "#!/usr/bin/env sh\necho \"unable to unzip gradle-8.12.1-bin.zip\"\nexit 1\n"
+            );
+            observed.addAll(extractReasonKeys(runCli(new String[] {
+                "check", fixture.toString(), "--project", tempDir.toString(), "--collect=all", "--agent"
+            }).stdout()));
+        } finally {
+            restoreSystemProperty(key, previous);
+        }
+
+        Path nonGitIr = tempDir.resolve("withdraw.bear.yaml");
+        Files.writeString(nonGitIr, Files.readString(fixture, StandardCharsets.UTF_8), StandardCharsets.UTF_8);
+        observed.addAll(extractReasonKeys(runCli(new String[] {
+            "pr-check", "withdraw.bear.yaml", "--project", tempDir.toString(), "--base", "HEAD", "--agent"
+        }).stdout()));
+
+        Path repo = initGitRepo(tempDir.resolve("repo-keys"));
+        Path ir = repo.resolve("spec/withdraw.bear.yaml");
+        Files.createDirectories(ir.getParent());
+        Files.writeString(ir, Files.readString(fixture, StandardCharsets.UTF_8), StandardCharsets.UTF_8);
+        gitCommitAll(repo, "base ir");
+        observed.addAll(extractReasonKeys(runCli(new String[] {
+            "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "origin/does-not-exist", "--agent"
+        }).stdout()));
+
+        observed.addAll(extractReasonKeys(runCli(new String[] {
+            "pr-check", "spec/missing.bear.yaml", "--project", tempDir.toString(), "--base", "HEAD", "--agent"
+        }).stdout()));
+
+        assertTrue(observed.containsAll(AgentTemplateRegistry.exactInfraQualifiers()),
+            "Missing reason key coverage: expected=" + AgentTemplateRegistry.exactInfraQualifiers() + " observed=" + observed);
+    }
     @Test
     void checkRejectsUnsupportedCollectValue() {
         CliRunResult run = runCli(new String[] {
@@ -224,6 +392,14 @@ class BearCliAgentModeTest {
         assertEquals(0, exit, "git command failed: " + String.join(" ", command) + "\n" + output);
     }
 
+    private static java.util.Set<String> extractReasonKeys(String json) {
+        java.util.HashSet<String> out = new java.util.HashSet<>();
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\\\"reasonKey\\\":\\\"([^\\\"]+)\\\"").matcher(json == null ? "" : json);
+        while (matcher.find()) {
+            out.add(matcher.group(1));
+        }
+        return java.util.Set.copyOf(out);
+    }
     private static void restoreSystemProperty(String key, String previous) {
         if (previous == null) {
             System.clearProperty(key);
@@ -250,3 +426,4 @@ class BearCliAgentModeTest {
     private record CliRunResult(int exitCode, String stdout, String stderr) {
     }
 }
+

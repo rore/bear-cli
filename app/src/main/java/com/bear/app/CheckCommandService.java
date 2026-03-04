@@ -561,7 +561,7 @@ final class CheckCommandService {
                         null,
                         CliCodes.UNDECLARED_REACH,
                         line,
-                        Map.of()
+                        Map.of("identityKey", finding.path() + "|" + finding.surface())
                     ));
                 }
                 return checkFailure(
@@ -597,7 +597,7 @@ final class CheckCommandService {
                         null,
                         CliCodes.REFLECTION_DISPATCH_FORBIDDEN,
                         line,
-                        Map.of()
+                        Map.of("identityKey", finding.path() + "|" + finding.surface())
                     ));
                 }
                 return checkFailure(
@@ -659,7 +659,7 @@ final class CheckCommandService {
                         null,
                         finding.rule(),
                         line,
-                        Map.of()
+                        Map.of("identityKey", finding.path() + "|" + finding.rule() + "|" + finding.detail())
                     ));
                 }
                 return checkFailure(
@@ -1197,6 +1197,10 @@ final class CheckCommandService {
         AgentDiagnostics.AgentCategory category = isGovernanceFailureCode(failureCode)
             ? AgentDiagnostics.AgentCategory.GOVERNANCE
             : AgentDiagnostics.AgentCategory.INFRA;
+        String normalizedPath = FailureEnvelopeEmitter.normalizeLocator(failurePath);
+        Map<String, String> evidence = RepeatableRuleRegistry.requiresIdentityKey(ruleId)
+            ? Map.of("identityKey", nullToEmpty(normalizedPath) + "|" + nullToEmpty(ruleId) + "|" + nullToEmpty(detail))
+            : Map.of();
         return AgentDiagnostics.problem(
             category,
             failureCode,
@@ -1204,11 +1208,11 @@ final class CheckCommandService {
             reasonKey,
             AgentDiagnostics.AgentSeverity.ERROR,
             blockId,
-            FailureEnvelopeEmitter.normalizeLocator(failurePath),
+            normalizedPath,
             null,
             ruleId != null ? ruleId : reasonKey,
             detail == null ? "" : detail,
-            Map.of()
+            evidence
         );
     }
 
@@ -1222,6 +1226,10 @@ final class CheckCommandService {
             || CliCodes.HYGIENE_UNEXPECTED_PATHS.equals(failureCode)
             || CliCodes.BOUNDARY_EXPANSION.equals(failureCode)
             || GovernanceRuleRegistry.PUBLIC_RULE_IDS.contains(failureCode);
+    }
+
+    private static String nullToEmpty(String value) {
+        return value == null ? "" : value;
     }
 
     private static String sha256Hex(byte[] bytes) {

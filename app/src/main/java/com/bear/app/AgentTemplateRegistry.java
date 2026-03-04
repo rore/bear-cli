@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 final class AgentTemplateRegistry {
     private static final Map<String, Template> EXACT = new HashMap<>();
@@ -225,14 +227,11 @@ final class AgentTemplateRegistry {
     }
 
     static AgentDiagnostics.AgentNextAction render(
-        String command,
-        String mode,
-        String collectMode,
-        boolean agentMode,
+        AgentCommandContext commandContext,
         AgentDiagnostics.AgentCluster cluster
     ) {
         Template template = resolve(cluster);
-        String rerunCommand = buildRerunCommand(command, mode, collectMode, agentMode);
+        String rerunCommand = buildRerunCommand(commandContext);
         ArrayList<String> renderedSteps = new ArrayList<>(template.steps().size());
         for (String step : template.steps()) {
             renderedSteps.add(interpolate(step, rerunCommand));
@@ -251,18 +250,8 @@ final class AgentTemplateRegistry {
         );
     }
 
-    private static String buildRerunCommand(String command, String mode, String collectMode, boolean agentMode) {
-        StringBuilder out = new StringBuilder("bear ").append(command);
-        if ("all".equals(mode)) {
-            out.append(" --all");
-        }
-        if ("all".equals(collectMode)) {
-            out.append(" --collect=all");
-        }
-        if (agentMode) {
-            out.append(" --agent");
-        }
-        return out.toString();
+    private static String buildRerunCommand(AgentCommandContext commandContext) {
+        return commandContext.rerunCommand();
     }
 
     private static String interpolate(String template, String rerunCommand) {
@@ -302,6 +291,16 @@ final class AgentTemplateRegistry {
         );
     }
 
+    static Set<String> exactInfraQualifiers() {
+        TreeSet<String> qualifiers = new TreeSet<>();
+        for (String key : EXACT.keySet()) {
+            String[] parts = key.split("\\|", 3);
+            if (parts.length == 3 && "INFRA".equals(parts[0]) && !parts[2].equals(parts[1])) {
+                qualifiers.add(parts[2]);
+            }
+        }
+        return Set.copyOf(qualifiers);
+    }
     private static void registerExact(
         AgentDiagnostics.AgentCategory category,
         String failureCode,
