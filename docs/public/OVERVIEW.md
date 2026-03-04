@@ -1,11 +1,16 @@
 ﻿# Overview (Proof of Concept)
+
 BEAR is a proof-of-concept reference implementation exploring a specific hypothesis:
 
 > In an agentic development world, teams building higher-sensitivity services may need strict, deterministic enforcement so an agent cannot expand external power or bypass architecture constraints silently.
 
 BEAR tries to make that practical by moving trust from "agent reasoning" to deterministic, machine-checkable gates.
 
-## What BEAR does\n\nNew to BEAR vocabulary (effects/ports/ops)? See [TERMS.md](TERMS.md).\n\n- **Agent updates**: the agent changes code and (when needed) a small YAML IR contract.
+## What BEAR does
+
+New to BEAR vocabulary (effects/ports/ops)? See [TERMS.md](TERMS.md).
+
+- **Agent updates**: the agent changes code and (when needed) a small YAML IR contract.
 - **BEAR generates**: deterministic wrappers/ports from the IR (the governed integration surface).
 - **BEAR enforces**: local/CI gates detect drift and covered boundary-bypass patterns.
 - **BEAR signals governance**: `pr-check` classifies boundary-expanding changes vs ordinary refactors.
@@ -39,6 +44,3 @@ If you want the details anyway, see:
 - What to look for in PRs/CI: [PR_REVIEW.md](PR_REVIEW.md)
 - What BEAR enforces vs only alerts on: [ENFORCEMENT.md](ENFORCEMENT.md)
 - Debug a failure by `CODE`: [troubleshooting.md](troubleshooting.md)
-
-
-

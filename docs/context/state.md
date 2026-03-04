@@ -28,3 +28,5 @@ Patch Plan v3.3 stabilization and CI reliability for block-port + compile-first 
 - Verification:
   - `./gradlew --no-daemon :app:test --tests com.bear.app.ProjectTestRunnerTest`
   - `./gradlew --no-daemon :app:test :kernel:test`
+
+- Fixed formatting in docs/public/OVERVIEW.md (removed literal \\n artifacts; restored normal markdown headings/spacing).
