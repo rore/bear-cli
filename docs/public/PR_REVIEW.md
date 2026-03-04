@@ -5,6 +5,7 @@ BEAR is designed so humans can review agent changes via deterministic signals, w
 Most PR findings become obvious once you know which "zone" a path belongs to.
 
 Figure: what BEAR governs vs what sits outside, and the two common failure shapes (undeclared reach, bypass into governed code).
+
 Legend: indigo = governed roots, slate = generated boundary glue, green = adapters, red = a violation.
 
 ```mermaid

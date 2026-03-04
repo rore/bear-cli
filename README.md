@@ -8,9 +8,6 @@ BEAR is a deterministic governance CLI and CI gate for agentic backend developme
 
 You edit code plus BEAR IR, then BEAR reports stable, machine-parseable signals: either green, or a precise failure with a remediation hint.
 
-Figure: the BEAR workflow (compile -> check -> pr-check) and the outputs CI should consume.
-Legend: yellow = IR you edit, green = BEAR commands, orange = what automation parses.
-
 ```mermaid
 %% id: bear-workflow-v1
 flowchart LR
@@ -38,6 +35,10 @@ flowchart LR
   classDef bad fill:#FEE2E2,stroke:#EF4444,color:#0B1220;
   classDef signal fill:#FFF7ED,stroke:#F97316,color:#0B1220;
 ```
+Figure: the BEAR workflow (compile -> check -> pr-check) and the outputs CI should consume.
+
+Legend: yellow = IR you edit, green = BEAR commands, orange = what automation parses.
+
 
 ## What BEAR does (plain terms)
 
