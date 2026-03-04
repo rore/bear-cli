@@ -10,23 +10,23 @@ Long-form historical notes are archived in `docs/context/archive/archive-state-h
 
 ## Current Focus
 
-Patch Plan v3.3 stabilization and CI reliability for block-port + compile-first checks.
+Reflection Dispatch Hygiene v1 rollout (reach lane) and enforcement proof coverage.
 
 ## Next Concrete Task
 
-1. Push the timeout process-tree fix and rerun GitHub workflows (`build-and-test`, `bear-gates`).
-2. If green, publish the v3.3 patch summary and close the CI regression.
+1. Run GitHub workflows (`build-and-test`, `bear-gates`) on the reflection-dispatch patch and confirm stable green.
+2. Add and run one more demo bypass probe (helper alias reflection path), then archive evidence.
 
 ## Session Notes
 
-- Implemented deterministic path normalization + ownership-scoped block-port enforcement and check/check-all graph parity.
-- Added compile-first project test execution (`classes` preflight then `test`) with `COMPILE_FAILURE` classification and timeout detail context (`phase`, `lastObservedTask`).
-- CI/index hardening is in place (`BEAR_BLOCKS_PATH=.ci/bear.blocks.yaml`) with `.ci` index smoke coverage.
-- CI regression fix (Linux timeout tests):
-  - `ProjectTestRunner.runGradlePhase` now captures process output via a background reader thread, avoiding timeout-path IO exceptions.
-  - timeout now kills full process tree (`destroyProcessTree`) to prevent orphan `sleep` children and TempDir cleanup failures.
-- Verification:
-  - `./gradlew --no-daemon :app:test --tests com.bear.app.ProjectTestRunnerTest`
-  - `./gradlew --no-daemon :app:test :kernel:test`
-
-- Fixed formatting in docs/public/OVERVIEW.md (removed literal \\n artifacts; restored normal markdown headings/spacing).
+- Implemented Reflection Dispatch Hygiene v1 in `check` and `check --all`.
+- Added `GovernedReflectionDispatchScanner` with deterministic stripped-source token scan and canonical token ordering.
+- Added dedicated failure code `CODE=REFLECTION_DISPATCH_FORBIDDEN` on exit lane `6`.
+- `_shared` scope is narrow: scanned only for concrete generated `*Port` implementors (hierarchy-aware).
+- Added tests:
+  - `GovernedReflectionDispatchScannerTest` (invoke/method-handle/lambda tokens, comments/strings ignored, ownership scope, `_shared` rules).
+  - `BearCliTest` integration for `check` and `check --all` envelope and ordering (fails before root tests).
+- Updated docs: `commands-check.md`, `output-format.md`, `troubleshooting.md`, `user-guide.md`, and `ENFORCEMENT.md`.
+- Verification run:
+  - `./gradlew.bat :app:test --tests com.bear.app.GovernedReflectionDispatchScannerTest --tests com.bear.app.BearCliTest.checkReflectionDispatchForbiddenReturnsDedicatedCodeAndSkipsProjectTests --tests com.bear.app.BearCliTest.checkReflectionDispatchForbiddenDetectsNoTargetTokenAliasCase --tests com.bear.app.BearCliTest.checkAllReflectionDispatchForbiddenFailsBeforeRootTests`
+  - `./gradlew.bat test`

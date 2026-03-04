@@ -70,6 +70,7 @@ Common `check` policy lines:
 
 - `check: HYGIENE_UNEXPECTED_PATHS: <relative/path>`
 - `check: UNDECLARED_REACH: <relative/path>: <surface>`
+- `check: UNDECLARED_REACH: <relative/path>: REACH_HYGIENE: KIND=REFLECTION_DISPATCH token=<token>`
 - `check: BOUNDARY_BYPASS: RULE=<rule>: <relative/path>: <detail>`
 - `check: INFO: CONTAINMENT_SURFACES_SKIPPED_FOR_SELECTION: projectRoot=<root>: reason=no_selected_blocks_with_impl_allowedDeps`
 
@@ -112,6 +113,3 @@ Wiring drift diagnostics:
 - [commands-pr-check.md](commands-pr-check.md)
 - [commands-validate.md](commands-validate.md)
 - [troubleshooting.md](troubleshooting.md)
-
-
-

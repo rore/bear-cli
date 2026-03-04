@@ -1931,6 +1931,63 @@ class BearCliTest {
     }
 
     @Test
+    void checkReflectionDispatchForbiddenReturnsDedicatedCodeAndSkipsProjectTests(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+        writeWorkingWithdrawImpl(tempDir);
+
+        Path marker = tempDir.resolve("wrapper-ran.txt");
+        String markerPath = marker.toString();
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho ran>\"" + markerPath + "\"\r\nexit /b 0\r\n",
+            "#!/usr/bin/env sh\necho ran > \"" + markerPath.replace("\\", "\\\\") + "\"\nexit 0\n"
+        );
+
+        Path impl = tempDir.resolve("src/main/java/blocks/withdraw/impl/WithdrawImpl.java");
+        Files.writeString(impl, "\n// reflection-dispatch hygiene violation\nObject any = null;\nany.invoke();\n", StandardOpenOption.APPEND);
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(6, check.exitCode);
+        String stderr = normalizeLf(check.stderr);
+        assertTrue(stderr.contains("check: UNDECLARED_REACH: src/main/java/blocks/withdraw/impl/WithdrawImpl.java: REACH_HYGIENE: KIND=REFLECTION_DISPATCH token=.invoke("));
+        assertFalse(Files.exists(marker));
+        assertFailureEnvelope(
+            check.stderr,
+            "REFLECTION_DISPATCH_FORBIDDEN",
+            "src/main/java/blocks/withdraw/impl/WithdrawImpl.java",
+            "Remove reflection/method-handle dynamic dispatch from governed roots and route through declared generated boundaries."
+        );
+    }
+
+    @Test
+    void checkReflectionDispatchForbiddenDetectsNoTargetTokenAliasCase(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
+        writeWorkingWithdrawImpl(tempDir);
+
+        Path bypass = tempDir.resolve("src/main/java/blocks/withdraw/impl/ReflectionAliasBypass.java");
+        Files.createDirectories(bypass.getParent());
+        Files.writeString(
+            bypass,
+            "package blocks.withdraw.impl;\n"
+                + "public final class ReflectionAliasBypass {\n"
+                + "  Object run(Object candidate) {\n"
+                + "    return candidate.invoke();\n"
+                + "  }\n"
+                + "}\n",
+            StandardCharsets.UTF_8
+        );
+
+        CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
+        assertEquals(6, check.exitCode);
+        assertTrue(normalizeLf(check.stderr).contains(
+            "check: UNDECLARED_REACH: src/main/java/blocks/withdraw/impl/ReflectionAliasBypass.java: REACH_HYGIENE: KIND=REFLECTION_DISPATCH token=.invoke("
+        ));
+    }
+    @Test
     void checkUndeclaredReachDetectsCoveredHttpSurfaces(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
         Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
@@ -3347,6 +3404,32 @@ class BearCliTest {
         assertEquals(0, run.exitCode);
     }
 
+    @Test
+    void checkAllReflectionDispatchForbiddenFailsBeforeRootTests(@TempDir Path tempDir) throws Exception {
+        MultiBlockFixture fixture = createMultiBlockFixture(tempDir);
+        Path alphaRoot = fixture.projectRoots().get(0);
+        Path alphaImpl = alphaRoot.resolve("src/main/java/blocks/alpha/impl/AlphaImpl.java");
+        Files.writeString(alphaImpl, "\nObject any = null;\nany.invoke();\n", StandardOpenOption.APPEND);
+
+        CliRunResult run = runCli(new String[] {
+            "check", "--all", "--project", fixture.repoRoot().toString()
+        });
+        assertEquals(6, run.exitCode);
+        String stderr = normalizeLf(run.stderr);
+        assertTrue(stderr.contains("BLOCK_CODE: REFLECTION_DISPATCH_FORBIDDEN"));
+        assertTrue(stderr.contains(
+            "DETAIL: check: UNDECLARED_REACH: src/main/java/blocks/alpha/impl/AlphaImpl.java: REACH_HYGIENE: KIND=REFLECTION_DISPATCH token=.invoke("
+        ));
+        assertFailureEnvelope(
+            run.stderr,
+            "REPO_MULTI_BLOCK_FAILED",
+            "bear.blocks.yaml",
+            "Review per-block results above and fix failing blocks, then rerun the command."
+        );
+
+        String stdout = normalizeLf(run.stdout);
+        assertFalse(stdout.contains("check-all: ROOT_TEST_START project=services/alpha"));
+    }
     @Test
     void checkAllClassifiesGradleLockAsIoError(@TempDir Path tempDir) throws Exception {
         MultiBlockFixture fixture = createMultiBlockFixture(tempDir);
@@ -5133,8 +5216,3 @@ class BearCliTest {
     private record MultiBlockFixture(Path repoRoot, List<Path> projectRoots) {
     }
 }
-
-
-
-
-

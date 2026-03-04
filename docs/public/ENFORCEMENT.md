@@ -1,4 +1,4 @@
-﻿# Enforcement and Alerts
+# Enforcement and Alerts
 
 For rationale see [FOUNDATIONS.md](FOUNDATIONS.md). For exact command contracts see [CONTRACTS.md](CONTRACTS.md).
 
@@ -71,6 +71,7 @@ Primary enforcement happens in `bear check`:
 Coverage note:
 
 - Undeclared-reach detection is `PARTIAL` in Preview because static detection is limited to covered surfaces.
+- Dynamic dispatch (reflection/method handles) is forbidden in governed roots because it can bypass boundary enforcement.
 
 ## What BEAR alerts on
 

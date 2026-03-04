@@ -174,10 +174,11 @@ Use when:
 
 Behavior:
 - fails with drift exit code when generated baseline is stale/missing
-- fails with undeclared-reach exit code when covered direct HTTP client usage bypasses declared ports
+- fails with undeclared-reach exit code when covered direct HTTP client usage bypasses declared ports, and when reflection/method-handle dynamic dispatch appears in governed roots
 - fails with boundary-bypass exit code when BEAR seam rules are violated:
   - direct impl usage in `src/main/**`
   - classloading reflection APIs in `src/main/**` (`Class.forName`, `loadClass`) unless allowlisted
+  - reflection/method-handle dynamic dispatch in governed roots is forbidden (`CODE=REFLECTION_DISPATCH_FORBIDDEN`) because it can bypass boundary enforcement
   - governed logic-to-governed-impl binding in production seams:
     - `src/main/resources/META-INF/services/**`
     - `src/main/java/module-info.java` (`provides ... with ...`)
@@ -313,7 +314,7 @@ Disallowed:
 - `3` drift failure
 - `4` project test failure (including timeout)
 - `5` boundary expansion detected in `pr-check`
-- `6` undeclared reach detected in `check` (`CODE=UNDECLARED_REACH`)
+- `6` reach/hygiene failure in `check` (`CODE=UNDECLARED_REACH`, `CODE=REFLECTION_DISPATCH_FORBIDDEN`, or `CODE=HYGIENE_UNEXPECTED_PATHS`)
 - `6` strict-hygiene unexpected paths in `check` (`CODE=HYGIENE_UNEXPECTED_PATHS`)
 - `7` boundary bypass detected in `check`/`pr-check` (`CODE=BOUNDARY_BYPASS`)
 - `64` usage/argument failure
@@ -458,5 +459,3 @@ Run-evaluation policy:
 - optional compile/check/pr-check smoke
 
 It is not a substitute for a true isolated agent reasoning session.
-
-

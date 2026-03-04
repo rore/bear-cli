@@ -82,6 +82,7 @@ Key line formats:
   - `drift: MISSING_BASELINE: build/generated/bear/wiring/<blockKey>.wiring.json`
 - for wiring files, `check` emits one deterministic line per `(reason, path)` (no duplicated `wiring/...` and `build/generated/bear/wiring/...` variants).
 - `check: UNDECLARED_REACH: <relative/path>: <surface>`
+- `check: UNDECLARED_REACH: <relative/path>: REACH_HYGIENE: KIND=REFLECTION_DISPATCH token=<token>`
 - `check: BOUNDARY_BYPASS: RULE=<rule>: <relative/path>: <detail>`
 - `check: HYGIENE_UNEXPECTED_PATHS: <relative/path>`
 - `BEAR_STRUCTURAL_SIGNAL|blockKey=<blockKey>|test=<Direction|Reach>|kind=<KIND>|detail=<detail>`
@@ -114,6 +115,7 @@ Containment verification semantics:
 `BOUNDARY_BYPASS` seam coverage for governed logic includes:
 - direct governed impl usage in Java source (`src/main/**`)
 - classloading reflection APIs in Java source (`Class.forName`, `loadClass`) unless allowlisted
+- reflection/method-handle dynamic dispatch in source-owned governed roots (`CODE=REFLECTION_DISPATCH_FORBIDDEN`)
 - governed logic-to-governed-impl binding through:
   - `src/main/resources/META-INF/services/**`
   - `src/main/java/module-info.java` (`provides ... with ...`)
@@ -184,7 +186,7 @@ Troubleshooting guardrail:
 - `2` validation/config failure (`IR_VALIDATION`, `POLICY_INVALID`, `MANIFEST_INVALID`)
 - `3` drift failure
 - `4` project test failure or timeout
-- `6` reach/hygiene policy failure (`UNDECLARED_REACH` or `HYGIENE_UNEXPECTED_PATHS`)
+- `6` reach/hygiene policy failure (`UNDECLARED_REACH`, `REFLECTION_DISPATCH_FORBIDDEN`, or `HYGIENE_UNEXPECTED_PATHS`)
 - `7` structural bypass policy failure (`BOUNDARY_BYPASS`)
 - `64` usage failure
 - `70` internal failure
@@ -217,5 +219,3 @@ For aggregated `--all` non-zero failures, footer code is `REPO_MULTI_BLOCK_FAILE
 - [exit-codes.md](exit-codes.md)
 - [output-format.md](output-format.md)
 - [troubleshooting.md](troubleshooting.md)
-
-

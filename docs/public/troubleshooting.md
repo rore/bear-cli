@@ -243,6 +243,15 @@ Fix:
 2. Recompile.
 3. Route calls through generated port interfaces.
 
+## `REFLECTION_DISPATCH_FORBIDDEN`
+
+Symptom: `check: UNDECLARED_REACH: ... REACH_HYGIENE: KIND=REFLECTION_DISPATCH token=<token>` and exit `6`.
+Likely cause: reflection/method-handle dynamic dispatch in governed roots.
+Fix:
+
+1. Remove reflection/method-handle dynamic dispatch (`.invoke(`, `MethodHandles`, `LambdaMetafactory`, `Proxy.newProxyInstance`, etc.) from governed roots.
+2. Route calls through declared generated boundaries.
+3. Re-run `bear check`.
 ## `BOUNDARY_BYPASS`
 
 Symptom: `check: BOUNDARY_BYPASS` (or `pr-check: BOUNDARY_BYPASS`) and exit `7`.
@@ -340,8 +349,3 @@ Fix:
 - [commands-pr-check.md](commands-pr-check.md)
 - [exit-codes.md](exit-codes.md)
 - [output-format.md](output-format.md)
-
-
-
-
-

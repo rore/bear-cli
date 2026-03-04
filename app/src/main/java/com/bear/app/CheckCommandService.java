@@ -481,6 +481,23 @@ final class CheckCommandService {
                 );
             }
 
+            List<UndeclaredReachFinding> reflectionDispatchFindings =
+                GovernedReflectionDispatchScanner.scanForbiddenReflectionDispatch(projectRoot, List.of(baselineWiringManifest));
+            if (!reflectionDispatchFindings.isEmpty()) {
+                for (UndeclaredReachFinding finding : reflectionDispatchFindings) {
+                    diagnostics.add("check: UNDECLARED_REACH: " + finding.path() + ": " + finding.surface());
+                }
+                return checkFailure(
+                    CliCodes.EXIT_UNDECLARED_REACH,
+                    diagnostics,
+                    "UNDECLARED_REACH",
+                    CliCodes.REFLECTION_DISPATCH_FORBIDDEN,
+                    reflectionDispatchFindings.get(0).path(),
+                    "Remove reflection/method-handle dynamic dispatch from governed roots and route through declared generated boundaries.",
+                    diagnostics.get(diagnostics.size() - 1)
+                );
+            }
+
             TreeSet<String> inboundTargetWrapperFqcns = blockPortGraph == null
                 ? new TreeSet<>()
                 : BlockPortGraphResolver.inboundTargetWrapperFqcns(
@@ -1031,12 +1048,3 @@ final class CheckCommandService {
     }
 
 }
-
-
-
-
-
-
-
-
-

@@ -30,6 +30,7 @@ final class CliCodes {
     static final String TEST_TIMEOUT = "TEST_TIMEOUT";
     static final String BOUNDARY_EXPANSION = "BOUNDARY_EXPANSION";
     static final String UNDECLARED_REACH = "UNDECLARED_REACH";
+    static final String REFLECTION_DISPATCH_FORBIDDEN = "REFLECTION_DISPATCH_FORBIDDEN";
     static final String BOUNDARY_BYPASS = "BOUNDARY_BYPASS";
     static final String PORT_IMPL_OUTSIDE_GOVERNED_ROOT = "PORT_IMPL_OUTSIDE_GOVERNED_ROOT";
     static final String MULTI_BLOCK_PORT_IMPL_FORBIDDEN = "MULTI_BLOCK_PORT_IMPL_FORBIDDEN";
@@ -42,4 +43,3 @@ final class CliCodes {
     static final String INVARIANT_VIOLATION = "INVARIANT_VIOLATION";
     static final String UNBLOCK_LOCKED = "UNBLOCK_LOCKED";
 }
-

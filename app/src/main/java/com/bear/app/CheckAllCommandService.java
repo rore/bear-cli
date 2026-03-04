@@ -332,6 +332,30 @@ final class CheckAllCommandService {
                     wiringManifests.add(ManifestParsers.parseWiringManifest(wiringPath));
                 }
 
+                List<UndeclaredReachFinding> reflectionDispatchFindings =
+                    GovernedReflectionDispatchScanner.scanForbiddenReflectionDispatch(root, wiringManifests);
+                if (!reflectionDispatchFindings.isEmpty()) {
+                    rootReachFailed++;
+                    rootTestSkippedDueToReach++;
+                    String locator = reflectionDispatchFindings.get(0).path();
+                    String detail = "check: UNDECLARED_REACH: "
+                        + reflectionDispatchFindings.get(0).path()
+                        + ": "
+                        + reflectionDispatchFindings.get(0).surface();
+                    for (int idx : entry.getValue()) {
+                        blockResults.set(idx, BearCli.rootFailure(
+                            blockResults.get(idx),
+                            CliCodes.EXIT_UNDECLARED_REACH,
+                            "UNDECLARED_REACH",
+                            CliCodes.REFLECTION_DISPATCH_FORBIDDEN,
+                            locator,
+                            detail,
+                            "Remove reflection/method-handle dynamic dispatch from governed roots and route through declared generated boundaries."
+                        ));
+                    }
+                    continue;
+                }
+
                 TreeSet<String> inboundTargetWrapperFqcns = BlockPortGraphResolver.inboundTargetWrapperFqcns(
                     blockPortGraph,
                     rootBlockKeys
@@ -844,9 +868,3 @@ final class CheckAllCommandService {
         );
     }
 }
-
-
-
-
-
-
