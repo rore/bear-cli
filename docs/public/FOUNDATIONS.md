@@ -1,4 +1,4 @@
-﻿# Foundations
+# Foundations
 
 This repository is a proof-of-concept reference implementation.
 It validates deterministic boundary governance for agentic backend development.
@@ -12,18 +12,9 @@ BEAR exists to make boundary authority changes explicit, enforceable, and CI-vis
 
 ## How It Works
 
-1. Declare boundary in IR
-- IR defines block operations and allowed effects.
-- `port.kind` can be `external` (`ops`) or `block` (`targetBlock` + `targetOps`).
-- `block.kind` remains `logic` in v1.
-
-2. Generate governed surface
-- `bear compile` (or `bear fix`) emits deterministic wrappers/ports/manifests.
-- Generated manifests include governed ownership roots (`governedSourceRoots`) used by enforcement.
-
-3. Run deterministic gates
-- `bear check` validates drift, covered bypass/reach rules, containment lanes, and project test gate.
-- `bear pr-check` compares against base and classifies boundary-expanding deltas.
+- **Declare boundary in IR.** IR defines block operations and allowed effects. `port.kind` can be `external` (`ops`) or `block` (`targetBlock` + `targetOps`). `block.kind` remains `logic` in v1.
+- **Generate governed surface.** `bear compile` (or `bear fix`) emits deterministic wrappers/ports/manifests. Generated manifests include governed ownership roots (`governedSourceRoots`) used by enforcement.
+- **Run deterministic gates.** `bear check` validates drift, covered bypass/reach rules, containment lanes, and runs project tests deterministically. `bear pr-check` compares against base and classifies boundary-expanding deltas.
 
 ## Intended Workflow Loop
 
@@ -31,7 +22,7 @@ Agent loop:
 1. Update implementation + IR from domain intent.
 2. Run `bear validate`.
 3. Run `bear compile` or `bear fix`.
-4. Run `bear check --collect=all --agent` until status is ok.
+4. Run `bear check --collect=all --agent` until `status=ok`.
 5. Run `bear pr-check --base <ref> --collect=all --agent` for governance classification.
 
 Developer role:

@@ -32,6 +32,7 @@ sequenceDiagram
 
   Note over CLI: Footer fields to parse:\nCODE / PATH / REMEDIATION
 ```
+
 - Locator may be repo-relative path or stable pseudo-path token.
 - Absolute filesystem paths are not allowed.
 - Path separators are normalized (`/`).

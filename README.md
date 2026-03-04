@@ -4,9 +4,10 @@
   <img src="assets/logo/bear-header-1400x320-clean.png" alt="BEAR logo" width="100%" />
 </p>
 
-BEAR is a deterministic governance CLI for agentic backend development.
+BEAR is a deterministic governance CLI and CI gate for agentic backend development.
 
-BEAR is a deterministic CI gate for agent-driven changes. You edit code plus BEAR IR, then BEAR reports stable, machine-parseable signals: either green, or a precise failure with a remediation hint.
+You edit code plus BEAR IR, then BEAR reports stable, machine-parseable signals: either green, or a precise failure with a remediation hint.
+
 Figure: the BEAR workflow (compile -> check -> pr-check) and the outputs CI should consume.
 Legend: yellow = IR you edit, green = BEAR commands, orange = what automation parses.
 
@@ -37,9 +38,10 @@ flowchart LR
   classDef bad fill:#FEE2E2,stroke:#EF4444,color:#0B1220;
   classDef signal fill:#FFF7ED,stroke:#F97316,color:#0B1220;
 ```
+
 ## What BEAR does (plain terms)
 
-- An agent updates code and (when needed) a small YAML BEAR IR contract.
+- An agent updates code and (when needed) a small YAML IR contract (BEAR IR).
 - A block is a governed backend unit; its operations and allowed effects are declared in BEAR IR.
 - BEAR generates deterministic guardrails (wrappers/ports) from that declaration.
 - Implementation can evolve freely inside those guardrails.
@@ -95,13 +97,19 @@ macOS/Linux (bash/zsh):
 Implement the specs.
 ```
 
-4. Run the deterministic enforcement gate.
+4. Compile deterministic generated artifacts.
+
+```powershell
+.\.bear\tools\bear-cli\bin\bear.bat compile --all --project .
+```
+
+5. Run the deterministic enforcement gate.
 
 ```powershell
 .\.bear\tools\bear-cli\bin\bear.bat check --all --project .
 ```
 
-5. Run the PR governance gate.
+6. Run the PR governance gate.
 
 Local sanity (base is self):
 

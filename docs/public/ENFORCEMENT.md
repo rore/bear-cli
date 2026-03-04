@@ -14,24 +14,9 @@ Promise boundary:
 
 BEAR enforcement and governance connect three things: the declared boundary (IR), the generated governed surface, and deterministic gates.
 
-1. Declared boundaries (IR is the source of truth)
-- IR declares operations (entrypoints) and the capability boundary (`effects.allow`).
-- Capabilities are expressed as ports:
-  - `kind=external`: external dependency ops (`ops`)
-  - `kind=block`: cross-block calls (`targetBlock` + `targetOps`) at the block boundary
-- `uses.allow` lets each operation select a subset of the block boundary.
-  - for `kind=block`, `uses.allow` never repeats `targetBlock`; it may optionally restrict `targetOps` to a subset.
-
-2. Generated surface and ownership (what is allowed to exist and where)
-- `bear compile` generates wrappers/ports and wiring metadata.
-- Wiring metadata includes:
-  - governed source roots (`governedSourceRoots`) for ownership/containment checks
-  - block-port bindings for cross-block routing and bypass enforcement
-
-3. Deterministic gates and deltas (what changes mean)
-- `bear check` enforces the repo state against the declared boundary and generated layout (drift, covered reach and bypass rules, optional containment) and runs project tests deterministically.
-- `bear pr-check` classifies boundary expansion by comparing normalized deltas against a base ref (exit `5`).
-  - shared policy deltas (`spec/_shared.policy.yaml`) are included in this governance classification.
+- **Declared boundary (IR is the source of truth).** IR declares operations (entrypoints) and the capability boundary (`effects.allow`). Capabilities are expressed as ports: `kind=external` uses `ops`; `kind=block` routes cross-block calls via `targetBlock` + `targetOps`. `uses.allow` lets each operation select a subset of the block boundary.
+- **Generated surface and ownership.** `bear compile` generates wrappers/ports and wiring metadata. Wiring metadata includes governed source roots (`governedSourceRoots`) for ownership/containment checks, plus block-port bindings for routing and bypass enforcement.
+- **Deterministic gates and deltas.** `bear check` enforces the repo state against the declared boundary and generated layout (drift, covered reach/bypass rules, optional containment) and runs project tests deterministically. `bear pr-check` compares normalized deltas against a base ref and flags boundary expansion (exit `5`), including shared policy deltas.
 
 Practical contract:
 - a green `check` means the repo is consistent with the current declared boundary (and the test gate passed)

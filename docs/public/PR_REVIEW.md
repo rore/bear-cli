@@ -26,6 +26,7 @@ flowchart LR
   classDef groupApp fill:#ECFDF5,stroke:#10B981,color:#0B1220;
   classDef bad fill:#FEE2E2,stroke:#EF4444,color:#0B1220;
 ```
+
 In a PR or CI job, the canonical pair is:
 
 ```text
