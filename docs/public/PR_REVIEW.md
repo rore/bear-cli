@@ -2,59 +2,30 @@
 
 BEAR is designed so humans can review agent changes via deterministic signals, without needing to understand every implementation detail.
 
+Most PR findings become obvious once you know which "zone" a path belongs to.
+Figure: what BEAR governs vs what sits outside, and the two common failure shapes (undeclared reach, bypass into governed code).
+Legend: indigo = governed roots, slate = generated boundary glue, green = adapters, red = a violation.
 
 ```mermaid
-%%{init: {"theme":"base","themeVariables":{
-  "fontFamily":"ui-sans-serif, system-ui",
-  "lineColor":"#64748B",
-  "textColor":"#E2E8F0",
-  "background":"#0F172A",
-  "primaryColor":"#111827",
-  "primaryBorderColor":"#475569",
-  "primaryTextColor":"#E2E8F0",
-  "secondaryColor":"#0B1220",
-  "secondaryBorderColor":"#334155",
-  "tertiaryColor":"#0B1220",
-  "tertiaryBorderColor":"#334155",
-  "noteBkgColor":"#1E293B",
-  "noteBorderColor":"#475569",
-  "noteTextColor":"#E2E8F0"
-}}}%%
+%% id: bear-zones-v1
 flowchart LR
-  GOV[Governed source roots]:::groupGov
-  GEN[Generated artifacts]:::groupGen
-  APP[App / adapters]:::groupApp
+  GOV[Governed code\n(source roots)]:::groupGov
+  GEN[Generated boundary glue\n(wiring, ports, wrappers)]:::groupGen
+  APP[App / adapters\n(infra, frameworks)]:::groupApp
 
   GOV -->|compile uses IR| GEN
   APP -->|implements ports| GEN
   GOV -->|calls only declared ports| GEN
 
-  B1[blocks/blockA/...]:::gov --> GOV
-  B2[blocks/blockB/...]:::gov --> GOV
-  SH[blocks/_shared/...]:::gov --> GOV
-
-  W[wiring files]:::gen --> GEN
-  P[ports + wrappers]:::gen --> GEN
-
-  A1[framework + infra]:::app --> APP
-  A2[external clients]:::app --> APP
-
   X((Violation)):::bad
-  GOV -->|undeclared reach| X
-  APP -->|bypass into governed| X
+  GOV -->|undeclared reach\n(import/call outside contract)| X
+  APP -->|bypass into governed\n(reflection/classloading seam)| X
 
-  classDef groupGov fill:#111827,stroke:#818CF8,color:#E2E8F0;
-  classDef groupGen fill:#111827,stroke:#64748B,color:#E2E8F0;
-  classDef groupApp fill:#111827,stroke:#10B981,color:#E2E8F0;
-
-  classDef gov fill:#0B1220,stroke:#818CF8,color:#E2E8F0;
-  classDef gen fill:#0B1220,stroke:#64748B,color:#E2E8F0;
-  classDef app fill:#0B1220,stroke:#10B981,color:#E2E8F0;
-
-  classDef bad fill:#3F0A0A,stroke:#F87171,color:#E2E8F0;
+  classDef groupGov fill:#EEF2FF,stroke:#6366F1,color:#0B1220;
+  classDef groupGen fill:#F1F5F9,stroke:#64748B,color:#0B1220;
+  classDef groupApp fill:#ECFDF5,stroke:#10B981,color:#0B1220;
+  classDef bad fill:#FEE2E2,stroke:#EF4444,color:#0B1220;
 ```
-
-
 In a PR or CI job, the canonical pair is:
 
 ```text

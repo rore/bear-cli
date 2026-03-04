@@ -91,3 +91,5 @@ Deterministic agent diagnostics v1 for `check` / `pr-check` (`--agent` JSON mode
 - Verification:
   - `./gradlew.bat :app:test --tests com.bear.app.BearPackageDocsConsistencyTest --tests com.bear.app.ContextDocsConsistencyTest`
   - `./gradlew.bat :app:test`
+- README wording update: introduced a plain-language `block` definition in "What BEAR does" and added acronym expansion line (`BEAR = Block Enforceable Architectural Representation`) before non-goals.
+- Verification: `./gradlew.bat --no-daemon :app:test --tests com.bear.app.ContextDocsConsistencyTest --tests com.bear.app.BearPackageDocsConsistencyTest`

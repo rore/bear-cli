@@ -6,55 +6,41 @@
 
 BEAR is a deterministic governance CLI for agentic backend development.
 
+BEAR is a deterministic CI gate for agent-driven changes. You edit code plus BEAR IR, then BEAR reports stable, machine-parseable signals: either green, or a precise failure with a remediation hint.
+Figure: the BEAR workflow (compile -> check -> pr-check) and the outputs CI should consume.
+Legend: yellow = IR you edit, green = BEAR commands, orange = what automation parses.
+
 ```mermaid
-%%{init: {"theme":"base","themeVariables":{
-  "fontFamily":"ui-sans-serif, system-ui",
-  "lineColor":"#64748B",
-  "textColor":"#E2E8F0",
-  "background":"#0F172A",
-  "primaryColor":"#111827",
-  "primaryBorderColor":"#475569",
-  "primaryTextColor":"#E2E8F0",
-  "secondaryColor":"#0B1220",
-  "secondaryBorderColor":"#334155",
-  "tertiaryColor":"#0B1220",
-  "tertiaryBorderColor":"#334155",
-  "noteBkgColor":"#1E293B",
-  "noteBorderColor":"#475569",
-  "noteTextColor":"#E2E8F0"
-}}}%%
+%% id: bear-workflow-v1
 flowchart LR
-  A[Agent / Dev edits code]:::actor --> B[Update BEAR IR file]:::ir
+  A[Agent / Dev edits code]:::actor --> B[Edit BEAR IR\n(.bear.yaml)]:::ir
   B --> C[bear compile]:::cmd
-  C --> D[Generated wiring + wrappers]:::gen
+  C --> D[Generate boundary glue\n(wiring, ports, wrappers)]:::gen
   D --> E[bear check]:::cmd
   E --> F{CI green?}:::gate
   F -- yes --> G[Merge]:::ok
-  F -- no --> H[Fix: code or IR]:::bad
+  F -- no --> H[Fix code or IR]:::bad
 
-  I[bear pr-check]:::cmd --> J{Boundary delta?}:::gate
+  I[bear pr-check]:::cmd --> J{Boundary delta in PR?}:::gate
   J -- none --> F
-  J -- expansion / bypass --> H
+  J -- expansion/bypass --> H
 
-  E -. emits .-> S1[[Signals:\nexit code + CODE/PATH/REMEDIATION]]:::signal
-  I -. emits .-> S2[[PR signals:\npr-delta + verdict + footer]]:::signal
+  E -. emits .-> S1[[CI contract output:\nexit code + CODE/PATH/REMEDIATION]]:::signal
+  I -. emits .-> S2[[PR output:\npr-delta + verdict + footer]]:::signal
 
-  classDef actor fill:#312E81,stroke:#818CF8,color:#E2E8F0;
-  classDef ir fill:#422006,stroke:#F59E0B,color:#E2E8F0;
-  classDef cmd fill:#064E3B,stroke:#10B981,color:#E2E8F0;
-  classDef gen fill:#0F172A,stroke:#64748B,color:#E2E8F0;
-  classDef gate fill:#111827,stroke:#CBD5E1,color:#E2E8F0;
-  classDef ok fill:#052E16,stroke:#22C55E,color:#E2E8F0;
-  classDef bad fill:#3F0A0A,stroke:#F87171,color:#E2E8F0;
-  classDef signal fill:#2B1405,stroke:#FB923C,color:#E2E8F0;
+  classDef actor fill:#EEF2FF,stroke:#6366F1,color:#0B1220;
+  classDef ir fill:#FFFBEB,stroke:#F59E0B,color:#0B1220;
+  classDef cmd fill:#ECFDF5,stroke:#10B981,color:#0B1220;
+  classDef gen fill:#F1F5F9,stroke:#64748B,color:#0B1220;
+  classDef gate fill:#FFFFFF,stroke:#0F172A,color:#0F172A;
+  classDef ok fill:#DCFCE7,stroke:#22C55E,color:#0B1220;
+  classDef bad fill:#FEE2E2,stroke:#EF4444,color:#0B1220;
+  classDef signal fill:#FFF7ED,stroke:#F97316,color:#0B1220;
 ```
-
-- as agents write more backend code, we may need strict, deterministic enforcement to prevent silent boundary expansion and generated-artifact drift
-- governance should not depend on agent reasoning quality; it should show up as explicit PR/CI signals
-
 ## What BEAR does (plain terms)
 
-- An agent updates code and (when needed) a small YAML IR contract.
+- An agent updates code and (when needed) a small YAML BEAR IR contract.
+- A block is a governed backend unit; its operations and allowed effects are declared in BEAR IR.
 - BEAR generates deterministic guardrails (wrappers/ports) from that declaration.
 - Implementation can evolve freely inside those guardrails.
 - CI gets deterministic governance signals from `check` and `pr-check`.
@@ -64,6 +50,8 @@ flowchart LR
 - Boundary power expansion becomes explicit and machine-parseable in PRs.
 - Generated guardrails cannot drift silently.
 - Every non-zero failure is actionable: `CODE`, `PATH`, `REMEDIATION`.
+
+BEAR = Block Enforceable Architectural Representation.
 
 ## What BEAR is not (preview non-goals)
 

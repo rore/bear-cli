@@ -10,45 +10,28 @@ PATH=<locator>
 REMEDIATION=<deterministic-step>
 ```
 
-
-Deterministic + parseable reporting pipeline:
+Automation should treat BEAR output as a deterministic pipeline: scanners produce findings, the CLI orders and formats them, and the footer is the stable machine hook.
+Figure: how findings become stable lines + a footer contract.
 
 ```mermaid
-%%{init: {"theme":"base","themeVariables":{
-  "fontFamily":"ui-sans-serif, system-ui",
-  "lineColor":"#64748B",
-  "textColor":"#E2E8F0",
-  "background":"#0F172A",
-  "primaryColor":"#111827",
-  "primaryBorderColor":"#475569",
-  "primaryTextColor":"#E2E8F0",
-  "secondaryColor":"#0B1220",
-  "secondaryBorderColor":"#334155",
-  "tertiaryColor":"#0B1220",
-  "tertiaryBorderColor":"#334155",
-  "noteBkgColor":"#1E293B",
-  "noteBorderColor":"#475569",
-  "noteTextColor":"#E2E8F0"
-}}}%%
+%% id: bear-output-pipeline-v1
 sequenceDiagram
-  participant CLI as bear pr-check
+  participant CLI as bear (command)
   participant Scan as scanners
-  participant Report as deterministic report
+  participant Report as deterministic formatter
 
-  rect rgb(15,23,42)
-    CLI->>Scan: run checks (ordered)
-    Scan-->>CLI: findings (tokens + paths)
+  rect rgb(236,253,245)
+    CLI->>Scan: run checks (stable order)
+    Scan-->>CLI: findings (token + path + details)
   end
 
-  rect rgb(43,20,5)
-    CLI->>Report: format (stable ordering)
+  rect rgb(241,245,249)
+    CLI->>Report: format deterministically
     Report-->>CLI: lines + verdict + footer
   end
 
-  Note over CLI: Footer contract:\nCODE / PATH / REMEDIATION
+  Note over CLI: Footer fields to parse:\nCODE / PATH / REMEDIATION
 ```
-
-
 - Locator may be repo-relative path or stable pseudo-path token.
 - Absolute filesystem paths are not allowed.
 - Path separators are normalized (`/`).
