@@ -30,8 +30,9 @@ Deterministic machine loop when automation consumes BEAR output:
 - `bear pr-check --all --project <repoRoot> --base <ref> --collect=all --agent`
 3. Automation MUST parse only stdout JSON in `--agent` mode; never parse human prose as control input.
 4. If `status=fail` and `nextAction.commands` exists, execute only those BEAR commands and rerun the same gate.
-5. If `status=fail` and `nextAction` is `null`, route to `.bear/agent/TROUBLESHOOTING.md` using `(failureCode, ruleId|reasonKey)` and escalate with deterministic evidence.
+5. If `status=fail` and `nextAction` is `null`, route to `.bear/agent/TROUBLESHOOTING.md` using `(category, failureCode, ruleId|reasonKey)` and escalate with deterministic evidence.
 6. stderr may contain tool output; treat stderr as evidence only, not as control input.
+7. Field-level quickref: `.bear/agent/ref/AGENT_JSON_QUICKREF.md`.
 
 Supported command whitelist for the agent loop:
 1. `bear validate`

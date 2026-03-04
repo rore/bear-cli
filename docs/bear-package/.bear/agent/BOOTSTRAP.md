@@ -25,7 +25,7 @@ Bootstrap guardrails:
 6. For machine loops, run gates with `--agent` (usually with `--collect=all`).
 7. In `--agent` mode, stdout JSON is the control interface; stderr is diagnostics/evidence.
 8. After a gate failure in `--agent` mode, follow `nextAction.commands` only.
-9. If `nextAction` is `null`, route to `.bear/agent/TROUBLESHOOTING.md` using `(failureCode, ruleId|reasonKey)`.
+9. If `nextAction` is `null`, route to `.bear/agent/TROUBLESHOOTING.md` using `(category, failureCode, ruleId|reasonKey)`.
 10. Completion requires both gates and reporting contract compliance:
 - `bear check --all --project <repoRoot> [--collect=all] [--agent]`
 - `bear pr-check --all --project <repoRoot> --base <ref> [--collect=all] [--agent]`
@@ -90,38 +90,9 @@ Read on demand:
 ## Hard-Stop Routing
 
 1. On `INTERNAL_ERROR` (`70`), repeated timeout (`124`), or `IO_LOCK`, follow `.bear/agent/TROUBLESHOOTING.md` and stop when anomaly criteria require stop.
-2. For expected greenfield baseline `BOUNDARY_EXPANSION_DETECTED`, do not force green; report `WAITING_FOR_BASELINE_REVIEW` per `.bear/agent/REPORTING.md`.
-3. If spec conflicts with explicit policy/contract rules, stop and escalate unless the spec explicitly authorizes rule changes.
-
-## AGENT_PACKAGE_PARITY_PRECONDITION
-
-Before implementation starts, these files MUST exist:
-1. `.bear/agent/CONTRACTS.md`
-2. `.bear/agent/TROUBLESHOOTING.md`
-3. `.bear/agent/REPORTING.md`
-4. `.bear/agent/ref/IR_REFERENCE.md`
-
-If any required file is missing:
-1. classify as process/tool anomaly
-2. stop immediately and escalate
-
-## GREENFIELD_HARD_STOP
-
-If `spec/*.bear.yaml` is empty:
-1. next action MUST be creating IR files under canonical `spec/`
-2. run `bear validate` and `bear compile` before implementation edits
-
-## INDEX_REQUIRED_PREFLIGHT
-
-If index-required mode is inferred from workflow/docs:
-1. `bear.blocks.yaml` MUST be created after IR files exist and before `--all` gates
-2. if preflight is unmet, stop and fix index/IR preconditions first
-
-## GREENFIELD_PR_CHECK_POLICY
-
-1. In greenfield baseline PRs, `bear pr-check` may expectedly fail with `BOUNDARY_EXPANSION_DETECTED`.
-2. Do not shrink IR/contracts to force green.
-3. Report baseline waiting semantics from `.bear/agent/REPORTING.md` and stop for boundary review.
+2. For process preconditions (missing agent package files, greenfield implementation before IR compile, missing index preflight), classify `PROCESS_VIOLATION|<label>|<evidence>` and follow `.bear/agent/TROUBLESHOOTING.md` labels.
+3. For expected greenfield baseline `BOUNDARY_EXPANSION_DETECTED`, follow `.bear/agent/TROUBLESHOOTING.md` greenfield policy and report `WAITING_FOR_BASELINE_REVIEW` per `.bear/agent/REPORTING.md`.
+4. If spec conflicts with explicit policy/contract rules, stop and escalate unless the spec explicitly authorizes rule changes.
 
 ## Done Gate Contract
 

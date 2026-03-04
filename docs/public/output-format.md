@@ -16,18 +16,26 @@ Deterministic + parseable reporting pipeline:
 ```mermaid
 %%{init: {"theme":"base","themeVariables":{
   "fontFamily":"ui-sans-serif, system-ui",
-  "lineColor":"#94A3B8",
-  "textColor":"#E5E7EB",
-  "background":"#0B1220",
+  "lineColor":"#64748B",
+  "textColor":"#E2E8F0",
+  "background":"#0F172A",
   "primaryColor":"#111827",
-  "primaryBorderColor":"#334155"
+  "primaryBorderColor":"#475569",
+  "primaryTextColor":"#E2E8F0",
+  "secondaryColor":"#0B1220",
+  "secondaryBorderColor":"#334155",
+  "tertiaryColor":"#0B1220",
+  "tertiaryBorderColor":"#334155",
+  "noteBkgColor":"#1E293B",
+  "noteBorderColor":"#475569",
+  "noteTextColor":"#E2E8F0"
 }}}%%
 sequenceDiagram
   participant CLI as bear pr-check
   participant Scan as scanners
   participant Report as deterministic report
 
-  rect rgb(17,24,39)
+  rect rgb(15,23,42)
     CLI->>Scan: run checks (ordered)
     Scan-->>CLI: findings (tokens + paths)
   end

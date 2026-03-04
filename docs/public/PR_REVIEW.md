@@ -6,11 +6,19 @@ BEAR is designed so humans can review agent changes via deterministic signals, w
 ```mermaid
 %%{init: {"theme":"base","themeVariables":{
   "fontFamily":"ui-sans-serif, system-ui",
-  "lineColor":"#94A3B8",
-  "textColor":"#E5E7EB",
-  "background":"#0B1220",
+  "lineColor":"#64748B",
+  "textColor":"#E2E8F0",
+  "background":"#0F172A",
   "primaryColor":"#111827",
-  "primaryBorderColor":"#334155"
+  "primaryBorderColor":"#475569",
+  "primaryTextColor":"#E2E8F0",
+  "secondaryColor":"#0B1220",
+  "secondaryBorderColor":"#334155",
+  "tertiaryColor":"#0B1220",
+  "tertiaryBorderColor":"#334155",
+  "noteBkgColor":"#1E293B",
+  "noteBorderColor":"#475569",
+  "noteTextColor":"#E2E8F0"
 }}}%%
 flowchart LR
   GOV[Governed source roots]:::groupGov
@@ -35,15 +43,15 @@ flowchart LR
   GOV -->|undeclared reach| X
   APP -->|bypass into governed| X
 
-  classDef groupGov fill:#111827,stroke:#818CF8,color:#E5E7EB;
-  classDef groupGen fill:#111827,stroke:#94A3B8,color:#E5E7EB;
-  classDef groupApp fill:#111827,stroke:#34D399,color:#E5E7EB;
+  classDef groupGov fill:#111827,stroke:#818CF8,color:#E2E8F0;
+  classDef groupGen fill:#111827,stroke:#64748B,color:#E2E8F0;
+  classDef groupApp fill:#111827,stroke:#10B981,color:#E2E8F0;
 
-  classDef gov fill:#0B1220,stroke:#818CF8,color:#E5E7EB;
-  classDef gen fill:#0B1220,stroke:#94A3B8,color:#E5E7EB;
-  classDef app fill:#0B1220,stroke:#34D399,color:#E5E7EB;
+  classDef gov fill:#0B1220,stroke:#818CF8,color:#E2E8F0;
+  classDef gen fill:#0B1220,stroke:#64748B,color:#E2E8F0;
+  classDef app fill:#0B1220,stroke:#10B981,color:#E2E8F0;
 
-  classDef bad fill:#3F0A0A,stroke:#F87171,color:#E5E7EB;
+  classDef bad fill:#3F0A0A,stroke:#F87171,color:#E2E8F0;
 ```
 
 

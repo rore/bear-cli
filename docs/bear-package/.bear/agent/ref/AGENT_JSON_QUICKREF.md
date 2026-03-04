@@ -10,6 +10,8 @@ Purpose:
 3. `exitCode`
 4. `collectMode` (`first|all`)
 5. `nextAction` (object|null)
+6. `nextAction.kind` (`INFRA|GOVERNANCE`) when `nextAction` is present
+7. `nextAction.primaryClusterId` when `nextAction` is present
 
 On failure (`status=fail`):
 1. If `nextAction.commands` exists, execute only these commands.

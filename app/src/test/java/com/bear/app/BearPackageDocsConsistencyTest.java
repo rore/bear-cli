@@ -74,13 +74,20 @@ class BearPackageDocsConsistencyTest {
         assertContains(reporting, "Automation MUST parse only stdout JSON in `--agent` mode");
         assertContains(reporting, "If `status=fail` and `nextAction.commands` exists, execute only those BEAR commands");
         assertContains(reporting, "If `status=fail` and `nextAction` is `null`, route to `.bear/agent/TROUBLESHOOTING.md`");
+        assertContains(reporting, "Field-level quickref: `.bear/agent/ref/AGENT_JSON_QUICKREF.md`.");
 
         assertMatchesHeading(troubleshooting, "(?m)^##\\s+Agent\\s+JSON-First\\s+Protocol\\s*$");
         assertMatchesHeading(troubleshooting, "(?m)^##\\s+Registry-Synced\\s+Template\\s+Keys\\s*$");
+        assertMatchesHeading(troubleshooting, "(?m)^##\\s+GREENFIELD_PR_CHECK_POLICY\\s*$");
         assertMatchesHeading(troubleshooting, "(?m)^###\\s+Exact\\s+Template\\s+Keys\\s+\\(AgentTemplateRegistry\\.EXACT\\)\\s*$");
         assertMatchesHeading(troubleshooting, "(?m)^###\\s+Failure\\s+Default\\s+Keys\\s+\\(AgentTemplateRegistry\\.FAILURE_DEFAULTS\\)\\s*$");
 
         assertContains(contracts, "In automation, `--agent` JSON on stdout is the authoritative control interface.");
+
+        assertFalse(bootstrap.contains("## AGENT_PACKAGE_PARITY_PRECONDITION"));
+        assertFalse(bootstrap.contains("## GREENFIELD_HARD_STOP"));
+        assertFalse(bootstrap.contains("## INDEX_REQUIRED_PREFLIGHT"));
+        assertFalse(bootstrap.contains("## GREENFIELD_PR_CHECK_POLICY"));
     }
 
     @Test

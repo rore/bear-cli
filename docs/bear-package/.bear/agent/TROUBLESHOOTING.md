@@ -211,6 +211,13 @@ Success criteria:
 5. Do not use `bear unblock` for intentional boundary expansion.
 6. If boundary expansion is expected, report `BLOCKED` with required governance next action.
 
+
+## GREENFIELD_PR_CHECK_POLICY
+
+Use this branch when greenfield baseline PR behavior is encountered:
+1. `pr-check` may expectedly fail with `BOUNDARY_EXPANSION_DETECTED` for newly introduced blocks/contracts/ports.
+2. Do not shrink IR/contracts to force green.
+3. Route to `.bear/agent/REPORTING.md` baseline waiting semantics (`WAITING_FOR_BASELINE_REVIEW`).
 ## GREENFIELD_BASELINE_PR
 
 Use this class when all are true:
@@ -257,6 +264,14 @@ Labels:
 1. `AGENT_PACKAGE_PARITY_PRECONDITION`
 2. `GREENFIELD_HARD_STOP`
 3. `INDEX_REQUIRED_PREFLIGHT`
+
+Label guidance:
+1. `AGENT_PACKAGE_PARITY_PRECONDITION`:
+- required files missing before implementation start (`.bear/agent/CONTRACTS.md`, `.bear/agent/TROUBLESHOOTING.md`, `.bear/agent/REPORTING.md`, `.bear/agent/ref/IR_REFERENCE.md`).
+2. `GREENFIELD_HARD_STOP`:
+- `spec/*.bear.yaml` empty and implementation edits attempted before successful `bear validate` + `bear compile`.
+3. `INDEX_REQUIRED_PREFLIGHT`:
+- index-required workflow inferred but `bear.blocks.yaml` preflight is unmet before `--all` gates.
 
 Deterministic handling:
 1. classify `Gate blocker` as `OTHER`.

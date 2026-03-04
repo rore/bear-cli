@@ -1,4 +1,4 @@
-﻿# BEAR (bear-cli)
+# BEAR (bear-cli)
 
 <p align="center">
   <img src="assets/logo/bear-header-1400x320-clean.png" alt="BEAR logo" width="100%" />
@@ -9,14 +9,22 @@ BEAR is a deterministic governance CLI for agentic backend development.
 ```mermaid
 %%{init: {"theme":"base","themeVariables":{
   "fontFamily":"ui-sans-serif, system-ui",
-  "lineColor":"#94A3B8",
-  "textColor":"#E5E7EB",
-  "background":"#0B1220",
+  "lineColor":"#64748B",
+  "textColor":"#E2E8F0",
+  "background":"#0F172A",
   "primaryColor":"#111827",
-  "primaryBorderColor":"#334155"
+  "primaryBorderColor":"#475569",
+  "primaryTextColor":"#E2E8F0",
+  "secondaryColor":"#0B1220",
+  "secondaryBorderColor":"#334155",
+  "tertiaryColor":"#0B1220",
+  "tertiaryBorderColor":"#334155",
+  "noteBkgColor":"#1E293B",
+  "noteBorderColor":"#475569",
+  "noteTextColor":"#E2E8F0"
 }}}%%
 flowchart LR
-  A[Agent / Dev edits code]:::actor --> B[Update BEAR IR (*.bear.yaml)]:::ir
+  A[Agent / Dev edits code]:::actor --> B[Update BEAR IR file]:::ir
   B --> C[bear compile]:::cmd
   C --> D[Generated wiring + wrappers]:::gen
   D --> E[bear check]:::cmd
@@ -31,14 +39,14 @@ flowchart LR
   E -. emits .-> S1[[Signals:\nexit code + CODE/PATH/REMEDIATION]]:::signal
   I -. emits .-> S2[[PR signals:\npr-delta + verdict + footer]]:::signal
 
-  classDef actor fill:#1E1B4B,stroke:#818CF8,color:#E5E7EB;
-  classDef ir fill:#2A1F0A,stroke:#FBBF24,color:#E5E7EB;
-  classDef cmd fill:#052E2B,stroke:#34D399,color:#E5E7EB;
-  classDef gen fill:#0F172A,stroke:#94A3B8,color:#E5E7EB;
-  classDef gate fill:#111827,stroke:#E5E7EB,color:#E5E7EB;
-  classDef ok fill:#052E16,stroke:#22C55E,color:#E5E7EB;
-  classDef bad fill:#3F0A0A,stroke:#F87171,color:#E5E7EB;
-  classDef signal fill:#2B1405,stroke:#FB923C,color:#E5E7EB;
+  classDef actor fill:#312E81,stroke:#818CF8,color:#E2E8F0;
+  classDef ir fill:#422006,stroke:#F59E0B,color:#E2E8F0;
+  classDef cmd fill:#064E3B,stroke:#10B981,color:#E2E8F0;
+  classDef gen fill:#0F172A,stroke:#64748B,color:#E2E8F0;
+  classDef gate fill:#111827,stroke:#CBD5E1,color:#E2E8F0;
+  classDef ok fill:#052E16,stroke:#22C55E,color:#E2E8F0;
+  classDef bad fill:#3F0A0A,stroke:#F87171,color:#E2E8F0;
+  classDef signal fill:#2B1405,stroke:#FB923C,color:#E2E8F0;
 ```
 
 - as agents write more backend code, we may need strict, deterministic enforcement to prevent silent boundary expansion and generated-artifact drift

@@ -79,4 +79,15 @@ Deterministic agent diagnostics v1 for `check` / `pr-check` (`--agent` JSON mode
 - Added deterministic sync test in `BearPackageDocsConsistencyTest` to assert troubleshooting key tables match `AgentTemplateRegistry` maps.
 - Verification:
   - `./gradlew.bat :app:test --tests com.bear.app.BearPackageDocsConsistencyTest --tests com.bear.app.ContextDocsConsistencyTest --tests com.bear.app.RepoArtifactPolicyTest`
-  - `./gradlew.bat :app:test`- Removed redundant public page `docs/public/MODEL.md` again to keep the guide/reference structure aligned and avoid dead pages.
+  - `./gradlew.bat :app:test`
+- Removed redundant public page `docs/public/MODEL.md` again to keep the guide/reference structure aligned and avoid dead pages.
+- Fixed GitHub Mermaid parse error in `README.md` by simplifying node label text (`Update BEAR IR file`) to avoid unsupported token parsing in GFM renderer.
+- Standardized Mermaid styling across public diagrams (`README.md`, `docs/public/PR_REVIEW.md`, `docs/public/output-format.md`) with one dark-mode-friendly palette for consistent semantic colors and contrast.
+- Agent-package follow-up tightening applied from review:
+  - BOOTSTRAP deduped (precondition/greenfield policy details routed to TROUBLESHOOTING; bootstrap kept router-first).
+  - Routing key text standardized to `(category, failureCode, ruleId|reasonKey)` across package docs.
+  - REPORTING now references `.bear/agent/ref/AGENT_JSON_QUICKREF.md` directly.
+  - AGENT_JSON_QUICKREF now includes `nextAction.kind` and `nextAction.primaryClusterId` parse targets.
+- Verification:
+  - `./gradlew.bat :app:test --tests com.bear.app.BearPackageDocsConsistencyTest --tests com.bear.app.ContextDocsConsistencyTest`
+  - `./gradlew.bat :app:test`
