@@ -1,4 +1,4 @@
-﻿# Model
+# Model
 
 For rationale see [FOUNDATIONS.md](FOUNDATIONS.md). For guarantees/signals see [ENFORCEMENT.md](ENFORCEMENT.md).
 
@@ -8,6 +8,8 @@ See also: [TERMS.md](TERMS.md) (effects/ports/ops).
 
 - `block`: one governed unit of logic.
 - `IR`: YAML declaration of block contract, effects, and selected semantics.
+- `port kind`: dependency-kind on a port entry (`external` uses `ops`; `block` uses `targetBlock` + `targetOps`).
+- `block.kind`: unchanged in v1 (`logic`).
 - `compile`: deterministic generation of BEAR-owned artifacts.
 - `check`: deterministic local gate for drift, boundary rules, and tests.
 - `pr-check`: deterministic base-vs-head governance classification.
@@ -47,3 +49,4 @@ Developers primarily review the resulting governance signals.
 - [commands-check.md](commands-check.md)
 - [commands-unblock.md](commands-unblock.md)
 - [commands-pr-check.md](commands-pr-check.md)
+

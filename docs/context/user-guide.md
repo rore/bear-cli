@@ -6,7 +6,7 @@ This guide is for day-to-day usage of `bear` in a project.
 
 BEAR is a deterministic CLI that helps you control boundary changes in backend code.
 
-It uses an **IR** (Intermediate Representation): a small YAML spec file (for example `spec/withdraw.bear.yaml`) that declares:
+It uses an **IR** (Intermediate Representation): a small YAML spec file (for example `spec/fulfillment.bear.yaml`) that declares:
 - block contract (inputs/outputs)
 - allowed external capabilities (effects/ports)
 - key invariants and idempotency settings
@@ -117,8 +117,8 @@ Behavior:
   - IR fallback when no tuple match exists
   - deterministic validation failure on canonical identity mismatch or ambiguous tuple matches
 - when IR declares `kind=block` effects in single-command mode:
-  - `--index <path>` is required
-  - `(ir, projectRoot)` tuple membership is validated against that index before generation
+  - index path resolves as explicit `--index <path>` if provided, else `<project>/bear.blocks.yaml`
+  - `(ir, projectRoot)` tuple membership is validated against that resolved index before generation
 - semantics are wrapper-owned by generation:
   - idempotent wrappers compute/replay/persist idempotency payloads
   - invariant checks run in wrappers on fresh and replay paths
@@ -300,7 +300,7 @@ Contract:
 `PATH` is a locator, not only a filesystem path.
 
 Allowed forms:
-- repo-relative path (example: `spec/withdraw.bear.yaml`)
+- repo-relative path (example: `spec/fulfillment.bear.yaml`)
 - stable pseudo-path token (example: `cli.args`, `cli.command`, `project.tests`, `internal`, `build/generated/bear`)
 
 Disallowed:
@@ -458,8 +458,4 @@ Run-evaluation policy:
 - optional compile/check/pr-check smoke
 
 It is not a substitute for a true isolated agent reasoning session.
-
-
-
-
 

@@ -78,10 +78,10 @@ All `--all` commands require `bear.blocks.yaml`.
 Minimal valid example:
 
 ```yaml
-version: v0
+version: v1
 blocks:
-  - name: withdraw
-    ir: spec/withdraw.bear.yaml
+  - name: inventory-sync
+    ir: spec/inventory-sync.bear.yaml
     projectRoot: .
 ```
 
@@ -92,12 +92,7 @@ Fallback if you do not want `--all` yet:
 .\.bear\tools\bear-cli\bin\bear.bat pr-check spec\<block>.bear.yaml --project . --base HEAD
 ```
 
-If the IR declares `kind=block` effects, single-file commands require `--index`:
-
-```powershell
-.\.bear\tools\bear-cli\bin\bear.bat check spec\<block>.bear.yaml --project . --index bear.blocks.yaml
-.\.bear\tools\bear-cli\bin\bear.bat pr-check spec\<block>.bear.yaml --project . --base HEAD --index bear.blocks.yaml
-```
+For single-file IR with `kind=block` effects, index defaults to `./bear.blocks.yaml` (see command docs for override and failure details).
 
 ## Related
 

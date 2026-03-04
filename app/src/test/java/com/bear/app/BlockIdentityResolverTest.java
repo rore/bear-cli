@@ -48,7 +48,7 @@ class BlockIdentityResolverTest {
         Files.createDirectories(irFile.getParent());
         Files.writeString(irFile, "version: v1\n", StandardCharsets.UTF_8);
         writeIndex(repoRoot, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: create-wallet\n"
             + "    ir: spec/create-wallet.bear.yaml\n"
@@ -75,7 +75,7 @@ class BlockIdentityResolverTest {
         Files.createDirectories(irFile.getParent());
         Files.writeString(irFile, "version: v1\n", StandardCharsets.UTF_8);
         writeIndex(repoRoot, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: create-wallet\n"
             + "    ir: spec/create-wallet.bear.yaml\n"
@@ -100,7 +100,7 @@ class BlockIdentityResolverTest {
         Files.createDirectories(irFile.getParent());
         Files.writeString(irFile, "version: v1\n", StandardCharsets.UTF_8);
         writeIndex(repoRoot, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: create-wallet\n"
             + "    ir: spec/create-wallet.bear.yaml\n"
@@ -126,7 +126,7 @@ class BlockIdentityResolverTest {
         Files.createDirectories(irFile.getParent());
         Files.writeString(irFile, "version: v1\n", StandardCharsets.UTF_8);
         writeIndex(repoRoot, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: wallet-create\n"
             + "    ir: spec/create-wallet.bear.yaml\n"

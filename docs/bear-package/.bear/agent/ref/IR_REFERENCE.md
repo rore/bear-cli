@@ -33,6 +33,10 @@ Optional:
 - `invariants` (allowed set)
 - `impl`
 
+Note:
+- `block.kind` stays `logic` in v1.
+- cross-block dependency modeling is introduced via `port.kind=block` under `effects.allow` / `uses.allow`.
+
 ## Operation Object
 
 Required:
@@ -85,10 +89,10 @@ External port shape:
 Block-port shape:
 
 ```yaml
-- port: transactionLog
+- port: routeCatalog
   kind: block
-  targetBlock: transaction-log
-  targetOps: [AppendTransaction, GetTransactions]
+  targetBlock: routing-catalog
+  targetOps: [ResolveRoute, GetCarrierEta]
 ```
 
 Rules:
@@ -108,7 +112,7 @@ Rules:
 Index-aware graph rules (`compile|fix|check|pr-check`):
 - `kind=block` target block and target ops are resolved against indexed IRs.
 - block-port cycle graph is invalid.
-- single-file mode with `kind=block` requires `--index` and tuple membership `(ir, projectRoot)` in index.
+- single-file mode with `kind=block` resolves index path as explicit `--index` or inferred `<project>/bear.blocks.yaml`, and enforces tuple membership `(ir, projectRoot)` in that index.
 
 ## Idempotency
 
@@ -131,7 +135,7 @@ or
 ```yaml
 idempotency:
   mode: use
-  keyFromInputs: [walletId, requestId]
+  keyFromInputs: [shipmentId, requestId]
 ```
 or
 ```yaml
@@ -154,7 +158,7 @@ Block-level `invariants` define allowed rules; operation invariants choose subse
 invariants:
   - kind: non_negative
     scope: result
-    field: balanceCents
+    field: estimatedMinutes
     params: {}
 ```
 
@@ -206,49 +210,49 @@ Wrapper behavior:
 ```yaml
 version: v1
 block:
-  name: Account
+  name: Fulfillment
   kind: logic
   operations:
-    - name: Withdraw
+    - name: PlanShipment
       contract:
         inputs:
-          - name: accountId
+          - name: shipmentId
             type: string
-          - name: amountCents
-            type: int
+          - name: destinationZone
+            type: string
           - name: requestId
             type: string
         outputs:
-          - name: balanceCents
-            type: int
-          - name: txSeq
+          - name: routeId
+            type: string
+          - name: estimatedMinutes
             type: int
       uses:
         allow:
-          - port: accountStore
+          - port: shipmentStore
             kind: external
             ops: [get, update]
-          - port: transactionLog
+          - port: routeCatalog
             kind: block
-            targetOps: [AppendTransaction]
+            targetOps: [ResolveRoute]
           - port: idempotency
             kind: external
             ops: [get, put]
       idempotency:
         mode: use
-        keyFromInputs: [accountId, requestId]
+        keyFromInputs: [shipmentId, requestId]
       invariants:
         - kind: non_negative
-          field: balanceCents
+          field: estimatedMinutes
   effects:
     allow:
-      - port: accountStore
+      - port: shipmentStore
         kind: external
         ops: [get, update]
-      - port: transactionLog
+      - port: routeCatalog
         kind: block
-        targetBlock: transaction-log
-        targetOps: [AppendTransaction]
+        targetBlock: routing-catalog
+        targetOps: [ResolveRoute]
       - port: idempotency
         kind: external
         ops: [get, put]
@@ -259,15 +263,18 @@ block:
       putOp: put
   invariants:
     - kind: non_negative
-      field: balanceCents
+      field: estimatedMinutes
 ```
 
 ## Commands
-
 For each changed IR:
 1. `bear validate <ir-file>`
 2. `bear compile <ir-file> --project <repoRoot> [--index <path>]` or `bear compile --all --project <repoRoot>`
 3. `bear fix <ir-file> --project <repoRoot> [--index <path>]` (or `fix --all`)
 4. `bear check <ir-file> --project <repoRoot> [--strict-hygiene] [--index <path>]` (or `check --all`)
 5. `bear pr-check <ir-file> --project <repoRoot> --base <ref> [--index <path>]` (or `pr-check --all`)
+
+
+
+
 

@@ -18,7 +18,7 @@ class BlockPortGraphResolverTest {
         Files.createDirectories(repoRoot.resolve("spec"));
         Files.writeString(
             repoRoot.resolve("bear.blocks.yaml"),
-            "version: v0\n"
+            "version: v1\n"
                 + "blocks:\n"
                 + "  - name: account\n"
                 + "    ir: spec/account.bear.yaml\n"
@@ -53,7 +53,7 @@ class BlockPortGraphResolverTest {
         Files.createDirectories(repoRoot.resolve("spec"));
         Files.writeString(
             repoRoot.resolve("bear.blocks.yaml"),
-            "version: v0\n"
+            "version: v1\n"
                 + "blocks:\n"
                 + "  - name: account\n"
                 + "    ir: spec/account.bear.yaml\n"

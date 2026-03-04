@@ -109,7 +109,7 @@ class AllModeContractTest {
         Files.writeString(
             repoRoot.resolve("bear.blocks.yaml"),
             ""
-                + "version: v0\n"
+                + "version: v1\n"
                 + "blocks:\n"
                 + "  - name: withdraw\n"
                 + "    ir: spec/withdraw.bear.yaml\n"

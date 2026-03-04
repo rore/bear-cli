@@ -15,6 +15,7 @@ bear validate <ir-file>
 - `<ir-file>`: required path to a single IR YAML file.
 - Extra or missing args are usage errors.
 - validate checks IR schema/semantic consistency for the file itself.
+- `block.kind` remains `logic`; cross-block semantics are declared by `port.kind=block` entries and resolved in index-aware command paths.
 - cross-block graph resolution (for `kind=block` target lookup and cycle checks) is enforced in index-aware compile/check/pr-check paths.
 
 ## Output schema and ordering guarantees
@@ -53,4 +54,5 @@ See [output-format.md](output-format.md).
 - [exit-codes.md](exit-codes.md)
 - [output-format.md](output-format.md)
 - [troubleshooting.md](troubleshooting.md)
+
 

@@ -72,7 +72,7 @@ Read on demand:
 4. After writing IR, verify exact IR path with `Test-Path`.
 5. Validate and compile IR before implementation:
 - `bear validate <ir-file>`
-- for single-file commands with `kind=block` effects, include `--index <path-to-bear.blocks.yaml>`
+- for single-file commands with `kind=block` effects, index path resolves as explicit `--index` if provided, else `<project>/bear.blocks.yaml`
 - `bear compile <ir-file> --project <repoRoot> [--index <path>]` or `bear compile --all --project <repoRoot>`
 6. Index preflight before `compile --all`:
 - verify all `ir:` paths referenced by `bear.blocks.yaml` exist
@@ -194,4 +194,5 @@ Required evidence before completion:
 1. `bear check --all --project <repoRoot> => 0`
 2. `bear pr-check --all --project <repoRoot> --base <ref> => 0`
 3. Completion report follows `.bear/agent/REPORTING.md` exactly.
+
 

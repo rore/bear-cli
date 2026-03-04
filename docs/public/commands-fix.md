@@ -26,8 +26,8 @@ REMEDIATION=Create bear.blocks.yaml or run non---all command
 
 Single mode:
 - `<ir-file>` and `--project` are required.
-- `--index <path>` is required when the IR declares any `kind=block` effects.
-- for `kind=block`, single-file fix validates normalized `(ir, projectRoot)` tuple membership in the provided index before generation/repair.
+- `--index <path>` is an optional override for index path.
+- for `kind=block`, single-file fix resolves index path as: explicit `--index` if provided, else `<project>/bear.blocks.yaml`; then validates normalized `(ir, projectRoot)` tuple membership before generation/repair.
 
 All-mode:
 - `--all` runs index-driven orchestration.
@@ -71,4 +71,5 @@ For aggregated `--all` non-zero failures, footer code is `REPO_MULTI_BLOCK_FAILE
 - [exit-codes.md](exit-codes.md)
 - [output-format.md](output-format.md)
 - [troubleshooting.md](troubleshooting.md)
+
 

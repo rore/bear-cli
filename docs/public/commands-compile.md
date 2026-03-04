@@ -27,8 +27,8 @@ REMEDIATION=Create bear.blocks.yaml or run non---all command
 Single-block:
 - `<ir-file>`: required IR YAML path.
 - `--project <path>`: required project root.
-- `--index <path>`: required when the IR declares any `kind=block` effects.
-- when `kind=block` effects are present, single-file compile validates normalized `(ir, projectRoot)` tuple membership in the provided index before generation.
+- `--index <path>`: optional override for index path.
+- when `kind=block` effects are present, single-file compile resolves index path as: explicit `--index` if provided, else `<project>/bear.blocks.yaml`; then validates normalized `(ir, projectRoot)` tuple membership before generation.
 
 All-mode:
 - `--all`: enables index-managed multi-block compile.
@@ -98,4 +98,5 @@ See [output-format.md](output-format.md).
 - [commands-fix.md](commands-fix.md)
 - [output-format.md](output-format.md)
 - [troubleshooting.md](troubleshooting.md)
+
 

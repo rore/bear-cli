@@ -6,7 +6,7 @@ Purpose:
 ## Minimal Valid Shape
 
 ```yaml
-version: v0
+version: v1
 blocks:
   - name: execution-core
     ir: spec/execution-core.bear.yaml
@@ -16,7 +16,7 @@ blocks:
 ## Required Fields
 
 Root:
-- `version: v0`
+- `version: v1`
 - `blocks` (non-empty list)
 
 Per block:
@@ -31,7 +31,7 @@ Per block:
 2. `projectRoot: .` is valid and means repo root.
 3. `name` is canonical block key and must match normalized IR `block.name`.
 4. Multi-block repos must keep `bear.blocks.yaml`; do not bypass governance by deleting it.
-5. Single-file commands on IRs with `kind=block` effects require `--index <path-to-bear.blocks.yaml>` and tuple membership `(ir, projectRoot)`.
+5. Single-file commands on IRs with `kind=block` effects resolve index as explicit `--index` or inferred `<project>/bear.blocks.yaml`, then enforce tuple membership `(ir, projectRoot)`.
 
 ## Common Mistakes and Fixes
 
@@ -51,10 +51,10 @@ Fix:
 - use `.` for repo root when applicable
 
 3. Mistake:
-- running single-file `compile`/`fix`/`check`/`pr-check` on a block-port IR without `--index`
+- running single-file `compile`/`fix`/`check`/`pr-check` on a block-port IR when `<project>/bear.blocks.yaml` is missing
 
 Fix:
-- pass `--index <path-to-bear.blocks.yaml>`
+- create `<project>/bear.blocks.yaml` or pass `--index <path-to-bear.blocks.yaml>`
 - ensure exact `(ir, projectRoot)` tuple exists in index
 
 4. Mistake:
@@ -63,4 +63,5 @@ Fix:
 Fix:
 - align index `name` with normalized IR block name
 - rerun `check --all`
+
 

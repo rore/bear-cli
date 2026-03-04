@@ -149,8 +149,12 @@ final class CheckCommandService {
             JvmTarget target = new JvmTarget();
             BearIr normalized = IR_PIPELINE.parseValidateNormalize(irFile);
 
-            if (explicitIndexPath != null) {
-                Path indexAbsolute = explicitIndexPath.toAbsolutePath().normalize();
+            Path resolvedIndexPath = explicitIndexPath;
+            if (BlockPortGraphResolver.hasBlockPortEffects(normalized)) {
+                resolvedIndexPath = SingleFileIndexResolver.resolveForBlockPorts(projectRoot, explicitIndexPath, "check");
+            }
+            if (resolvedIndexPath != null) {
+                Path indexAbsolute = resolvedIndexPath.toAbsolutePath().normalize();
                 Path repoRoot = indexAbsolute.getParent();
                 if (repoRoot == null) {
                     String line = "index: VALIDATION_ERROR: BLOCK_PORT_INDEX_REQUIRED: invalid --index path";
@@ -165,23 +169,12 @@ final class CheckCommandService {
                     );
                 }
                 blockPortGraph = BlockPortGraphResolver.resolveAndValidate(repoRoot, indexAbsolute);
-            } else if (BlockPortGraphResolver.hasBlockPortEffects(normalized)) {
-                String line = "index: VALIDATION_ERROR: BLOCK_PORT_INDEX_REQUIRED: single-file command with kind=block ports requires --index <path-to-bear.blocks.yaml>";
-                return checkFailure(
-                    CliCodes.EXIT_VALIDATION,
-                    List.of(line),
-                    "VALIDATION",
-                    CliCodes.IR_VALIDATION,
-                    "bear.blocks.yaml",
-                    "Add `--index <path-to-bear.blocks.yaml>` and rerun the command.",
-                    line
-                );
             }
             boolean considerContainmentSurfaces = considerContainmentSurfacesOverride != null
                 ? considerContainmentSurfacesOverride
                 : CheckContainmentStage.hasAllowedDeps(normalized) || sharedContainmentInScope(projectRoot);
             BlockIdentityResolution identity = expectedBlockKey == null
-                ? BlockIdentityResolver.resolveSingleCommandIdentity(irFile, projectRoot, normalized.block().name(), explicitIndexPath)
+                ? BlockIdentityResolver.resolveSingleCommandIdentity(irFile, projectRoot, normalized.block().name(), resolvedIndexPath)
                 : BlockIdentityResolver.resolveIndexIdentity(
                     expectedBlockKey,
                     expectedBlockLocator == null || expectedBlockLocator.isBlank()
@@ -1012,6 +1005,7 @@ final class CheckCommandService {
     }
 
 }
+
 
 
 

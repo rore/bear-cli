@@ -48,10 +48,10 @@ Fix:
 ## `BLOCK_PORT_INDEX_REQUIRED`
 
 Symptom: single-file `compile`/`fix`/`check`/`pr-check` returns `index: VALIDATION_ERROR: BLOCK_PORT_INDEX_REQUIRED: ...` with exit `2`.
-Likely cause: IR uses `kind=block` effects without `--index`, or provided `--index` path is invalid.
+Likely cause: IR uses `kind=block` effects and inferred `<project>/bear.blocks.yaml` is missing, or provided `--index` path is invalid.
 Fix:
 
-1. Re-run command with `--index <path-to-bear.blocks.yaml>`.
+1. Ensure `<project>/bear.blocks.yaml` exists, or pass `--index <path-to-bear.blocks.yaml>` explicitly.
 2. Ensure the IR is declared in that index with matching normalized `(ir, projectRoot)` tuple.
 3. Re-run command.
 
@@ -340,6 +340,7 @@ Fix:
 - [commands-pr-check.md](commands-pr-check.md)
 - [exit-codes.md](exit-codes.md)
 - [output-format.md](output-format.md)
+
 
 
 

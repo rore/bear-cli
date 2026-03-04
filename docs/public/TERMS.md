@@ -16,8 +16,9 @@ This page defines the minimal vocabulary used in BEAR docs and outputs.
   - Rule: every `uses.allow` entry must be subset-or-equal to `effects.allow`.
 
 Port entry kinds:
+- Important: this is a `port.kind` distinction. `block.kind` is unchanged and remains `logic` in v1.
 - `kind=external`: capability to an external dependency.
-  - Uses `ops` (for example `ledger.getBalance`, `ledger.setBalance`).
+  - Uses `ops` (for example `routeStore.getRoute`, `routeStore.putRoute`).
 - `kind=block`: dependency on another BEAR block.
   - Uses `targetBlock` + `targetOps` (operation names on the target block).
   - Cross-block calls are routed through generated block-port clients; direct target internals/wrapper bypass is policy-failing.
@@ -38,29 +39,29 @@ Port entry kinds:
 ```yaml
 block:
   operations:
-    - name: ExecuteWithdraw
+    - name: PlanDelivery
       uses:
         allow:
-          - port: ledger
+          - port: routeStore
             kind: external
-            ops: [getBalance, setBalance]
-          - port: transactionLog
+            ops: [getRoute, putRoute]
+          - port: etaService
             kind: block
-            targetOps: [AppendTransaction]
+            targetOps: [EstimateEta]
   effects:
     allow:
-      - port: ledger
+      - port: routeStore
         kind: external
-        ops: [getBalance, setBalance]
-      - port: transactionLog
+        ops: [getRoute, putRoute]
+      - port: etaService
         kind: block
-        targetBlock: transaction-log
-        targetOps: [AppendTransaction]
+        targetBlock: shipping-eta
+        targetOps: [EstimateEta]
 ```
 
 In this example:
-- the block has external reach to `ledger` and a cross-block dependency on `transaction-log`
-- `ExecuteWithdraw` uses only a subset of declared capabilities
+- the block has external reach to `routeStore` and a cross-block dependency on `shipping-eta`
+- `PlanDelivery` uses only a subset of declared capabilities
 
 ## Where the full details live
 

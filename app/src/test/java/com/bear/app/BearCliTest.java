@@ -751,7 +751,7 @@ class BearCliTest {
         );
 
         writeBlockIndex(tempDir, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: withdraw\n"
             + "    ir: spec/withdraw-allowedDeps.bear.yaml\n"
@@ -1286,7 +1286,7 @@ class BearCliTest {
         );
 
         writeBlockIndex(tempDir, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: beta\n"
             + "    ir: spec/beta.bear.yaml\n"
@@ -1350,7 +1350,7 @@ class BearCliTest {
         );
 
         writeBlockIndex(tempDir, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: alpha\n"
             + "    ir: spec/alpha.bear.yaml\n"
@@ -1409,7 +1409,7 @@ class BearCliTest {
         Files.deleteIfExists(projectRoot.resolve("build/generated/bear/config/containment-required.json"));
 
         writeBlockIndex(tempDir, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: alpha\n"
             + "    ir: spec/alpha.bear.yaml\n"
@@ -1455,7 +1455,7 @@ class BearCliTest {
         );
 
         writeBlockIndex(tempDir, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: alpha\n"
             + "    ir: spec/alpha.bear.yaml\n"
@@ -1489,7 +1489,7 @@ class BearCliTest {
         Files.writeString(sharedSource, "package blocks._shared.state;\npublic final class SharedOnly {}\n", StandardCharsets.UTF_8);
 
         writeBlockIndex(tempDir, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: alpha\n"
             + "    ir: spec/alpha.bear.yaml\n"
@@ -1530,7 +1530,7 @@ class BearCliTest {
         );
 
         writeBlockIndex(tempDir, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: alpha\n"
             + "    ir: spec/alpha.bear.yaml\n"
@@ -2832,7 +2832,7 @@ class BearCliTest {
         writeFreshContainmentMarkers(serviceRoot);
 
         writeBlockIndex(repo, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: alpha\n"
             + "    ir: spec/alpha.bear.yaml\n"
@@ -3074,7 +3074,7 @@ class BearCliTest {
         );
 
         writeBlockIndex(tempDir, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: alpha\n"
             + "    ir: spec/alpha.bear.yaml\n"
@@ -3251,7 +3251,7 @@ class BearCliTest {
     void checkAllDisabledBlockRenderedAsSkip(@TempDir Path tempDir) throws Exception {
         MultiBlockFixture fixture = createMultiBlockFixture(tempDir);
         writeBlockIndex(fixture.repoRoot(), ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: alpha\n"
             + "    ir: spec/alpha.bear.yaml\n"
@@ -3620,7 +3620,7 @@ class BearCliTest {
     void fixAllDisabledBlockRenderedAsSkip(@TempDir Path tempDir) throws Exception {
         MultiBlockFixture fixture = createMultiBlockFixture(tempDir);
         writeBlockIndex(fixture.repoRoot(), ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: alpha\n"
             + "    ir: spec/alpha.bear.yaml\n"
@@ -3715,7 +3715,7 @@ class BearCliTest {
         Files.writeString(irA, baseAlpha, StandardCharsets.UTF_8);
         Files.writeString(irB, baseBeta, StandardCharsets.UTF_8);
         writeBlockIndex(repo, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: alpha\n"
             + "    ir: spec/alpha.bear.yaml\n"
@@ -3996,7 +3996,7 @@ class BearCliTest {
         Path repo = initGitRepo(tempDir.resolve("repo"));
         writeFixtureIr(repo.resolve("spec/withdraw.bear.yaml"));
         writeBlockIndex(repo, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: withdraw\n"
             + "    ir: spec/withdraw.bear.yaml\n"
@@ -4089,7 +4089,7 @@ class BearCliTest {
         gitCommitAll(repo, "base");
         writeFixtureIr(repo.resolve("spec/withdraw.bear.yaml"));
         writeBlockIndex(repo, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: withdraw\n"
             + "    ir: spec/withdraw.bear.yaml\n"
@@ -4389,7 +4389,7 @@ class BearCliTest {
         );
 
         writeBlockIndex(repoRoot, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: alpha\n"
             + "    ir: spec/alpha.bear.yaml\n"
@@ -4766,7 +4766,7 @@ class BearCliTest {
         Path ir = repo.resolve("spec/withdraw.bear.yaml");
         writeFixtureIr(ir);
         writeBlockIndex(repo, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: withdraw\n"
             + "    ir: spec/withdraw.bear.yaml\n"

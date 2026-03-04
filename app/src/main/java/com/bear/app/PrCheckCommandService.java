@@ -79,9 +79,20 @@ final class PrCheckCommandService {
             }
 
             BearIr head = IR_PIPELINE.parseValidateNormalize(headIrPath);
+            boolean hasBlockPortEffects = BlockPortGraphResolver.hasBlockPortEffects(head);
+            Path resolvedIndexPath = explicitIndexPath;
+            if (hasBlockPortEffects) {
+                resolvedIndexPath = SingleFileIndexResolver.resolveForBlockPorts(projectRoot, explicitIndexPath, "pr-check");
+            } else if (resolvedIndexPath == null) {
+                Path inferredIndexPath = projectRoot.resolve("bear.blocks.yaml").toAbsolutePath().normalize();
+                if (Files.isRegularFile(inferredIndexPath)) {
+                    resolvedIndexPath = inferredIndexPath;
+                }
+            }
+            Path identityIndexPath = hasBlockPortEffects ? resolvedIndexPath : explicitIndexPath;
             BlockPortGraph blockPortGraph = null;
-            if (explicitIndexPath != null) {
-                Path indexAbsolute = explicitIndexPath.toAbsolutePath().normalize();
+            if (resolvedIndexPath != null) {
+                Path indexAbsolute = resolvedIndexPath.toAbsolutePath().normalize();
                 Path repoRoot = indexAbsolute.getParent();
                 if (repoRoot == null) {
                     String line = "index: VALIDATION_ERROR: BLOCK_PORT_INDEX_REQUIRED: invalid --index path";
@@ -99,32 +110,12 @@ final class PrCheckCommandService {
                     );
                 }
                 blockPortGraph = BlockPortGraphResolver.resolveAndValidate(repoRoot, indexAbsolute);
-            } else {
-                Path inferredIndexPath = projectRoot.resolve("bear.blocks.yaml").normalize();
-                if (Files.isRegularFile(inferredIndexPath)) {
-                    blockPortGraph = BlockPortGraphResolver.resolveAndValidate(projectRoot, inferredIndexPath);
-                }
-            }
-            if (BlockPortGraphResolver.hasBlockPortEffects(head) && explicitIndexPath == null) {
-                String line = "index: VALIDATION_ERROR: BLOCK_PORT_INDEX_REQUIRED: single-file command with kind=block ports requires --index <path-to-bear.blocks.yaml>";
-                return prFailure(
-                    CliCodes.EXIT_VALIDATION,
-                    List.of(line),
-                    "VALIDATION",
-                    CliCodes.IR_VALIDATION,
-                    "bear.blocks.yaml",
-                    "Add `--index <path-to-bear.blocks.yaml>` and rerun `bear pr-check`.",
-                    line,
-                    List.of(),
-                    false,
-                    false
-                );
             }
             BlockIdentityResolution headIdentity = BlockIdentityResolver.resolveSingleCommandIdentity(
                 headIrPath,
                 projectRoot,
                 head.block().name(),
-                explicitIndexPath
+                identityIndexPath
             );
             String blockKey = headIdentity.blockKey();
 
@@ -947,6 +938,9 @@ final class PrCheckCommandService {
         }
     }
 }
+
+
+
 
 
 

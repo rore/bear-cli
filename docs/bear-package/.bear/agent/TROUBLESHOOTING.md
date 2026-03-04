@@ -42,8 +42,8 @@ Explicit non-remediations:
 - fix `.bear/policy/*.txt` format/order/path exactness.
 
 2. `CODE=BLOCK_PORT_INDEX_REQUIRED`:
-- single-file command on IR with `kind=block` effects requires `--index <path-to-bear.blocks.yaml>`.
-- ensure the IR tuple `(ir, projectRoot)` exists in that index.
+- single-file command on IR with `kind=block` effects requires a resolved index path: explicit `--index` or inferred `<project>/bear.blocks.yaml`.
+- ensure the resolved index exists and the IR tuple `(ir, projectRoot)` is present.
 
 3. Drift lane (`exit 3`):
 - use `bear fix` / `fix --all` for generated artifacts.
@@ -253,4 +253,5 @@ Deterministic flow:
 3. Use `bear unblock --project <repoRoot>` only to clear stale marker state.
 4. For containment markers, rerun `compile` then `check` after fixing stale/missing marker causes.
 5. Do not use `bear unblock` to force expected boundary expansion green.
+
 

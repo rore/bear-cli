@@ -149,37 +149,14 @@ public final class BearCli {
             maybeFailInternalForTest("fix");
             JvmTarget target = new JvmTarget();
             BearIr normalized = IR_PIPELINE.parseValidateNormalize(irFile);
+            Path resolvedIndexPath = explicitIndexPath;
             if (BlockPortGraphResolver.hasBlockPortEffects(normalized)) {
-                if (explicitIndexPath == null) {
-                    String line = "index: VALIDATION_ERROR: BLOCK_PORT_INDEX_REQUIRED: single-file command with kind=block ports requires --index <path-to-bear.blocks.yaml>";
-                    return fixFailure(
-                        CliCodes.EXIT_VALIDATION,
-                        List.of(line),
-                        "VALIDATION",
-                        CliCodes.IR_VALIDATION,
-                        "bear.blocks.yaml",
-                        "Add --index <path-to-bear.blocks.yaml> and rerun bear fix.",
-                        line
-                    );
-                }
-                Path indexAbsolute = explicitIndexPath.toAbsolutePath().normalize();
-                Path repoRoot = indexAbsolute.getParent();
-                if (repoRoot == null) {
-                    String line = "index: VALIDATION_ERROR: BLOCK_PORT_INDEX_REQUIRED: invalid --index path";
-                    return fixFailure(
-                        CliCodes.EXIT_VALIDATION,
-                        List.of(line),
-                        "VALIDATION",
-                        CliCodes.IR_VALIDATION,
-                        "bear.blocks.yaml",
-                        "Pass a valid --index path and rerun bear fix.",
-                        line
-                    );
-                }
-                BlockPortGraphResolver.resolveAndValidate(repoRoot, indexAbsolute);
+                resolvedIndexPath = SingleFileIndexResolver.resolveForBlockPorts(projectRoot, explicitIndexPath, "fix");
+                Path repoRoot = resolvedIndexPath.getParent();
+                BlockPortGraphResolver.resolveAndValidate(repoRoot, resolvedIndexPath);
             }
             BlockIdentityResolution identity = expectedBlockKey == null
-                ? BlockIdentityResolver.resolveSingleCommandIdentity(irFile, projectRoot, normalized.block().name(), explicitIndexPath)
+                ? BlockIdentityResolver.resolveSingleCommandIdentity(irFile, projectRoot, normalized.block().name(), resolvedIndexPath)
                 : BlockIdentityResolver.resolveIndexIdentity(
                     expectedBlockKey,
                     expectedBlockLocator == null || expectedBlockLocator.isBlank()
@@ -258,37 +235,14 @@ public final class BearCli {
             maybeFailInternalForTest("compile");
             JvmTarget target = new JvmTarget();
             BearIr normalized = IR_PIPELINE.parseValidateNormalize(irFile);
+            Path resolvedIndexPath = explicitIndexPath;
             if (BlockPortGraphResolver.hasBlockPortEffects(normalized)) {
-                if (explicitIndexPath == null) {
-                    String line = "index: VALIDATION_ERROR: BLOCK_PORT_INDEX_REQUIRED: single-file command with kind=block ports requires --index <path-to-bear.blocks.yaml>";
-                    return compileFailure(
-                        CliCodes.EXIT_VALIDATION,
-                        List.of(line),
-                        "VALIDATION",
-                        CliCodes.IR_VALIDATION,
-                        "bear.blocks.yaml",
-                        "Add --index <path-to-bear.blocks.yaml> and rerun bear compile.",
-                        line
-                    );
-                }
-                Path indexAbsolute = explicitIndexPath.toAbsolutePath().normalize();
-                Path repoRoot = indexAbsolute.getParent();
-                if (repoRoot == null) {
-                    String line = "index: VALIDATION_ERROR: BLOCK_PORT_INDEX_REQUIRED: invalid --index path";
-                    return compileFailure(
-                        CliCodes.EXIT_VALIDATION,
-                        List.of(line),
-                        "VALIDATION",
-                        CliCodes.IR_VALIDATION,
-                        "bear.blocks.yaml",
-                        "Pass a valid --index path and rerun bear compile.",
-                        line
-                    );
-                }
-                BlockPortGraphResolver.resolveAndValidate(repoRoot, indexAbsolute);
+                resolvedIndexPath = SingleFileIndexResolver.resolveForBlockPorts(projectRoot, explicitIndexPath, "compile");
+                Path repoRoot = resolvedIndexPath.getParent();
+                BlockPortGraphResolver.resolveAndValidate(repoRoot, resolvedIndexPath);
             }
             BlockIdentityResolution identity = expectedBlockKey == null
-                ? BlockIdentityResolver.resolveSingleCommandIdentity(irFile, projectRoot, normalized.block().name(), explicitIndexPath)
+                ? BlockIdentityResolver.resolveSingleCommandIdentity(irFile, projectRoot, normalized.block().name(), resolvedIndexPath)
                 : BlockIdentityResolver.resolveIndexIdentity(
                     expectedBlockKey,
                     expectedBlockLocator == null || expectedBlockLocator.isBlank()
@@ -895,6 +849,7 @@ public final class BearCli {
         return FailureEnvelopeEmitter.normalizeLocator(raw);
     }
 }
+
 
 
 

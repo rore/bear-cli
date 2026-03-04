@@ -28,8 +28,8 @@ REMEDIATION=Create bear.blocks.yaml or run non---all command
 ## Inputs and flags
 
 - Single mode requires `<ir-file>`, `--project`, and `--base`.
-- `--index <path>` is required in single mode when IR declares `kind=block` effects.
-- for `kind=block`, single mode validates normalized `(ir, projectRoot)` tuple membership in the provided index.
+- `--index <path>` is an optional override for single mode.
+- for `kind=block`, single mode resolves index path as: explicit `--index` if provided, else `<project>/bear.blocks.yaml`; then validates normalized `(ir, projectRoot)` tuple membership.
 - `<ir-file>` must be repo-relative.
 - `--all` mode uses index selection and optional `--blocks`, `--only`, `--strict-orphans`.
 - completion workflows should pair:
@@ -110,4 +110,5 @@ For aggregated `--all` non-zero failures, footer code is `REPO_MULTI_BLOCK_FAILE
 - [exit-codes.md](exit-codes.md)
 - [output-format.md](output-format.md)
 - [troubleshooting.md](troubleshooting.md)
+
 

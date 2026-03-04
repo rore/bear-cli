@@ -17,9 +17,8 @@ Block Ports v1 docs/contract sync hardening:
 
 ## Next Concrete Task
 
-1. Decide whether to keep or remove legacy `MULTI_BLOCK_PORT_IMPL_*` governance signal flow now that `BLOCK_PORT_*` enforcement is active.
-2. Add explicit CLI test coverage for single-file `--index` tuple mismatch in `check` and `pr-check` command handlers.
-3. Re-run demo-repo simulation to confirm block-port enforcement behavior with a real two-block account/transaction-log implementation.
+1. Run a demo-repo smoke (`account` + `transaction-log`) with single-file block-port commands omitting `--index` to confirm expected inference behavior in agent transcripts.
+2. Decide whether to keep the `BLOCK_PORT_INDEX_REQUIRED` token name or split it into inferred-missing vs explicit-invalid variants.
 
 ## Session Notes
 
@@ -82,6 +81,23 @@ Block Ports v1 docs/contract sync hardening:
   - updated `commands-compile`/`commands-fix`/`commands-validate`/`commands-check`/`commands-pr-check` and `QUICKSTART` for single-file `--index` and deterministic missing-index envelope consistency
   - refreshed `TERMS` and `ENFORCEMENT` language for `external ops` vs `block targetOps`
   - updated agent package refs (`IR_REFERENCE`, `BLOCK_INDEX_QUICKREF`, `BEAR_PRIMER`, `BOOTSTRAP`, `TROUBLESHOOTING`, `CONTRACTS`) to include block-port semantics and index requirements
+- Verification:
+  - `:app:test --tests com.bear.app.ContextDocsConsistencyTest --tests com.bear.app.BearPackageDocsConsistencyTest` pass
+
+
+
+
+- Simplified single-file block-port index behavior:
+  - compile/fix/check/pr-check now infer <project>/bear.blocks.yaml when --index is omitted and IR uses kind=block effects.
+  - explicit --index remains supported as override.
+  - deterministic failure remains CODE=IR_VALIDATION, PATH=bear.blocks.yaml when inferred index is missing.
+- Added focused regression coverage: SingleFileIndexInferenceTest (compile/fix/check/pr-check inference + missing inferred index).
+- Updated public + agent docs to reflect inferred default index path for single-file block-port flows.
+
+- Docs coherence pass completed (public + agent refs):
+  - removed detailed single-file `--index` override examples from `QUICKSTART`; kept one-line pointer only.
+  - added explicit clarification that `block.kind` is unchanged (`logic`) and new semantics are at `port.kind` (`external` vs `block`) with `ops` vs `targetOps`.
+  - aligned this clarification across `TERMS`, `MODEL`, `commands-validate`, `BEAR_PRIMER`, and `IR_REFERENCE`, and switched examples from wallet/account patterns to neutral fulfillment/inventory domains.
 - Verification:
   - `:app:test --tests com.bear.app.ContextDocsConsistencyTest --tests com.bear.app.BearPackageDocsConsistencyTest` pass
 

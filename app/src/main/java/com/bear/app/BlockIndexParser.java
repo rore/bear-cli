@@ -32,8 +32,8 @@ final class BlockIndexParser {
         }
 
         Object version = root.get("version");
-        if (!(version instanceof String versionText) || !"v0".equals(versionText)) {
-            throw new BlockIndexValidationException("INDEX_INVALID: version must be v0", "bear.blocks.yaml");
+        if (!(version instanceof String versionText) || !"v1".equals(versionText)) {
+            throw new BlockIndexValidationException("INDEX_INVALID: version must be v1", "bear.blocks.yaml");
         }
 
         Object blocksObject = root.get("blocks");

@@ -1,4 +1,4 @@
-﻿# Foundations
+# Foundations
 
 This repository is a proof-of-concept reference implementation.
 It is not a production-ready framework; it exists to validate and demonstrate deterministic boundary governance for agentic backend development.
@@ -31,30 +31,30 @@ Typical shape:
 ```yaml
 version: v1
 block:
-  name: Withdraw
+  name: InventorySync
   kind: logic
   operations:
-    - name: ExecuteWithdraw
+    - name: ApplyRestock
       contract:
         inputs:
-          - name: txId
+          - name: restockId
             type: string
         outputs:
-          - name: balance
-            type: decimal
+          - name: availableUnits
+            type: int
       uses:
         allow:
-          - port: ledger
-            ops: [getBalance, setBalance]
+          - port: inventoryStore
+            ops: [getUnits, setUnits]
           - port: idempotency
             ops: [get, put]
       idempotency:
         mode: use
-        key: txId
+        key: restockId
   effects:
     allow:
-      - port: ledger
-        ops: [getBalance, setBalance]
+      - port: inventoryStore
+        ops: [getUnits, setUnits]
       - port: idempotency
         ops: [get, put]
   idempotency:
@@ -111,5 +111,4 @@ BEAR CLI is split into two modules:
 - [ENFORCEMENT.md](ENFORCEMENT.md)
 - [PR_REVIEW.md](PR_REVIEW.md)
 - [CONTRACTS.md](CONTRACTS.md)
-
 

@@ -1,9 +1,9 @@
-# BEAR Block Index (v0)
+# BEAR Block Index (v1)
 
 ## Purpose
 
 `bear.blocks.yaml` is the source of truth for BEAR-managed blocks in repo-level `--all` enforcement.
-v0 does not support discovery-based inclusion.
+v1 does not support discovery-based inclusion.
 
 ## File
 
@@ -13,10 +13,10 @@ Default location:
 Override:
 - `--blocks <path>` (repo-relative)
 
-## Schema (v0)
+## Schema (v1)
 
 Root fields:
-- `version` (required, must be `v0`)
+- `version` (required, must be `v1`)
 - `blocks` (required, non-empty list)
 
 Each block entry:
@@ -39,7 +39,7 @@ Each block entry:
 - execution and output order is canonical: sort selected blocks by `name`
 - output paths use `/` separators
 
-## Marker Path Invariant (v0)
+## Marker Path Invariant (v1)
 
 Canonical marker path per enabled block:
 - `<projectRoot>/build/generated/bear/surfaces/<blockKey>.surface.json`
@@ -47,7 +47,7 @@ Canonical marker path per enabled block:
 Marker payload includes:
 - `surfaceVersion: 2`
 
-This path is a v0 BEAR-owned contract path.
+This path is a v1 BEAR-owned contract path.
 Changing it is a breaking change and requires a spec/version update.
 
 Legacy marker path (deprecated):

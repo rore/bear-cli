@@ -18,10 +18,11 @@ You declare structure in IR, generate deterministic artifacts, implement only us
   - input/output fields for the block API.
 - Effects:
   - declared capability ports and allowed ops.
+  - this adds `port.kind` variants (`external` vs `block`); `block.kind` remains `logic`.
   - external ports use `ops`; block ports use `targetBlock` + `targetOps`.
 - Idempotency:
   - replay-safe wrapper behavior keyed by declared input material (`key` or `keyFromInputs`).
-  - single-file compile/check/pr-check/fix for IRs with `kind=block` effects requires `--index`.
+  - single-file compile/check/pr-check/fix for IRs with `kind=block` effects resolves index as explicit `--index` or inferred `<project>/bear.blocks.yaml`.
 - Invariant:
   - structural output rule (`non_negative`, `non_empty`, `equals`, `one_of`).
   - v1 supports `non_negative` (and v1.2 extends this structural set with `non_empty`, `equals`, `one_of`).
@@ -69,4 +70,6 @@ Edit:
 - `src/main/java/**/<BlockName>Impl.java`
 - `src/test/java/**`
 - repo-owned IR/docs/scripts
+
+
 

@@ -16,14 +16,14 @@ class BlockIndexParserTest {
     void parsesValidIndex(@TempDir Path tempDir) throws Exception {
         Path index = tempDir.resolve("bear.blocks.yaml");
         Files.writeString(index, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: alpha\n"
             + "    ir: spec/a.bear.yaml\n"
             + "    projectRoot: services/a\n", StandardCharsets.UTF_8);
 
         BlockIndex parsed = new BlockIndexParser().parse(tempDir, index);
-        assertEquals("v0", parsed.version());
+        assertEquals("v1", parsed.version());
         assertEquals(1, parsed.blocks().size());
         assertTrue(parsed.blocks().get(0).enabled());
     }
@@ -32,7 +32,7 @@ class BlockIndexParserTest {
     void allowsDuplicateEnabledProjectRoot(@TempDir Path tempDir) throws Exception {
         Path index = tempDir.resolve("bear.blocks.yaml");
         Files.writeString(index, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: alpha\n"
             + "    ir: spec/a.bear.yaml\n"
@@ -49,7 +49,7 @@ class BlockIndexParserTest {
     void rejectsInvalidName(@TempDir Path tempDir) throws Exception {
         Path index = tempDir.resolve("bear.blocks.yaml");
         Files.writeString(index, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: Alpha\n"
             + "    ir: spec/a.bear.yaml\n"
@@ -66,7 +66,7 @@ class BlockIndexParserTest {
     void allowsProjectRootDotAndCanonicalizes(@TempDir Path tempDir) throws Exception {
         Path index = tempDir.resolve("bear.blocks.yaml");
         Files.writeString(index, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: alpha\n"
             + "    ir: spec/a.bear.yaml\n"
@@ -80,7 +80,7 @@ class BlockIndexParserTest {
     void rejectsIrDot(@TempDir Path tempDir) throws Exception {
         Path index = tempDir.resolve("bear.blocks.yaml");
         Files.writeString(index, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: alpha\n"
             + "    ir: .\n"
@@ -98,7 +98,7 @@ class BlockIndexParserTest {
     void rejectsDuplicateTupleWhenStrictGuardEnabled(@TempDir Path tempDir) throws Exception {
         Path index = tempDir.resolve("bear.blocks.yaml");
         Files.writeString(index, ""
-            + "version: v0\n"
+            + "version: v1\n"
             + "blocks:\n"
             + "  - name: alpha\n"
             + "    ir: spec/a.bear.yaml\n"
