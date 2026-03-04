@@ -1,4 +1,4 @@
-version: v0
+version: v1
 blocks:
   - name: withdraw
     ir: spec/fixtures/withdraw.bear.yaml
