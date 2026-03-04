@@ -71,12 +71,19 @@ public final class BearIrNormalizer {
     private List<BearIr.EffectPort> sortPorts(List<BearIr.EffectPort> ports) {
         List<BearIr.EffectPort> list = new ArrayList<>();
         for (BearIr.EffectPort port : ports) {
-            List<String> ops = new ArrayList<>(port.ops());
-            ops.sort(String::compareTo);
-            list.add(new BearIr.EffectPort(port.port(), ops));
+            List<String> ops = port.ops() == null ? null : new ArrayList<>(port.ops());
+            if (ops != null) {
+                ops.sort(String::compareTo);
+            }
+            List<String> targetOps = port.targetOps() == null ? null : new ArrayList<>(port.targetOps());
+            if (targetOps != null) {
+                targetOps.sort(String::compareTo);
+            }
+            BearIr.EffectPortKind kind = port.kind() == null ? BearIr.EffectPortKind.EXTERNAL : port.kind();
+            list.add(new BearIr.EffectPort(port.port(), kind, ops, port.targetBlock(), targetOps));
         }
         list.sort(Comparator.comparing(BearIr.EffectPort::port));
-        return list;
+        return List.copyOf(list);
     }
 
     private List<BearIr.Invariant> normalizeInvariants(List<BearIr.Invariant> invariants) {
@@ -120,4 +127,3 @@ public final class BearIrNormalizer {
         return new BearIr.Impl(sorted);
     }
 }
-

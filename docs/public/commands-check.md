@@ -11,7 +11,7 @@ Completion pairing note:
 ## Invocation forms
 
 ```text
-bear check <ir-file> --project <path> [--strict-hygiene]
+bear check <ir-file> --project <path> [--strict-hygiene] [--index <path>]
 bear check --all --project <repoRoot> [--blocks <path>] [--only <csv>] [--fail-fast] [--strict-orphans] [--strict-hygiene]
 ```
 
@@ -27,6 +27,8 @@ REMEDIATION=Create bear.blocks.yaml or run non---all command
 ## Inputs and flags
 
 - Single mode uses `<ir-file>` and `--project`.
+- `--index <path>` is required in single mode when IR declares `kind=block` effects.
+- for `kind=block`, single mode validates index tuple membership by normalized `(ir, projectRoot)` against `bear.blocks.yaml`.
 - `--all` mode uses index-driven orchestration from `bear.blocks.yaml` by default.
 - `--blocks` overrides index path.
 - `--only` restricts block set.
@@ -119,10 +121,15 @@ Containment verification semantics:
 - placeholder impl stubs (`RULE=IMPL_PLACEHOLDER`)
 - governed impl containment boundary violations (`RULE=IMPL_CONTAINMENT_BYPASS`)
 - generated `com.bear.generated.*Port` implementations outside owning governed roots (`RULE=PORT_IMPL_OUTSIDE_GOVERNED_ROOT`)
+- block-port interface implementations under `src/main/java/**` (`RULE=BLOCK_PORT_IMPL_INVALID`)
+- direct cross-block target internals/wrapper references outside app lane (`RULE=BLOCK_PORT_REFERENCE_FORBIDDEN`)
+- app-lane direct execute of inbound block-port target wrappers (`RULE=BLOCK_PORT_INBOUND_EXECUTE_FORBIDDEN`)
 - generated `com.bear.generated.*Port` multi-block implementers without valid `_shared` marker (`RULE=MULTI_BLOCK_PORT_IMPL_FORBIDDEN`)
 
-Rationale:
-- generated port implementations are boundary authority; this rule preserves block isolation by preventing mega-adapters from collapsing multiple generated block packages into one class.
+Block-port lane contract:
+- app wiring lane is path-pinned to `src/main/java/com/**`.
+- generated block-client scan scope is pinned to `build/generated/bear/src/main/java/**`.
+- user-lane scan scope is pinned to `src/main/java/**`.
 
 Containment scanner contract (always-on):
 - scope: governed impl files from wiring manifests only
@@ -148,12 +155,12 @@ Containment scanner contract (always-on):
 - findings are emitted in deterministic order: `path`, then `rule`, then `detail`.
 
 Wiring manifest requirement:
-- containment consumes v2 wiring manifests only.
-- required containment fields include `blockRootSourceDir` and `governedSourceRoots`.
+- containment and block-port enforcement consume v3 wiring manifests.
+- required fields include `blockRootSourceDir`, `governedSourceRoots`, and `blockPortBindings`.
 - `governedSourceRoots` ordering is deterministic in this slice:
   - first: `blockRootSourceDir`
   - mandatory second: `src/main/java/blocks/_shared` (reserved governed root)
-- stale/non-v2/malformed wiring manifests fail deterministically with `CODE=MANIFEST_INVALID` (exit `2`); rerun `bear compile`.
+- stale/non-v3/malformed wiring manifests fail deterministically with `CODE=MANIFEST_INVALID` (exit `2`); rerun `bear compile`.
 
 For lock/bootstrap test-runner failures, detail lines append deterministic diagnostics:
 
@@ -209,3 +216,6 @@ For aggregated `--all` non-zero failures, footer code is `REPO_MULTI_BLOCK_FAILE
 - [exit-codes.md](exit-codes.md)
 - [output-format.md](output-format.md)
 - [troubleshooting.md](troubleshooting.md)
+
+
+

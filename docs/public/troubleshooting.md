@@ -45,6 +45,16 @@ Fix:
 1. Create `bear.blocks.yaml` in repo root, or
 2. run non-`--all` command form.
 
+## `BLOCK_PORT_INDEX_REQUIRED`
+
+Symptom: single-file `compile`/`fix`/`check`/`pr-check` returns `index: VALIDATION_ERROR: BLOCK_PORT_INDEX_REQUIRED: ...` with exit `2`.
+Likely cause: IR uses `kind=block` effects without `--index`, or provided `--index` path is invalid.
+Fix:
+
+1. Re-run command with `--index <path-to-bear.blocks.yaml>`.
+2. Ensure the IR is declared in that index with matching normalized `(ir, projectRoot)` tuple.
+3. Re-run command.
+
 ## `IO_ERROR`
 
 Symptom: read/write or wrapper path failure, exit `74`.
@@ -172,6 +182,34 @@ Fix:
    - shared governed root (`src/main/java/blocks/_shared/...`)
 2. Re-run `bear pr-check`.
 
+## `BLOCK_PORT_IMPL_INVALID`
+
+Symptom: `check`/`pr-check` failure with exit `7`, `CODE=BOUNDARY_BYPASS`, and `RULE=BLOCK_PORT_IMPL_INVALID`.
+Likely cause:
+- block-port interface implemented under `src/main/java/**`, or
+- generated binding mismatch under `build/generated/bear/src/main/java/**`, or
+- `_shared` generated-port implementation owner mismatch.
+Fix:
+
+1. Remove user-root implementations of block-port interfaces.
+2. Regenerate and use the expected generated block client implementation.
+3. For `_shared` classes implementing generated `*Port`, add `@BearSharedOwner("<blockKey>")` and ensure single-owner implementation.
+4. Re-run `bear check` / `bear pr-check`.
+
+## `BLOCK_PORT_REFERENCE_FORBIDDEN` or `BLOCK_PORT_INBOUND_EXECUTE_FORBIDDEN`
+
+Symptom: `check`/`pr-check` failure with exit `7`, `CODE=BOUNDARY_BYPASS`, and rule `BLOCK_PORT_REFERENCE_FORBIDDEN` or `BLOCK_PORT_INBOUND_EXECUTE_FORBIDDEN`.
+Likely cause:
+- source block code directly references target block internals/wrappers, or
+- app wiring directly executes inbound target wrappers.
+Fix:
+
+1. Route cross-block calls through generated block clients only.
+2. Keep app wiring in `src/main/java/com/**` and avoid direct execute calls to inbound target wrappers.
+3. Remove direct references to `blocks.<target>.*` internals from non-app lanes.
+4. Re-run `bear check` / `bear pr-check`.
+
+
 ## `MULTI_BLOCK_PORT_IMPL_FORBIDDEN`
 
 Symptom: `check`/`pr-check` failure with exit `7`, `CODE=BOUNDARY_BYPASS`, and `RULE=MULTI_BLOCK_PORT_IMPL_FORBIDDEN`.
@@ -195,7 +233,6 @@ Action:
 
 1. Review whether the multi-block adapter is intentional.
 2. Keep current marker placement/rule compliance, or split adapters per generated package if isolation should be stricter.
-
 ## `UNDECLARED_REACH`
 
 Symptom: `check: UNDECLARED_REACH` and exit `6`.
@@ -267,9 +304,9 @@ Action:
 Symptom: wiring semantic inconsistency with exit `2`.
 Likely cause:
 - generated wiring mismatch,
-- missing required v2 semantic fields (`logicRequiredPorts`, `wrapperOwnedSemanticPorts`, `wrapperOwnedSemanticChecks`, `blockRootSourceDir`),
-- missing required v2 containment fields (`governedSourceRoots`),
-- unsupported/non-v2 wiring schema,
+- missing required v3 semantic fields (`logicRequiredPorts`, `wrapperOwnedSemanticPorts`, `wrapperOwnedSemanticChecks`, `blockRootSourceDir`, `blockPortBindings`),
+- missing required v3 containment fields (`governedSourceRoots`),
+- unsupported/non-v3 wiring schema,
 - missing governed binding fields (`logicInterfaceFqcn`, `implFqcn`).
 Fix:
 
@@ -303,3 +340,7 @@ Fix:
 - [commands-pr-check.md](commands-pr-check.md)
 - [exit-codes.md](exit-codes.md)
 - [output-format.md](output-format.md)
+
+
+
+

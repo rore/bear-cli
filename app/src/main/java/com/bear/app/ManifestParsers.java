@@ -45,7 +45,7 @@ final class ManifestParsers {
             throw new ManifestParseException("MALFORMED_JSON");
         }
         String schemaVersion = extractRequiredString(json, "schemaVersion");
-        if (!"v2".equals(schemaVersion)) {
+        if (!"v3".equals(schemaVersion)) {
             throw new ManifestParseException("UNSUPPORTED_WIRING_SCHEMA_VERSION");
         }
         String blockKey = extractRequiredString(json, "blockKey");
@@ -60,6 +60,8 @@ final class ManifestParsers {
         String logicRequiredPortsPayload = extractRequiredArrayPayload(json, "logicRequiredPorts");
         String wrapperOwnedSemanticPortsPayload = extractRequiredArrayPayload(json, "wrapperOwnedSemanticPorts");
         String wrapperOwnedSemanticChecksPayload = extractRequiredArrayPayload(json, "wrapperOwnedSemanticChecks");
+        String blockPortBindingsPayload = extractRequiredArrayPayload(json, "blockPortBindings");
+
         validateRepoRelativeRootPath(blockRootSourceDir, "blockRootSourceDir");
         List<String> governedSourceRoots = parseStringArray(governedSourceRootsPayload);
         validateGovernedSourceRoots(governedSourceRoots, blockRootSourceDir);
@@ -68,6 +70,8 @@ final class ManifestParsers {
         List<String> logicRequiredPorts = parseStringArray(logicRequiredPortsPayload);
         List<String> wrapperOwnedSemanticPorts = parseStringArray(wrapperOwnedSemanticPortsPayload);
         List<String> wrapperOwnedSemanticChecks = parseStringArray(wrapperOwnedSemanticChecksPayload);
+        List<BlockPortBinding> blockPortBindings = parseBlockPortBindings(blockPortBindingsPayload);
+
         return new WiringManifest(
             schemaVersion,
             blockKey,
@@ -81,8 +85,76 @@ final class ManifestParsers {
             constructorPortParams,
             logicRequiredPorts,
             wrapperOwnedSemanticPorts,
-            wrapperOwnedSemanticChecks
+            wrapperOwnedSemanticChecks,
+            blockPortBindings
         );
+    }
+
+    private static List<BlockPortBinding> parseBlockPortBindings(String payload) throws ManifestParseException {
+        if (payload.isBlank()) {
+            return List.of();
+        }
+        ArrayList<BlockPortBinding> bindings = new ArrayList<>();
+        for (String rawObject : splitObjectArray(payload)) {
+            String objectJson = rawObject.trim();
+            String port = extractRequiredString(objectJson, "port");
+            String targetBlock = extractRequiredString(objectJson, "targetBlock");
+            String targetOpsPayload = extractRequiredArrayPayload(objectJson, "targetOps");
+            String portInterfaceFqcn = extractRequiredString(objectJson, "portInterfaceFqcn");
+            String expectedClientImplFqcn = extractRequiredString(objectJson, "expectedClientImplFqcn");
+            List<String> targetOps = parseStringArray(targetOpsPayload);
+            bindings.add(new BlockPortBinding(port, targetBlock, targetOps, portInterfaceFqcn, expectedClientImplFqcn));
+        }
+        if (bindings.isEmpty()) {
+            throw new ManifestParseException("INVALID_BLOCK_PORT_BINDINGS");
+        }
+        return List.copyOf(bindings);
+    }
+
+    private static List<String> splitObjectArray(String payload) throws ManifestParseException {
+        ArrayList<String> objects = new ArrayList<>();
+        int depth = 0;
+        int start = -1;
+        boolean inString = false;
+        boolean escape = false;
+        for (int i = 0; i < payload.length(); i++) {
+            char c = payload.charAt(i);
+            if (inString) {
+                if (escape) {
+                    escape = false;
+                } else if (c == '\\') {
+                    escape = true;
+                } else if (c == '"') {
+                    inString = false;
+                }
+                continue;
+            }
+            if (c == '"') {
+                inString = true;
+                continue;
+            }
+            if (c == '{') {
+                if (depth == 0) {
+                    start = i;
+                }
+                depth++;
+                continue;
+            }
+            if (c == '}') {
+                if (depth <= 0) {
+                    throw new ManifestParseException("INVALID_BLOCK_PORT_BINDINGS");
+                }
+                depth--;
+                if (depth == 0 && start >= 0) {
+                    objects.add(payload.substring(start, i + 1));
+                    start = -1;
+                }
+            }
+        }
+        if (depth != 0 || inString) {
+            throw new ManifestParseException("INVALID_BLOCK_PORT_BINDINGS");
+        }
+        return objects;
     }
 
     private static void validateGovernedSourceRoots(List<String> roots, String blockRootSourceDir) throws ManifestParseException {

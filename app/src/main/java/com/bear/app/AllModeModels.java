@@ -339,8 +339,9 @@ record PrDelta(PrClass clazz, PrCategory category, PrChange change, String key) 
 }
 
 record PrSurface(
-    TreeSet<String> ports,
-    Map<String, TreeSet<String>> opsByPort,
+    TreeSet<String> externalPorts,
+    Map<String, TreeSet<String>> externalOpsByPort,
+    TreeSet<String> blockEdges,
     Map<String, String> allowedDeps,
     BearIr.BlockIdempotency blockIdempotency,
     TreeSet<String> blockInvariants,
@@ -378,7 +379,49 @@ record WiringManifest(
     List<String> constructorPortParams,
     List<String> logicRequiredPorts,
     List<String> wrapperOwnedSemanticPorts,
-    List<String> wrapperOwnedSemanticChecks
+    List<String> wrapperOwnedSemanticChecks,
+    List<BlockPortBinding> blockPortBindings
+) {
+    WiringManifest(
+        String schemaVersion,
+        String blockKey,
+        String entrypointFqcn,
+        String logicInterfaceFqcn,
+        String implFqcn,
+        String implSourcePath,
+        String blockRootSourceDir,
+        List<String> governedSourceRoots,
+        List<String> requiredEffectPorts,
+        List<String> constructorPortParams,
+        List<String> logicRequiredPorts,
+        List<String> wrapperOwnedSemanticPorts,
+        List<String> wrapperOwnedSemanticChecks
+    ) {
+        this(
+            schemaVersion,
+            blockKey,
+            entrypointFqcn,
+            logicInterfaceFqcn,
+            implFqcn,
+            implSourcePath,
+            blockRootSourceDir,
+            governedSourceRoots,
+            requiredEffectPorts,
+            constructorPortParams,
+            logicRequiredPorts,
+            wrapperOwnedSemanticPorts,
+            wrapperOwnedSemanticChecks,
+            List.of()
+        );
+    }
+}
+
+record BlockPortBinding(
+    String port,
+    String targetBlock,
+    List<String> targetOps,
+    String portInterfaceFqcn,
+    String expectedClientImplFqcn
 ) {
 }
 
@@ -416,3 +459,4 @@ record ProjectTestResult(
     boolean fallbackToUserCache
 ) {
 }
+

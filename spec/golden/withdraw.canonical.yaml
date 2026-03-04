@@ -20,10 +20,12 @@ block:
     uses:
       allow:
       - port: idempotency
+        kind: external
         ops:
         - get
         - put
       - port: ledger
+        kind: external
         ops:
         - getBalance
         - setBalance
@@ -37,10 +39,12 @@ block:
   effects:
     allow:
     - port: idempotency
+      kind: external
       ops:
       - get
       - put
     - port: ledger
+      kind: external
       ops:
       - getBalance
       - setBalance

@@ -305,6 +305,34 @@ class BearIrValidatorTest {
     }
 
     @Test
+    void rejectDuplicateTargetOpsForBlockPort(@TempDir Path tempDir) throws IOException {
+        String yaml = ""
+            + "version: v1\n"
+            + "block:\n"
+            + "  name: Account\n"
+            + "  kind: logic\n"
+            + "  operations:\n"
+            + "    - name: Deposit\n"
+            + "      contract:\n"
+            + "        inputs: [{name: accountId, type: string}]\n"
+            + "        outputs: [{name: balanceCents, type: int}]\n"
+            + "      uses:\n"
+            + "        allow:\n"
+            + "          - port: transactionLog\n"
+            + "            kind: block\n"
+            + "            targetOps: [AppendTransaction]\n"
+            + "  effects:\n"
+            + "    allow:\n"
+            + "      - port: transactionLog\n"
+            + "        kind: block\n"
+            + "        targetBlock: transaction-log\n"
+            + "        targetOps: [AppendTransaction, AppendTransaction]\n";
+
+        BearIrValidationException ex = assertSemanticError(tempDir, yaml);
+        assertEquals(BearIrValidationException.Code.DUPLICATE, ex.code());
+        assertEquals("block.effects.allow[0].targetOps[1]", ex.path());
+    }
+    @Test
     void acceptWithdrawFixture() throws Exception {
         Path fixture = TestRepoPaths.repoRoot().resolve("spec/fixtures/withdraw.bear.yaml");
         BearIrParser parser = new BearIrParser();
@@ -367,3 +395,4 @@ class BearIrValidatorTest {
         return text.replace("\r\n", "\n");
     }
 }
+

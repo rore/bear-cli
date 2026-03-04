@@ -1,4 +1,4 @@
-﻿# bear pr-check
+# bear pr-check
 
 ## Purpose
 
@@ -10,7 +10,7 @@ Run deterministic PR governance checks:
 ## Invocation forms
 
 ```text
-bear pr-check <ir-file> --project <path> --base <ref>
+bear pr-check <ir-file> --project <path> --base <ref> [--index <path>]
 bear pr-check --all --project <repoRoot> --base <ref> [--blocks <path>] [--only <csv>] [--strict-orphans]
 ```
 
@@ -28,6 +28,8 @@ REMEDIATION=Create bear.blocks.yaml or run non---all command
 ## Inputs and flags
 
 - Single mode requires `<ir-file>`, `--project`, and `--base`.
+- `--index <path>` is required in single mode when IR declares `kind=block` effects.
+- for `kind=block`, single mode validates normalized `(ir, projectRoot)` tuple membership in the provided index.
 - `<ir-file>` must be repo-relative.
 - `--all` mode uses index selection and optional `--blocks`, `--only`, `--strict-orphans`.
 - completion workflows should pair:
@@ -42,10 +44,13 @@ REMEDIATION=Create bear.blocks.yaml or run non---all command
   - includes `_shared` policy deltas keyed as:
     - `<projectRoot>:_shared:<groupId:artifactId>@<version>`
     - changed version form: `@<old>-><new>`
-- Governance signal lines to `stdout` (informational, non-failing):
+- Governance signal lines to `stdout` (legacy informational path):
   - `pr-check: GOVERNANCE: MULTI_BLOCK_PORT_IMPL_ALLOWED: <relative/path>: <implClassFqcn> -> <sortedGeneratedPackageCsv>`
 - Port-impl containment lines (when violated):
   - `pr-check: BOUNDARY_BYPASS: RULE=PORT_IMPL_OUTSIDE_GOVERNED_ROOT: <relative/path>: KIND=PORT_IMPL_OUTSIDE_GOVERNED_ROOT: <interfaceFqcn> -> <implClassFqcn>`
+  - `pr-check: BOUNDARY_BYPASS: RULE=BLOCK_PORT_IMPL_INVALID: <relative/path>: BLOCK_PORT_IMPL_INVALID: block-port interface must not be implemented in src/main/java; only generated client allowed`
+  - `pr-check: BOUNDARY_BYPASS: RULE=BLOCK_PORT_REFERENCE_FORBIDDEN: <relative/path>: BLOCK_PORT_REFERENCE_FORBIDDEN: <detail>`
+  - `pr-check: BOUNDARY_BYPASS: RULE=BLOCK_PORT_INBOUND_EXECUTE_FORBIDDEN: <relative/path>: BLOCK_PORT_REFERENCE_FORBIDDEN: app wiring may not directly execute inbound target wrapper: <wrapperFqcn>.execute(...)`
   - `pr-check: BOUNDARY_BYPASS: RULE=MULTI_BLOCK_PORT_IMPL_FORBIDDEN: <relative/path>: KIND=MULTI_BLOCK_PORT_IMPL_FORBIDDEN: <implClassFqcn> -> <sortedGeneratedPackageCsv>`
   - `pr-check: BOUNDARY_BYPASS: RULE=MULTI_BLOCK_PORT_IMPL_FORBIDDEN: <relative/path>: KIND=MARKER_MISUSED_OUTSIDE_SHARED: <implClassFqcn>`
 - Boundary verdict:
@@ -56,13 +61,11 @@ REMEDIATION=Create bear.blocks.yaml or run non---all command
   - `ADDED` / `CHANGED` => `BOUNDARY_EXPANDING`
   - `REMOVED` => `ORDINARY`
 - Port-impl containment findings are deterministically sorted by path, rule, then detail.
-- Governance signal lines are deterministically sorted by path, impl class, then package CSV.
-- `pr-check --all` success output may include an aggregated `GOVERNANCE SIGNALS:` section after block sections and before `SUMMARY`.
+- block-port inbound wrapper deny set is deterministically derived from resolved index graph edges (`kind=block`) and sorted by target block key + op.
+- app wiring lane is path-pinned to `src/main/java/com/**`.
+- generated client scan scope is `build/generated/bear/src/main/java/**`.
+- user root scan scope is `src/main/java/**`.
 - `pr-check --all` may include a single repo-level `REPO DELTA:` section (before `SUMMARY`) for shared-policy deltas; these lines are emitted once per project root (no per-block duplication).
-- Multi-block marker contract:
-  - marker text is exact: `// BEAR:ALLOW_MULTI_BLOCK_PORT_IMPL`
-  - valid only for files under `src/main/java/blocks/_shared/**`
-  - marker must be within 5 non-empty lines above class declaration
 - Non-zero exits append failure footer as last three `stderr` lines.
 
 Implementation note:
@@ -93,6 +96,8 @@ For aggregated `--all` non-zero failures, footer code is `REPO_MULTI_BLOCK_FAILE
 
 - [troubleshooting.md#boundary_expansion](troubleshooting.md#boundary_expansion)
 - [troubleshooting.md#port_impl_outside_governed_root](troubleshooting.md#port_impl_outside_governed_root)
+- [troubleshooting.md#block_port_impl_invalid](troubleshooting.md#block_port_impl_invalid)
+- [troubleshooting.md#block_port_reference_forbidden-or-block_port_inbound_execute_forbidden](troubleshooting.md#block_port_reference_forbidden-or-block_port_inbound_execute_forbidden)
 - [troubleshooting.md#multi_block_port_impl_forbidden](troubleshooting.md#multi_block_port_impl_forbidden)
 - [troubleshooting.md#io_git](troubleshooting.md#io_git)
 - [troubleshooting.md#ir_validation](troubleshooting.md#ir_validation)
@@ -104,4 +109,9 @@ For aggregated `--all` non-zero failures, footer code is `REPO_MULTI_BLOCK_FAILE
 - [exit-codes.md](exit-codes.md)
 - [output-format.md](output-format.md)
 - [troubleshooting.md](troubleshooting.md)
+
+
+
+
+
 

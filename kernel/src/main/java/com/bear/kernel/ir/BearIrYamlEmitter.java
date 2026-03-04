@@ -17,8 +17,6 @@ public final class BearIrYamlEmitter {
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
         options.setPrettyFlow(false);
         options.setIndent(2);
-        // Keep defaults for sequence indicator indent; SnakeYAML enforces constraints
-        // relative to `indent` and may throw if set inconsistently.
         options.setLineBreak(DumperOptions.LineBreak.UNIX);
         options.setExplicitStart(false);
         options.setExplicitEnd(false);
@@ -112,7 +110,14 @@ public final class BearIrYamlEmitter {
         for (BearIr.EffectPort port : allow) {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("port", port.port());
-            map.put("ops", new ArrayList<>(port.ops()));
+            BearIr.EffectPortKind kind = port.kind() == null ? BearIr.EffectPortKind.EXTERNAL : port.kind();
+            map.put("kind", kind == BearIr.EffectPortKind.BLOCK ? "block" : "external");
+            if (kind == BearIr.EffectPortKind.BLOCK) {
+                map.put("targetBlock", port.targetBlock());
+                map.put("targetOps", port.targetOps() == null ? List.of() : new ArrayList<>(port.targetOps()));
+            } else {
+                map.put("ops", port.ops() == null ? List.of() : new ArrayList<>(port.ops()));
+            }
             list.add(map);
         }
         return list;
@@ -189,4 +194,3 @@ public final class BearIrYamlEmitter {
         return list;
     }
 }
-

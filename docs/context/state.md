@@ -1,4 +1,4 @@
-﻿# BEAR Session State
+# BEAR Session State
 
 This file is the short operational handoff for the current work window.
 For milestone status and backlog ordering, use `docs/context/program-board.md`.
@@ -10,17 +10,16 @@ Long-form historical notes are archived in `docs/context/archive/archive-state-h
 
 ## Current Focus
 
-P2 stabilization v3 hardening:
-- unified `--all` missing-index envelope across compile/check/fix/pr-check
-- deterministic `check --all` progress/heartbeat stream
-- single-source invariant fingerprint + validator/codegen consistency for multi-op IR
+Block Ports v1 freeze implementation hardening:
+- single-command `--index` plumbing for `compile`/`fix`/`check`/`pr-check`
+- deterministic block-edge graph validation + cycle canonicalization + single-file tuple membership
+- block-port enforcement path (generated-client binding checks, app-lane inbound wrapper deny, user-root impl ban)
 
 ## Next Concrete Task
 
-1. If repo-level `--all` gates are required in this workspace, add `bear.blocks.yaml` and rerun:
-- `bear check --all --project .`
-- `bear pr-check --all --project . --base <ref>`
-2. Optional follow-up: add explicit integration coverage for a non-`_shared` containment Gradle lane task in CLI tests.
+1. Decide whether to keep or remove legacy `MULTI_BLOCK_PORT_IMPL_*` governance signal flow now that `BLOCK_PORT_*` enforcement is active.
+2. Add explicit CLI test coverage for single-file `--index` tuple mismatch in `check` and `pr-check` command handlers.
+3. Re-run demo-repo simulation to confirm block-port enforcement behavior with a real two-block account/transaction-log implementation.
 
 ## Session Notes
 
@@ -66,3 +65,17 @@ P2 stabilization v3 hardening:
 - Fixed markdown formatting bug (removed literal \\n sequences) in public docs.
 - Verification:
   - ran :app:test doc consistency tests (ContextDocsConsistencyTest, BearPackageDocsConsistencyTest)
+
+- Completed Block Ports v1 freeze follow-through:
+  - added deterministic block-port graph cycle regression (`BLOCK_PORT_CYCLE_DETECTED` least-rotation assertion)
+  - added app-lane/non-app-lane enforcement coverage in `BlockPortBindingEnforcerTest`
+  - added runtime-generated `@BearSharedOwner` annotation (`com.bear.generated.runtime.BearSharedOwner`) and generator assertion in `JvmTargetTest`
+- Updated public command/docs contract to block-port model:
+  - `commands-check`, `commands-pr-check`, `output-format`, `troubleshooting` now document `BLOCK_PORT_*` rules, app-lane path pinning (`src/main/java/com/**`), generated scan scope (`build/generated/bear/src/main/java/**`), and single-command `--index` requirements
+  - `user-guide` command forms now include optional `--index` for single-command modes and block-port index tuple behavior
+- Verification:
+  - targeted suites: `JvmTargetTest`, `BlockPortBindingEnforcerTest`, `BlockPortGraphResolverTest`, docs consistency tests
+  - full suites: `:kernel:test` and `:app:test` pass
+  - repo-level BEAR gates via `:app:run` return deterministic missing-index envelope (`INDEX_REQUIRED_MISSING`, exit 2) because repo root intentionally has no `bear.blocks.yaml`
+
+

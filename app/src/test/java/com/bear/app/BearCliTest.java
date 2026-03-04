@@ -75,7 +75,7 @@ class BearCliTest {
             stderr,
             "USAGE_INVALID_ARGS",
             "cli.args",
-            "Run `bear compile <ir-file> --project <path>` with the expected arguments."
+            "Run `bear compile <ir-file> --project <path> [--index <path>]` with the expected arguments."
         );
     }
 
@@ -140,7 +140,7 @@ class BearCliTest {
             run.stderr,
             "USAGE_INVALID_ARGS",
             "cli.args",
-            "Run `bear fix <ir-file> --project <path>` with the expected arguments."
+            "Run `bear fix <ir-file> --project <path> [--index <path>]` with the expected arguments."
         );
     }
 
@@ -229,7 +229,7 @@ class BearCliTest {
             run.stderr,
             "USAGE_INVALID_ARGS",
             "cli.args",
-            "Run `bear check <ir-file> --project <path> [--strict-hygiene]` with the expected arguments."
+            "Run `bear check <ir-file> --project <path> [--strict-hygiene] [--index <path>]` with the expected arguments."
         );
     }
 
@@ -3762,7 +3762,7 @@ class BearCliTest {
             run.stderr,
             "USAGE_INVALID_ARGS",
             "cli.args",
-            "Run `bear pr-check <ir-file> --project <path> --base <ref>` with the expected arguments."
+            "Run `bear pr-check <ir-file> --project <path> --base <ref> [--index <path>]` with the expected arguments."
         );
     }
 
@@ -4893,7 +4893,7 @@ class BearCliTest {
     }
 
     @Test
-    void checkFailsManifestInvalidWhenWiringSchemaNotV2(@TempDir Path tempDir) throws Exception {
+    void checkFailsManifestInvalidWhenWiringSchemaNotV3(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
         Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
@@ -4901,7 +4901,7 @@ class BearCliTest {
 
         Path wiring = tempDir.resolve("build/generated/bear/wiring/withdraw.wiring.json");
         String content = Files.readString(wiring, StandardCharsets.UTF_8);
-        content = content.replace("\"schemaVersion\":\"v2\"", "\"schemaVersion\":\"v1\"");
+        content = content.replace("\"schemaVersion\":\"v3\"", "\"schemaVersion\":\"v1\"");
         Files.writeString(wiring, content, StandardCharsets.UTF_8);
 
         CliRunResult check = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
@@ -5133,6 +5133,7 @@ class BearCliTest {
     private record MultiBlockFixture(Path repoRoot, List<Path> projectRoots) {
     }
 }
+
 
 
 

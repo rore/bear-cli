@@ -1,4 +1,4 @@
-﻿# BEAR CLI User Guide (Preview)
+# BEAR CLI User Guide (Preview)
 
 This guide is for day-to-day usage of `bear` in a project.
 
@@ -101,7 +101,7 @@ Success:
 ### 2. Compile generated artifacts
 
 ```text
-bear compile <ir-file> --project <path>
+bear compile <ir-file> --project <path> [--index <path>]
 ```
 
 Use when:
@@ -116,6 +116,9 @@ Behavior:
   - index-authoritative when exactly one `(ir, projectRoot)` tuple matches in `bear.blocks.yaml`
   - IR fallback when no tuple match exists
   - deterministic validation failure on canonical identity mismatch or ambiguous tuple matches
+- when IR declares `kind=block` effects in single-command mode:
+  - `--index <path>` is required
+  - `(ir, projectRoot)` tuple membership is validated against that index before generation
 - semantics are wrapper-owned by generation:
   - idempotent wrappers compute/replay/persist idempotency payloads
   - invariant checks run in wrappers on fresh and replay paths
@@ -135,7 +138,7 @@ Optional flags:
 ### 3. Repair generated artifacts
 
 ```text
-bear fix <ir-file> --project <path>
+bear fix <ir-file> --project <path> [--index <path>]
 ```
 
 Use when:
@@ -162,7 +165,7 @@ Optional flags:
 ### 4. Local gate (drift + tests)
 
 ```text
-bear check <ir-file> --project <path> [--strict-hygiene]
+bear check <ir-file> --project <path> [--strict-hygiene] [--index <path>]
 ```
 
 Use when:
@@ -189,8 +192,8 @@ Behavior:
   - `.bear/policy/reflection-allowlist.txt`
   - `.bear/policy/hygiene-allowlist.txt`
 - fails with validation (`MANIFEST_INVALID`) when wiring semantics are inconsistent
-  - v2 wiring manifests are required for containment checks
-  - required v2 semantic/containment fields must be present (`logicRequiredPorts`, `wrapperOwnedSemanticPorts`, `wrapperOwnedSemanticChecks`, `blockRootSourceDir`, `governedSourceRoots`)
+  - v3 wiring manifests are required for containment and block-port checks
+  - required v3 semantic/containment fields must be present (`logicRequiredPorts`, `wrapperOwnedSemanticPorts`, `wrapperOwnedSemanticChecks`, `blockRootSourceDir`, `governedSourceRoots`, `blockPortBindings`)
   - `governedSourceRoots` order is deterministic: block root first, mandatory reserved `src/main/java/blocks/_shared` second
   - wrapper-owned semantic ports must not overlap logic-required ports
 - runs project tests only after no-drift result
@@ -246,7 +249,7 @@ Behavior:
 ### 5. PR governance gate (base diff classification)
 
 ```text
-bear pr-check <ir-file> --project <path> --base <ref>
+bear pr-check <ir-file> --project <path> --base <ref> [--index <path>]
 ```
 
 Use when:
@@ -350,7 +353,7 @@ Expected classification:
 `bear check` enforces:
 - deterministic generated-artifact drift gate
 - covered undeclared-reach gate for direct HTTP bypass surfaces
-- boundary-bypass seam gate (`DIRECT_IMPL_USAGE`, `NULL_PORT_WIRING`, `EFFECTS_BYPASS`, `IMPL_CONTAINMENT_BYPASS`, `PORT_IMPL_OUTSIDE_GOVERNED_ROOT`, `MULTI_BLOCK_PORT_IMPL_FORBIDDEN`)
+- boundary-bypass seam gate (`DIRECT_IMPL_USAGE`, `NULL_PORT_WIRING`, `EFFECTS_BYPASS`, `IMPL_CONTAINMENT_BYPASS`, `PORT_IMPL_OUTSIDE_GOVERNED_ROOT`, `BLOCK_PORT_IMPL_INVALID`, `BLOCK_PORT_REFERENCE_FORBIDDEN`, `BLOCK_PORT_INBOUND_EXECUTE_FORBIDDEN`)
 - project tests (only after drift and undeclared-reach pass)
 
 `bear pr-check` enforces:
@@ -416,9 +419,9 @@ All non-zero command exits include deterministic footer lines:
 1. Developer states feature intent in domain terms.
 2. Agent updates IR if boundary/contract/effect changes are needed.
 3. Agent runs `bear validate <ir-file>`.
-4. Agent runs `bear compile <ir-file> --project <path>`.
+4. Agent runs `bear compile <ir-file> --project <path> [--index <path>]`.
 5. If containment scope is active, rely on `bear check` to run project tests with generated containment init-script injection (no manual `build.gradle` patching).
-6. If generated artifacts need deterministic repair, run `bear fix <ir-file> --project <path>` (or `fix --all`).
+6. If generated artifacts need deterministic repair, run `bear fix <ir-file> --project <path> [--index <path>]` (or `fix --all`).
 7. Agent implements user-owned logic/tests.
 8. Agent runs `bear check --all --project <repoRoot>`.
 9. Agent runs `bear pr-check --all --project <repoRoot> --base <ref>`.
@@ -455,5 +458,8 @@ Run-evaluation policy:
 - optional compile/check/pr-check smoke
 
 It is not a substitute for a true isolated agent reasoning session.
+
+
+
 
 

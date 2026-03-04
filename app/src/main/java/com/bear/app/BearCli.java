@@ -135,12 +135,51 @@ public final class BearCli {
     }
 
     static FixResult executeFix(Path irFile, Path projectRoot, String expectedBlockKey, String expectedBlockLocator) {
+        return executeFix(irFile, projectRoot, expectedBlockKey, expectedBlockLocator, null);
+    }
+
+    static FixResult executeFix(
+        Path irFile,
+        Path projectRoot,
+        String expectedBlockKey,
+        String expectedBlockLocator,
+        Path explicitIndexPath
+    ) {
         try {
             maybeFailInternalForTest("fix");
             JvmTarget target = new JvmTarget();
             BearIr normalized = IR_PIPELINE.parseValidateNormalize(irFile);
+            if (BlockPortGraphResolver.hasBlockPortEffects(normalized)) {
+                if (explicitIndexPath == null) {
+                    String line = "index: VALIDATION_ERROR: BLOCK_PORT_INDEX_REQUIRED: single-file command with kind=block ports requires --index <path-to-bear.blocks.yaml>";
+                    return fixFailure(
+                        CliCodes.EXIT_VALIDATION,
+                        List.of(line),
+                        "VALIDATION",
+                        CliCodes.IR_VALIDATION,
+                        "bear.blocks.yaml",
+                        "Add --index <path-to-bear.blocks.yaml> and rerun bear fix.",
+                        line
+                    );
+                }
+                Path indexAbsolute = explicitIndexPath.toAbsolutePath().normalize();
+                Path repoRoot = indexAbsolute.getParent();
+                if (repoRoot == null) {
+                    String line = "index: VALIDATION_ERROR: BLOCK_PORT_INDEX_REQUIRED: invalid --index path";
+                    return fixFailure(
+                        CliCodes.EXIT_VALIDATION,
+                        List.of(line),
+                        "VALIDATION",
+                        CliCodes.IR_VALIDATION,
+                        "bear.blocks.yaml",
+                        "Pass a valid --index path and rerun bear fix.",
+                        line
+                    );
+                }
+                BlockPortGraphResolver.resolveAndValidate(repoRoot, indexAbsolute);
+            }
             BlockIdentityResolution identity = expectedBlockKey == null
-                ? BlockIdentityResolver.resolveSingleCommandIdentity(irFile, projectRoot, normalized.block().name())
+                ? BlockIdentityResolver.resolveSingleCommandIdentity(irFile, projectRoot, normalized.block().name(), explicitIndexPath)
                 : BlockIdentityResolver.resolveIndexIdentity(
                     expectedBlockKey,
                     expectedBlockLocator == null || expectedBlockLocator.isBlank()
@@ -205,12 +244,51 @@ public final class BearCli {
     }
 
     static CompileResult executeCompile(Path irFile, Path projectRoot, String expectedBlockKey, String expectedBlockLocator) {
+        return executeCompile(irFile, projectRoot, expectedBlockKey, expectedBlockLocator, null);
+    }
+
+    static CompileResult executeCompile(
+        Path irFile,
+        Path projectRoot,
+        String expectedBlockKey,
+        String expectedBlockLocator,
+        Path explicitIndexPath
+    ) {
         try {
             maybeFailInternalForTest("compile");
             JvmTarget target = new JvmTarget();
             BearIr normalized = IR_PIPELINE.parseValidateNormalize(irFile);
+            if (BlockPortGraphResolver.hasBlockPortEffects(normalized)) {
+                if (explicitIndexPath == null) {
+                    String line = "index: VALIDATION_ERROR: BLOCK_PORT_INDEX_REQUIRED: single-file command with kind=block ports requires --index <path-to-bear.blocks.yaml>";
+                    return compileFailure(
+                        CliCodes.EXIT_VALIDATION,
+                        List.of(line),
+                        "VALIDATION",
+                        CliCodes.IR_VALIDATION,
+                        "bear.blocks.yaml",
+                        "Add --index <path-to-bear.blocks.yaml> and rerun bear compile.",
+                        line
+                    );
+                }
+                Path indexAbsolute = explicitIndexPath.toAbsolutePath().normalize();
+                Path repoRoot = indexAbsolute.getParent();
+                if (repoRoot == null) {
+                    String line = "index: VALIDATION_ERROR: BLOCK_PORT_INDEX_REQUIRED: invalid --index path";
+                    return compileFailure(
+                        CliCodes.EXIT_VALIDATION,
+                        List.of(line),
+                        "VALIDATION",
+                        CliCodes.IR_VALIDATION,
+                        "bear.blocks.yaml",
+                        "Pass a valid --index path and rerun bear compile.",
+                        line
+                    );
+                }
+                BlockPortGraphResolver.resolveAndValidate(repoRoot, indexAbsolute);
+            }
             BlockIdentityResolution identity = expectedBlockKey == null
-                ? BlockIdentityResolver.resolveSingleCommandIdentity(irFile, projectRoot, normalized.block().name())
+                ? BlockIdentityResolver.resolveSingleCommandIdentity(irFile, projectRoot, normalized.block().name(), explicitIndexPath)
                 : BlockIdentityResolver.resolveIndexIdentity(
                     expectedBlockKey,
                     expectedBlockLocator == null || expectedBlockLocator.isBlank()
@@ -281,13 +359,26 @@ public final class BearCli {
         String expectedBlockKey,
         String expectedBlockLocator
     ) {
+        return executeCheck(irFile, projectRoot, runReachAndTests, strictHygiene, expectedBlockKey, expectedBlockLocator, null);
+    }
+
+    static CheckResult executeCheck(
+        Path irFile,
+        Path projectRoot,
+        boolean runReachAndTests,
+        boolean strictHygiene,
+        String expectedBlockKey,
+        String expectedBlockLocator,
+        Path explicitIndexPath
+    ) {
         return CheckCommandService.executeCheck(
             irFile,
             projectRoot,
             runReachAndTests,
             strictHygiene,
             expectedBlockKey,
-            expectedBlockLocator
+            expectedBlockLocator,
+            explicitIndexPath
         );
     }
 
@@ -347,7 +438,11 @@ public final class BearCli {
     }
 
     static PrCheckResult executePrCheck(Path projectRoot, String repoRelativePath, String baseRef) {
-        return PrCheckCommandService.executePrCheck(projectRoot, repoRelativePath, baseRef);
+        return executePrCheck(projectRoot, repoRelativePath, baseRef, null);
+    }
+
+    static PrCheckResult executePrCheck(Path projectRoot, String repoRelativePath, String baseRef, Path explicitIndexPath) {
+        return PrCheckCommandService.executePrCheck(projectRoot, repoRelativePath, baseRef, explicitIndexPath);
     }
 
     private static CheckResult checkFailure(
@@ -762,14 +857,14 @@ public final class BearCli {
 
     static void printUsage(PrintStream out) {
         out.println("Usage: bear validate <file>");
-        out.println("       bear compile <ir-file> --project <path>");
+        out.println("       bear compile <ir-file> --project <path> [--index <path>]");
         out.println("       bear compile --all --project <repoRoot> [--blocks <path>] [--only <csv>] [--fail-fast] [--strict-orphans]");
-        out.println("       bear fix <ir-file> --project <path>");
+        out.println("       bear fix <ir-file> --project <path> [--index <path>]");
         out.println("       bear fix --all --project <repoRoot> [--blocks <path>] [--only <csv>] [--fail-fast] [--strict-orphans]");
-        out.println("       bear check <ir-file> --project <path> [--strict-hygiene]");
+        out.println("       bear check <ir-file> --project <path> [--strict-hygiene] [--index <path>]");
         out.println("       bear check --all --project <repoRoot> [--blocks <path>] [--only <csv>] [--fail-fast] [--strict-orphans] [--strict-hygiene]");
         out.println("       bear unblock --project <path>");
-        out.println("       bear pr-check <ir-file> --project <path> --base <ref>");
+        out.println("       bear pr-check <ir-file> --project <path> --base <ref> [--index <path>]");
         out.println("       bear pr-check --all --project <repoRoot> --base <ref> [--blocks <path>] [--only <csv>] [--strict-orphans]");
         out.println("       bear --help");
     }

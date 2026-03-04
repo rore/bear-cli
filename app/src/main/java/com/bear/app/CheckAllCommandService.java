@@ -598,24 +598,7 @@ final class CheckAllCommandService {
     }
 
     private static boolean isManifestSemanticFieldError(ManifestParseException e) {
-        String code = e.reasonCode();
-        return "MISSING_KEY_logicInterfaceFqcn".equals(code)
-            || "MISSING_KEY_implFqcn".equals(code)
-            || "MISSING_KEY_logicRequiredPorts".equals(code)
-            || "MISSING_KEY_wrapperOwnedSemanticPorts".equals(code)
-            || "MISSING_KEY_wrapperOwnedSemanticChecks".equals(code)
-            || "MISSING_KEY_blockRootSourceDir".equals(code)
-            || "MISSING_KEY_governedSourceRoots".equals(code)
-            || "MALFORMED_ARRAY_logicRequiredPorts".equals(code)
-            || "MALFORMED_ARRAY_wrapperOwnedSemanticPorts".equals(code)
-            || "MALFORMED_ARRAY_wrapperOwnedSemanticChecks".equals(code)
-            || "MALFORMED_ARRAY_governedSourceRoots".equals(code)
-            || "INVALID_STRING_ARRAY".equals(code)
-            || "UNSUPPORTED_WIRING_SCHEMA_VERSION".equals(code)
-            || "INVALID_GOVERNED_SOURCE_ROOTS".equals(code)
-            || PortImplContainmentScanner.AMBIGUOUS_PORT_OWNER_REASON_CODE.equals(code)
-            || "INVALID_ROOT_PATH_blockRootSourceDir".equals(code)
-            || "INVALID_ROOT_PATH_governedSourceRoots".equals(code);
+        return CheckManifestValidation.isManifestSemanticFieldError(e);
     }
 
     private static String testDiagnosticsSuffix(ProjectTestResult testResult) {

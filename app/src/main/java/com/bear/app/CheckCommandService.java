@@ -15,6 +15,7 @@ import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 final class CheckCommandService {
     private static final IrPipeline IR_PIPELINE = new DefaultIrPipeline();
@@ -52,7 +53,31 @@ final class CheckCommandService {
             strictHygiene,
             expectedBlockKey,
             expectedBlockLocator,
+            null,
+            true,
             null
+        );
+    }
+
+    static CheckResult executeCheck(
+        Path irFile,
+        Path projectRoot,
+        boolean runReachAndTests,
+        boolean strictHygiene,
+        String expectedBlockKey,
+        String expectedBlockLocator,
+        Path explicitIndexPath
+    ) {
+        return executeCheck(
+            irFile,
+            projectRoot,
+            runReachAndTests,
+            strictHygiene,
+            expectedBlockKey,
+            expectedBlockLocator,
+            null,
+            true,
+            explicitIndexPath
         );
     }
 
@@ -73,7 +98,8 @@ final class CheckCommandService {
             expectedBlockKey,
             expectedBlockLocator,
             considerContainmentSurfacesOverride,
-            true
+            true,
+            null
         );
     }
 
@@ -87,8 +113,33 @@ final class CheckCommandService {
         Boolean considerContainmentSurfacesOverride,
         boolean runContainmentPreflight
     ) {
+        return executeCheck(
+            irFile,
+            projectRoot,
+            runReachAndTests,
+            strictHygiene,
+            expectedBlockKey,
+            expectedBlockLocator,
+            considerContainmentSurfacesOverride,
+            runContainmentPreflight,
+            null
+        );
+    }
+
+    static CheckResult executeCheck(
+        Path irFile,
+        Path projectRoot,
+        boolean runReachAndTests,
+        boolean strictHygiene,
+        String expectedBlockKey,
+        String expectedBlockLocator,
+        Boolean considerContainmentSurfacesOverride,
+        boolean runContainmentPreflight,
+        Path explicitIndexPath
+    ) {
         Path baselineRoot = projectRoot.resolve("build").resolve("generated").resolve("bear");
         Path tempRoot = null;
+        BlockPortGraph blockPortGraph = null;
         try {
             maybeFailInternalForTest();
             CheckResult forcedTimeout = forceProjectTestTimeoutForTest();
@@ -97,11 +148,40 @@ final class CheckCommandService {
             }
             JvmTarget target = new JvmTarget();
             BearIr normalized = IR_PIPELINE.parseValidateNormalize(irFile);
+
+            if (explicitIndexPath != null) {
+                Path indexAbsolute = explicitIndexPath.toAbsolutePath().normalize();
+                Path repoRoot = indexAbsolute.getParent();
+                if (repoRoot == null) {
+                    String line = "index: VALIDATION_ERROR: BLOCK_PORT_INDEX_REQUIRED: invalid --index path";
+                    return checkFailure(
+                        CliCodes.EXIT_VALIDATION,
+                        List.of(line),
+                        "VALIDATION",
+                        CliCodes.IR_VALIDATION,
+                        "bear.blocks.yaml",
+                        "Pass a valid `--index` path and rerun the command.",
+                        line
+                    );
+                }
+                blockPortGraph = BlockPortGraphResolver.resolveAndValidate(repoRoot, indexAbsolute);
+            } else if (BlockPortGraphResolver.hasBlockPortEffects(normalized)) {
+                String line = "index: VALIDATION_ERROR: BLOCK_PORT_INDEX_REQUIRED: single-file command with kind=block ports requires --index <path-to-bear.blocks.yaml>";
+                return checkFailure(
+                    CliCodes.EXIT_VALIDATION,
+                    List.of(line),
+                    "VALIDATION",
+                    CliCodes.IR_VALIDATION,
+                    "bear.blocks.yaml",
+                    "Add `--index <path-to-bear.blocks.yaml>` and rerun the command.",
+                    line
+                );
+            }
             boolean considerContainmentSurfaces = considerContainmentSurfacesOverride != null
                 ? considerContainmentSurfacesOverride
                 : CheckContainmentStage.hasAllowedDeps(normalized) || sharedContainmentInScope(projectRoot);
             BlockIdentityResolution identity = expectedBlockKey == null
-                ? BlockIdentityResolver.resolveSingleCommandIdentity(irFile, projectRoot, normalized.block().name())
+                ? BlockIdentityResolver.resolveSingleCommandIdentity(irFile, projectRoot, normalized.block().name(), explicitIndexPath)
                 : BlockIdentityResolver.resolveIndexIdentity(
                     expectedBlockKey,
                     expectedBlockLocator == null || expectedBlockLocator.isBlank()
@@ -408,10 +488,25 @@ final class CheckCommandService {
                 );
             }
 
-            List<BoundaryBypassFinding> bypassFindings = BoundaryBypassScanner.scanBoundaryBypass(
+            TreeSet<String> inboundTargetWrapperFqcns = blockPortGraph == null
+                ? new TreeSet<>()
+                : BlockPortGraphResolver.inboundTargetWrapperFqcns(blockPortGraph);
+
+            List<BoundaryBypassFinding> bypassFindings = new ArrayList<>();
+            bypassFindings.addAll(BoundaryBypassScanner.scanBoundaryBypass(
                 projectRoot,
                 List.of(baselineWiringManifest),
                 reflectionAllowlist
+            ));
+            bypassFindings.addAll(BlockPortBindingEnforcer.scan(
+                projectRoot,
+                List.of(baselineWiringManifest),
+                inboundTargetWrapperFqcns
+            ));
+            bypassFindings.sort(
+                Comparator.comparing(BoundaryBypassFinding::path)
+                    .thenComparing(BoundaryBypassFinding::rule)
+                    .thenComparing(BoundaryBypassFinding::detail)
             );
             if (!bypassFindings.isEmpty()) {
                 for (BoundaryBypassFinding finding : bypassFindings) {
@@ -917,3 +1012,7 @@ final class CheckCommandService {
     }
 
 }
+
+
+
+

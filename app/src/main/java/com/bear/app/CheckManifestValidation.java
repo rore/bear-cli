@@ -1,6 +1,8 @@
 package com.bear.app;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 final class CheckManifestValidation {
     private CheckManifestValidation() {
@@ -31,7 +33,7 @@ final class CheckManifestValidation {
                 line
             );
         }
-        if (!"v2".equals(manifest.schemaVersion())) {
+        if (!"v3".equals(manifest.schemaVersion())) {
             String line = "check: MANIFEST_INVALID: unsupported wiring schema version: " + manifest.schemaVersion();
             return checkFailure(
                 CliCodes.EXIT_VALIDATION,
@@ -39,7 +41,7 @@ final class CheckManifestValidation {
                 "VALIDATION",
                 CliCodes.MANIFEST_INVALID,
                 path,
-                "Regenerate wiring manifests with `bear compile` so v2 wiring metadata is present, then rerun `bear check`.",
+                "Regenerate wiring manifests with `bear compile` so v3 wiring metadata is present, then rerun `bear check`.",
                 line
             );
         }
@@ -67,6 +69,122 @@ final class CheckManifestValidation {
                 line
             );
         }
+        if (manifest.blockPortBindings() == null) {
+            String line = "check: MANIFEST_INVALID: missing blockPortBindings";
+            return checkFailure(
+                CliCodes.EXIT_VALIDATION,
+                List.of(line),
+                "VALIDATION",
+                CliCodes.MANIFEST_INVALID,
+                path,
+                "Regenerate wiring manifests with block-port metadata and rerun `bear check`.",
+                line
+            );
+        }
+
+        Set<String> seenBlockPortNames = new HashSet<>();
+        for (BlockPortBinding binding : manifest.blockPortBindings()) {
+            if (binding.port() == null || binding.port().isBlank()) {
+                String line = "check: MANIFEST_INVALID: blockPortBinding missing port";
+                return checkFailure(
+                    CliCodes.EXIT_VALIDATION,
+                    List.of(line),
+                    "VALIDATION",
+                    CliCodes.MANIFEST_INVALID,
+                    path,
+                    "Regenerate wiring manifests with complete block-port metadata and rerun `bear check`.",
+                    line
+                );
+            }
+            if (!seenBlockPortNames.add(binding.port())) {
+                String line = "check: MANIFEST_INVALID: duplicate blockPortBinding.port: " + binding.port();
+                return checkFailure(
+                    CliCodes.EXIT_VALIDATION,
+                    List.of(line),
+                    "VALIDATION",
+                    CliCodes.MANIFEST_INVALID,
+                    path,
+                    "Regenerate wiring manifests with unique block-port entries and rerun `bear check`.",
+                    line
+                );
+            }
+            if (binding.targetBlock() == null || binding.targetBlock().isBlank()) {
+                String line = "check: MANIFEST_INVALID: blockPortBinding missing targetBlock: " + binding.port();
+                return checkFailure(
+                    CliCodes.EXIT_VALIDATION,
+                    List.of(line),
+                    "VALIDATION",
+                    CliCodes.MANIFEST_INVALID,
+                    path,
+                    "Regenerate wiring manifests with complete block-port metadata and rerun `bear check`.",
+                    line
+                );
+            }
+            if (binding.portInterfaceFqcn() == null || binding.portInterfaceFqcn().isBlank()) {
+                String line = "check: MANIFEST_INVALID: blockPortBinding missing portInterfaceFqcn: " + binding.port();
+                return checkFailure(
+                    CliCodes.EXIT_VALIDATION,
+                    List.of(line),
+                    "VALIDATION",
+                    CliCodes.MANIFEST_INVALID,
+                    path,
+                    "Regenerate wiring manifests with complete block-port metadata and rerun `bear check`.",
+                    line
+                );
+            }
+            if (binding.expectedClientImplFqcn() == null || binding.expectedClientImplFqcn().isBlank()) {
+                String line = "check: MANIFEST_INVALID: blockPortBinding missing expectedClientImplFqcn: " + binding.port();
+                return checkFailure(
+                    CliCodes.EXIT_VALIDATION,
+                    List.of(line),
+                    "VALIDATION",
+                    CliCodes.MANIFEST_INVALID,
+                    path,
+                    "Regenerate wiring manifests with complete block-port metadata and rerun `bear check`.",
+                    line
+                );
+            }
+            if (binding.targetOps() == null || binding.targetOps().isEmpty()) {
+                String line = "check: MANIFEST_INVALID: blockPortBinding targetOps must be non-empty: " + binding.port();
+                return checkFailure(
+                    CliCodes.EXIT_VALIDATION,
+                    List.of(line),
+                    "VALIDATION",
+                    CliCodes.MANIFEST_INVALID,
+                    path,
+                    "Regenerate wiring manifests with non-empty block targetOps and rerun `bear check`.",
+                    line
+                );
+            }
+            HashSet<String> seenTargetOps = new HashSet<>();
+            for (String op : binding.targetOps()) {
+                if (op == null || op.isBlank()) {
+                    String line = "check: MANIFEST_INVALID: blockPortBinding targetOps contains blank entry: " + binding.port();
+                    return checkFailure(
+                        CliCodes.EXIT_VALIDATION,
+                        List.of(line),
+                        "VALIDATION",
+                        CliCodes.MANIFEST_INVALID,
+                        path,
+                        "Regenerate wiring manifests with valid targetOps entries and rerun `bear check`.",
+                        line
+                    );
+                }
+                if (!seenTargetOps.add(op)) {
+                    String line = "check: MANIFEST_INVALID: blockPortBinding targetOps contains duplicate entry: " + binding.port() + "." + op;
+                    return checkFailure(
+                        CliCodes.EXIT_VALIDATION,
+                        List.of(line),
+                        "VALIDATION",
+                        CliCodes.MANIFEST_INVALID,
+                        path,
+                        "Regenerate wiring manifests with distinct targetOps entries and rerun `bear check`.",
+                        line
+                    );
+                }
+            }
+        }
+
         for (String semanticPort : manifest.wrapperOwnedSemanticPorts()) {
             if (manifest.logicRequiredPorts().contains(semanticPort)) {
                 String line = "check: MANIFEST_INVALID: wrapperOwnedSemanticPorts overlaps logicRequiredPorts: " + semanticPort;
@@ -93,11 +211,20 @@ final class CheckManifestValidation {
             || "MISSING_KEY_wrapperOwnedSemanticChecks".equals(code)
             || "MISSING_KEY_blockRootSourceDir".equals(code)
             || "MISSING_KEY_governedSourceRoots".equals(code)
+            || "MISSING_KEY_blockPortBindings".equals(code)
+            || "MISSING_KEY_port".equals(code)
+            || "MISSING_KEY_targetBlock".equals(code)
+            || "MISSING_KEY_targetOps".equals(code)
+            || "MISSING_KEY_portInterfaceFqcn".equals(code)
+            || "MISSING_KEY_expectedClientImplFqcn".equals(code)
             || "MALFORMED_ARRAY_logicRequiredPorts".equals(code)
             || "MALFORMED_ARRAY_wrapperOwnedSemanticPorts".equals(code)
             || "MALFORMED_ARRAY_wrapperOwnedSemanticChecks".equals(code)
             || "MALFORMED_ARRAY_governedSourceRoots".equals(code)
+            || "MALFORMED_ARRAY_blockPortBindings".equals(code)
+            || "MALFORMED_ARRAY_targetOps".equals(code)
             || "INVALID_STRING_ARRAY".equals(code)
+            || "INVALID_BLOCK_PORT_BINDINGS".equals(code)
             || "UNSUPPORTED_WIRING_SCHEMA_VERSION".equals(code)
             || "INVALID_GOVERNED_SOURCE_ROOTS".equals(code)
             || PortImplContainmentScanner.AMBIGUOUS_PORT_OWNER_REASON_CODE.equals(code)
@@ -111,6 +238,12 @@ final class CheckManifestValidation {
         }
         if ("MULTI_BLOCK_PORT_IMPL_FORBIDDEN".equals(rule)) {
             return "Split generated-port adapters so each class implements one generated block package, or move the adapter under blocks/_shared and add `// BEAR:ALLOW_MULTI_BLOCK_PORT_IMPL` within 5 non-empty lines above the class declaration.";
+        }
+        if ("BLOCK_PORT_IMPL_INVALID".equals(rule)) {
+            return "Use the generated block client as the only implementation for block-port interfaces and remove user-lane implementations under src/main/java.";
+        }
+        if ("BLOCK_PORT_REFERENCE_FORBIDDEN".equals(rule) || "BLOCK_PORT_INBOUND_EXECUTE_FORBIDDEN".equals(rule)) {
+            return "Route cross-block calls through generated block clients and avoid direct references/execute calls to target block internals or inbound wrappers.";
         }
         if ("SHARED_PURITY_VIOLATION".equals(rule)) {
             return "Keep `_shared.pure` deterministic: remove mutable static state/synchronized usage, move stateful code to `blocks/**/adapter/**` or `blocks/_shared/state/**`, and use allowlisted immutable constants only.";

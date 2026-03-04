@@ -19,8 +19,44 @@ final class BlockIdentityResolver {
         Path projectRoot,
         String irBlockName
     ) throws IOException, BlockIndexValidationException, BlockIdentityResolutionException {
+        return resolveSingleCommandIdentity(irFile, projectRoot, irBlockName, null);
+    }
+
+    static BlockIdentityResolution resolveSingleCommandIdentity(
+        Path irFile,
+        Path projectRoot,
+        String irBlockName,
+        Path explicitIndexPath
+    ) throws IOException, BlockIndexValidationException, BlockIdentityResolutionException {
         Path projectRootAbsolute = projectRoot.toAbsolutePath().normalize();
         Path irAbsolute = irFile.toAbsolutePath().normalize();
+
+        if (explicitIndexPath != null) {
+            Path indexAbsolute = explicitIndexPath.toAbsolutePath().normalize();
+            Path repoRoot = indexAbsolute.getParent();
+            if (repoRoot == null) {
+                throw new BlockIdentityResolutionException(
+                    "index: VALIDATION_ERROR: INDEX_INVALID: index path has no parent",
+                    "bear.blocks.yaml",
+                    "Pass a valid `--index` path and rerun the command."
+                );
+            }
+            BlockIndex index = new BlockIndexParser().parse(repoRoot, indexAbsolute, true);
+            String irRelative = toRepoRelativeOrNull(repoRoot, irAbsolute);
+            if (irRelative == null) {
+                String line = "index: VALIDATION_ERROR: INDEX_MEMBERSHIP_MISMATCH: ir="
+                    + normalizePathForDisplay(irAbsolute)
+                    + ", projectRoot="
+                    + normalizePathForDisplay(projectRootAbsolute);
+                throw new BlockIdentityResolutionException(
+                    line,
+                    "bear.blocks.yaml",
+                    "Ensure the IR path is declared in the index under the same `(ir, projectRoot)` tuple, then rerun the command."
+                );
+            }
+            return resolveFromIndexTuple(index, repoRoot, irRelative, projectRootAbsolute, irBlockName);
+        }
+
         Path repoRoot = findNearestIndexRoot(projectRootAbsolute);
         if (repoRoot == null) {
             return BlockIdentityResolution.singleIrFallback(canonicalize(irBlockName));
@@ -32,38 +68,14 @@ final class BlockIdentityResolver {
         if (irRelative == null) {
             return BlockIdentityResolution.singleIrFallback(canonicalize(irBlockName));
         }
-
-        List<BlockIndexEntry> matches = new ArrayList<>();
-        for (BlockIndexEntry entry : index.blocks()) {
-            if (!entry.ir().equals(irRelative)) {
-                continue;
+        try {
+            return resolveFromIndexTuple(index, repoRoot, irRelative, projectRootAbsolute, irBlockName);
+        } catch (BlockIdentityResolutionException e) {
+            if (e.line() != null && e.line().contains("INDEX_MEMBERSHIP_MISMATCH")) {
+                return BlockIdentityResolution.singleIrFallback(canonicalize(irBlockName));
             }
-            Path entryProjectRoot = repoRoot.resolve(entry.projectRoot()).normalize();
-            if (!entryProjectRoot.equals(projectRootAbsolute)) {
-                continue;
-            }
-            matches.add(entry);
+            throw e;
         }
-
-        if (matches.isEmpty()) {
-            return BlockIdentityResolution.singleIrFallback(canonicalize(irBlockName));
-        }
-        if (matches.size() > 1) {
-            String tupleProjectRoot = normalizePathForDisplay(projectRootAbsolute);
-            String line = "index: VALIDATION_ERROR: AMBIGUOUS_INDEX_ENTRIES: ir="
-                + irRelative
-                + ", projectRoot="
-                + tupleProjectRoot;
-            throw new BlockIdentityResolutionException(
-                line,
-                "bear.blocks.yaml",
-                "Deduplicate `bear.blocks.yaml` so exactly one entry matches `(ir, projectRoot)`, then rerun the command."
-            );
-        }
-
-        BlockIndexEntry match = matches.get(0);
-        String indexLocator = formatIndexLocator(match);
-        return resolveIndexIdentity(match.name(), indexLocator, irBlockName);
     }
 
     static BlockIdentityResolution resolveIndexIdentity(
@@ -101,6 +113,55 @@ final class BlockIdentityResolver {
         return "bear.blocks.yaml:name=" + entry.name()
             + ",ir=" + entry.ir()
             + ",projectRoot=" + entry.projectRoot();
+    }
+
+    private static BlockIdentityResolution resolveFromIndexTuple(
+        BlockIndex index,
+        Path repoRoot,
+        String irRelative,
+        Path projectRootAbsolute,
+        String irBlockName
+    ) throws BlockIdentityResolutionException {
+        List<BlockIndexEntry> matches = new ArrayList<>();
+        for (BlockIndexEntry entry : index.blocks()) {
+            if (!entry.ir().equals(irRelative)) {
+                continue;
+            }
+            Path entryProjectRoot = repoRoot.resolve(entry.projectRoot()).normalize();
+            if (!entryProjectRoot.equals(projectRootAbsolute)) {
+                continue;
+            }
+            matches.add(entry);
+        }
+
+        if (matches.isEmpty()) {
+            String tupleProjectRoot = normalizePathForDisplay(projectRootAbsolute);
+            String line = "index: VALIDATION_ERROR: INDEX_MEMBERSHIP_MISMATCH: ir="
+                + irRelative
+                + ", projectRoot="
+                + tupleProjectRoot;
+            throw new BlockIdentityResolutionException(
+                line,
+                "bear.blocks.yaml",
+                "Ensure `bear.blocks.yaml` contains exactly one matching `(ir, projectRoot)` tuple and rerun the command."
+            );
+        }
+        if (matches.size() > 1) {
+            String tupleProjectRoot = normalizePathForDisplay(projectRootAbsolute);
+            String line = "index: VALIDATION_ERROR: AMBIGUOUS_INDEX_ENTRIES: ir="
+                + irRelative
+                + ", projectRoot="
+                + tupleProjectRoot;
+            throw new BlockIdentityResolutionException(
+                line,
+                "bear.blocks.yaml",
+                "Deduplicate `bear.blocks.yaml` so exactly one entry matches `(ir, projectRoot)`, then rerun the command."
+            );
+        }
+
+        BlockIndexEntry match = matches.get(0);
+        String indexLocator = formatIndexLocator(match);
+        return resolveIndexIdentity(match.name(), indexLocator, irBlockName);
     }
 
     private static Path findNearestIndexRoot(Path start) {

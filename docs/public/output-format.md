@@ -1,4 +1,4 @@
-﻿# Output Format
+# Output Format
 
 ## Non-zero failure footer
 
@@ -44,6 +44,9 @@ Contract:
 `pr-check` boundary-bypass lines:
 
 - `pr-check: BOUNDARY_BYPASS: RULE=PORT_IMPL_OUTSIDE_GOVERNED_ROOT: <relative/path>: KIND=PORT_IMPL_OUTSIDE_GOVERNED_ROOT: <interfaceFqcn> -> <implClassFqcn>`
+- `pr-check: BOUNDARY_BYPASS: RULE=BLOCK_PORT_IMPL_INVALID: <relative/path>: BLOCK_PORT_IMPL_INVALID: block-port interface must not be implemented in src/main/java; only generated client allowed`
+- `pr-check: BOUNDARY_BYPASS: RULE=BLOCK_PORT_REFERENCE_FORBIDDEN: <relative/path>: BLOCK_PORT_REFERENCE_FORBIDDEN: <detail>`
+- `pr-check: BOUNDARY_BYPASS: RULE=BLOCK_PORT_INBOUND_EXECUTE_FORBIDDEN: <relative/path>: BLOCK_PORT_REFERENCE_FORBIDDEN: app wiring may not directly execute inbound target wrapper: <wrapperFqcn>.execute(...)`
 - `pr-check: BOUNDARY_BYPASS: RULE=MULTI_BLOCK_PORT_IMPL_FORBIDDEN: <relative/path>: KIND=MULTI_BLOCK_PORT_IMPL_FORBIDDEN: <implClassFqcn> -> <sortedGeneratedPackageCsv>`
 - `pr-check: BOUNDARY_BYPASS: RULE=MULTI_BLOCK_PORT_IMPL_FORBIDDEN: <relative/path>: KIND=MARKER_MISUSED_OUTSIDE_SHARED: <implClassFqcn>`
 
@@ -86,7 +89,7 @@ Common `check` policy lines:
 
 `pr-check` delta lines are deterministically sorted by class, category, change, and key.
 `pr-check` port-impl containment findings are deterministically sorted by `path`, then `rule`, then `detail`.
-`pr-check` governance signal lines are deterministically sorted by `path`, then `implClassFqcn`, then `sortedGeneratedPackageCsv`.
+for block-port enforcement, inbound wrapper deny-set derivation is deterministic and index-driven (`kind=block` edges sorted by target block key + op).
 `pr-check --all` `REPO DELTA:` lines are deterministically sorted lexicographically and rendered once per repo aggregation.
 `BEAR_STRUCTURAL_SIGNAL` lines are sorted within each generated structural test class; consumers must treat inter-test ordering as non-contractual.
 
@@ -109,4 +112,6 @@ Wiring drift diagnostics:
 - [commands-pr-check.md](commands-pr-check.md)
 - [commands-validate.md](commands-validate.md)
 - [troubleshooting.md](troubleshooting.md)
+
+
 

@@ -7,6 +7,11 @@ public record BearIr(String version, BearIr.Block block) {
         LOGIC
     }
 
+    public enum EffectPortKind {
+        EXTERNAL,
+        BLOCK
+    }
+
     public enum FieldType {
         STRING,
         DECIMAL,
@@ -60,7 +65,13 @@ public record BearIr(String version, BearIr.Block block) {
     public record Effects(List<EffectPort> allow) {
     }
 
-    public record EffectPort(String port, List<String> ops) {
+    public record EffectPort(
+        String port,
+        EffectPortKind kind,
+        List<String> ops,
+        String targetBlock,
+        List<String> targetOps
+    ) {
     }
 
     public record BlockIdempotency(IdempotencyStore store) {
@@ -84,4 +95,3 @@ public record BearIr(String version, BearIr.Block block) {
     public record AllowedDep(String maven, String version) {
     }
 }
-

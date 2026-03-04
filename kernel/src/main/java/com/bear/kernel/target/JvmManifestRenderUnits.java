@@ -44,8 +44,7 @@ final class JvmManifestRenderUnits {
             if (i > 0) {
                 out.append(",");
             }
-            List<String> ops = new ArrayList<>(port.ops());
-            ops.sort(String::compareTo);
+            List<String> ops = capabilityOps(port);
             out.append("{\"name\":\"").append(jsonEscape(port.port())).append("\",\"ops\":[");
             for (int j = 0; j < ops.size(); j++) {
                 if (j > 0) {
@@ -92,7 +91,8 @@ final class JvmManifestRenderUnits {
         List<String> constructorPortParams,
         List<String> logicRequiredPorts,
         List<String> wrapperOwnedSemanticPorts,
-        List<String> wrapperOwnedSemanticChecks
+        List<String> wrapperOwnedSemanticChecks,
+        List<String> blockPortBindings
     ) {
         String entrypointFqcn = generatedPackageName + "." + blockName;
         String logicInterfaceFqcn = generatedPackageName + "." + blockName + "Logic";
@@ -108,7 +108,7 @@ final class JvmManifestRenderUnits {
 
         StringBuilder out = new StringBuilder();
         out.append("{");
-        out.append("\"schemaVersion\":\"v2\",");
+        out.append("\"schemaVersion\":\"v3\",");
         out.append("\"blockKey\":\"").append(jsonEscape(blockKey)).append("\",");
         out.append("\"entrypointFqcn\":\"").append(jsonEscape(entrypointFqcn)).append("\",");
         out.append("\"logicInterfaceFqcn\":\"").append(jsonEscape(logicInterfaceFqcn)).append("\",");
@@ -162,9 +162,32 @@ final class JvmManifestRenderUnits {
             }
             out.append("\"").append(jsonEscape(wrapperOwnedSemanticChecks.get(i))).append("\"");
         }
-        out.append("]}");
+        out.append("],");
+        out.append("\"blockPortBindings\":[");
+        for (int i = 0; i < blockPortBindings.size(); i++) {
+            if (i > 0) {
+                out.append(",");
+            }
+            out.append(blockPortBindings.get(i));
+        }
+        out.append("]");
+        out.append("}");
         out.append("\n");
         return out.toString();
+    }
+
+    private static List<String> capabilityOps(BearIr.EffectPort port) {
+        List<String> ops = new ArrayList<>();
+        BearIr.EffectPortKind kind = port.kind() == null ? BearIr.EffectPortKind.EXTERNAL : port.kind();
+        if (kind == BearIr.EffectPortKind.BLOCK) {
+            if (port.targetOps() != null) {
+                ops.addAll(port.targetOps());
+            }
+        } else if (port.ops() != null) {
+            ops.addAll(port.ops());
+        }
+        ops.sort(String::compareTo);
+        return ops;
     }
 
     private static byte[] canonicalIrBytes(BearIr ir) {

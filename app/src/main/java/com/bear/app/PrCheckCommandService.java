@@ -32,7 +32,11 @@ final class PrCheckCommandService {
     }
 
     static PrCheckResult executePrCheck(Path projectRoot, String repoRelativePath, String baseRef) {
-        return executePrCheck(projectRoot, repoRelativePath, baseRef, true, ".");
+        return executePrCheck(projectRoot, repoRelativePath, baseRef, true, ".", null);
+    }
+
+    static PrCheckResult executePrCheck(Path projectRoot, String repoRelativePath, String baseRef, Path explicitIndexPath) {
+        return executePrCheck(projectRoot, repoRelativePath, baseRef, true, ".", explicitIndexPath);
     }
 
     static PrCheckResult executePrCheck(
@@ -41,6 +45,16 @@ final class PrCheckCommandService {
         String baseRef,
         boolean includeSharedPolicyDeltas,
         String projectRootLabel
+    ) {
+        return executePrCheck(projectRoot, repoRelativePath, baseRef, includeSharedPolicyDeltas, projectRootLabel, null);
+    }
+    static PrCheckResult executePrCheck(
+        Path projectRoot,
+        String repoRelativePath,
+        String baseRef,
+        boolean includeSharedPolicyDeltas,
+        String projectRootLabel,
+        Path explicitIndexPath
     ) {
         Path tempRoot = null;
         try {
@@ -65,10 +79,52 @@ final class PrCheckCommandService {
             }
 
             BearIr head = IR_PIPELINE.parseValidateNormalize(headIrPath);
+            BlockPortGraph blockPortGraph = null;
+            if (explicitIndexPath != null) {
+                Path indexAbsolute = explicitIndexPath.toAbsolutePath().normalize();
+                Path repoRoot = indexAbsolute.getParent();
+                if (repoRoot == null) {
+                    String line = "index: VALIDATION_ERROR: BLOCK_PORT_INDEX_REQUIRED: invalid --index path";
+                    return prFailure(
+                        CliCodes.EXIT_VALIDATION,
+                        List.of(line),
+                        "VALIDATION",
+                        CliCodes.IR_VALIDATION,
+                        "bear.blocks.yaml",
+                        "Pass a valid `--index` path and rerun `bear pr-check`.",
+                        line,
+                        List.of(),
+                        false,
+                        false
+                    );
+                }
+                blockPortGraph = BlockPortGraphResolver.resolveAndValidate(repoRoot, indexAbsolute);
+            } else {
+                Path inferredIndexPath = projectRoot.resolve("bear.blocks.yaml").normalize();
+                if (Files.isRegularFile(inferredIndexPath)) {
+                    blockPortGraph = BlockPortGraphResolver.resolveAndValidate(projectRoot, inferredIndexPath);
+                }
+            }
+            if (BlockPortGraphResolver.hasBlockPortEffects(head) && explicitIndexPath == null) {
+                String line = "index: VALIDATION_ERROR: BLOCK_PORT_INDEX_REQUIRED: single-file command with kind=block ports requires --index <path-to-bear.blocks.yaml>";
+                return prFailure(
+                    CliCodes.EXIT_VALIDATION,
+                    List.of(line),
+                    "VALIDATION",
+                    CliCodes.IR_VALIDATION,
+                    "bear.blocks.yaml",
+                    "Add `--index <path-to-bear.blocks.yaml>` and rerun `bear pr-check`.",
+                    line,
+                    List.of(),
+                    false,
+                    false
+                );
+            }
             BlockIdentityResolution headIdentity = BlockIdentityResolver.resolveSingleCommandIdentity(
                 headIrPath,
                 projectRoot,
-                head.block().name()
+                head.block().name(),
+                explicitIndexPath
             );
             String blockKey = headIdentity.blockKey();
 
@@ -252,9 +308,24 @@ final class PrCheckCommandService {
                 }
             }
 
-            List<BoundaryBypassFinding> containmentFindings = BoundaryBypassScanner.scanPortImplContainmentBypass(
+            TreeSet<String> inboundTargetWrapperFqcns = blockPortGraph == null
+                ? new TreeSet<>()
+                : BlockPortGraphResolver.inboundTargetWrapperFqcns(blockPortGraph);
+
+            List<BoundaryBypassFinding> containmentFindings = new ArrayList<>();
+            containmentFindings.addAll(BoundaryBypassScanner.scanPortImplContainmentBypass(
                 projectRoot,
                 List.of(headWiring)
+            ));
+            containmentFindings.addAll(BlockPortBindingEnforcer.scan(
+                projectRoot,
+                List.of(headWiring),
+                inboundTargetWrapperFqcns
+            ));
+            containmentFindings.sort(
+                Comparator.comparing(BoundaryBypassFinding::path)
+                    .thenComparing(BoundaryBypassFinding::rule)
+                    .thenComparing(BoundaryBypassFinding::detail)
             );
             if (!containmentFindings.isEmpty()) {
                 List<String> detailLines = new ArrayList<>();
@@ -502,6 +573,12 @@ final class PrCheckCommandService {
         }
         if ("MULTI_BLOCK_PORT_IMPL_FORBIDDEN".equals(rule)) {
             return "Split generated-port adapters so each class implements one generated block package, or move the adapter under blocks/_shared and add `// BEAR:ALLOW_MULTI_BLOCK_PORT_IMPL` within 5 non-empty lines above the class declaration.";
+        }
+        if ("BLOCK_PORT_IMPL_INVALID".equals(rule)) {
+            return "Use the generated block client as the only implementation for block-port interfaces and remove user-lane implementations under src/main/java.";
+        }
+        if ("BLOCK_PORT_REFERENCE_FORBIDDEN".equals(rule) || "BLOCK_PORT_INBOUND_EXECUTE_FORBIDDEN".equals(rule)) {
+            return "Route cross-block calls through generated block clients and avoid direct references/execute calls to target block internals or inbound wrappers.";
         }
         return "Wire via generated entrypoints and declared effect ports; remove impl seam bypasses.";
     }
@@ -870,3 +947,9 @@ final class PrCheckCommandService {
         }
     }
 }
+
+
+
+
+
+

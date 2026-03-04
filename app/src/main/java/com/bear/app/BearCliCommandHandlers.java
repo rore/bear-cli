@@ -82,21 +82,64 @@ final class BearCliCommandHandlers {
             return runCompileAll(args, out, err);
         }
 
-        if (args.length != 4 || !"--project".equals(args[2])) {
+        Path irFile = null;
+        Path projectRoot = null;
+        Path indexPath = null;
+        for (int i = 1; i < args.length; i++) {
+            String token = args[i];
+            if ("--project".equals(token)) {
+                if (i + 1 >= args.length) {
+                    return BearCli.failWithLegacy(
+                        err,
+                        CliCodes.EXIT_USAGE,
+                        "usage: INVALID_ARGS: expected value after --project",
+                        CliCodes.USAGE_INVALID_ARGS,
+                        "cli.args",
+                        "Run `bear compile <ir-file> --project <path> [--index <path>]` with the expected arguments."
+                    );
+                }
+                projectRoot = Path.of(args[++i]);
+                continue;
+            }
+            if ("--index".equals(token)) {
+                if (i + 1 >= args.length) {
+                    return BearCli.failWithLegacy(
+                        err,
+                        CliCodes.EXIT_USAGE,
+                        "usage: INVALID_ARGS: expected value after --index",
+                        CliCodes.USAGE_INVALID_ARGS,
+                        "cli.args",
+                        "Run `bear compile <ir-file> --project <path> [--index <path>]` with the expected arguments."
+                    );
+                }
+                indexPath = Path.of(args[++i]);
+                continue;
+            }
+            if (token.startsWith("--") || irFile != null) {
+                return BearCli.failWithLegacy(
+                    err,
+                    CliCodes.EXIT_USAGE,
+                    "usage: INVALID_ARGS: unexpected argument: " + token,
+                    CliCodes.USAGE_INVALID_ARGS,
+                    "cli.args",
+                    "Run `bear compile <ir-file> --project <path> [--index <path>]` with the expected arguments."
+                );
+            }
+            irFile = Path.of(token);
+        }
+
+        if (irFile == null || projectRoot == null) {
             return BearCli.failWithLegacy(
                 err,
                 CliCodes.EXIT_USAGE,
-                "usage: INVALID_ARGS: expected: bear compile <ir-file> --project <path>",
+                "usage: INVALID_ARGS: expected: bear compile <ir-file> --project <path> [--index <path>]",
                 CliCodes.USAGE_INVALID_ARGS,
                 "cli.args",
-                "Run `bear compile <ir-file> --project <path>` with the expected arguments."
+                "Run `bear compile <ir-file> --project <path> [--index <path>]` with the expected arguments."
             );
         }
 
-        Path irFile = Path.of(args[1]);
-        Path projectRoot = Path.of(args[3]);
-
-        CompileResult result = BearCli.executeCompile(irFile, projectRoot, null, null);
+        CompileResult result = BearCli.executeCompile(irFile, projectRoot, null, null, indexPath);
         return BearCli.emitCompileResult(result, out, err);
     }
 
@@ -110,20 +153,64 @@ final class BearCliCommandHandlers {
             return runFixAll(args, out, err);
         }
 
-        if (args.length != 4 || !"--project".equals(args[2])) {
+        Path irFile = null;
+        Path projectRoot = null;
+        Path indexPath = null;
+        for (int i = 1; i < args.length; i++) {
+            String token = args[i];
+            if ("--project".equals(token)) {
+                if (i + 1 >= args.length) {
+                    return BearCli.failWithLegacy(
+                        err,
+                        CliCodes.EXIT_USAGE,
+                        "usage: INVALID_ARGS: expected value after --project",
+                        CliCodes.USAGE_INVALID_ARGS,
+                        "cli.args",
+                        "Run `bear fix <ir-file> --project <path> [--index <path>]` with the expected arguments."
+                    );
+                }
+                projectRoot = Path.of(args[++i]);
+                continue;
+            }
+            if ("--index".equals(token)) {
+                if (i + 1 >= args.length) {
+                    return BearCli.failWithLegacy(
+                        err,
+                        CliCodes.EXIT_USAGE,
+                        "usage: INVALID_ARGS: expected value after --index",
+                        CliCodes.USAGE_INVALID_ARGS,
+                        "cli.args",
+                        "Run `bear fix <ir-file> --project <path> [--index <path>]` with the expected arguments."
+                    );
+                }
+                indexPath = Path.of(args[++i]);
+                continue;
+            }
+            if (token.startsWith("--") || irFile != null) {
+                return BearCli.failWithLegacy(
+                    err,
+                    CliCodes.EXIT_USAGE,
+                    "usage: INVALID_ARGS: unexpected argument: " + token,
+                    CliCodes.USAGE_INVALID_ARGS,
+                    "cli.args",
+                    "Run `bear fix <ir-file> --project <path> [--index <path>]` with the expected arguments."
+                );
+            }
+            irFile = Path.of(token);
+        }
+
+        if (irFile == null || projectRoot == null) {
             return BearCli.failWithLegacy(
                 err,
                 CliCodes.EXIT_USAGE,
-                "usage: INVALID_ARGS: expected: bear fix <ir-file> --project <path>",
+                "usage: INVALID_ARGS: expected: bear fix <ir-file> --project <path> [--index <path>]",
                 CliCodes.USAGE_INVALID_ARGS,
                 "cli.args",
-                "Run `bear fix <ir-file> --project <path>` with the expected arguments."
+                "Run `bear fix <ir-file> --project <path> [--index <path>]` with the expected arguments."
             );
         }
 
-        Path irFile = Path.of(args[1]);
-        Path projectRoot = Path.of(args[3]);
-        FixResult result = BearCli.executeFix(irFile, projectRoot, null, null);
+        FixResult result = BearCli.executeFix(irFile, projectRoot, null, null, indexPath);
         return BearCli.emitFixResult(result, out, err);
     }
 
@@ -139,6 +226,7 @@ final class BearCliCommandHandlers {
 
         Path irFile = null;
         Path projectRoot = null;
+        Path indexPath = null;
         boolean strictHygiene = false;
         for (int i = 1; i < args.length; i++) {
             String token = args[i];
@@ -150,7 +238,7 @@ final class BearCliCommandHandlers {
                         "usage: INVALID_ARGS: expected value after --project",
                         CliCodes.USAGE_INVALID_ARGS,
                         "cli.args",
-                        "Run `bear check <ir-file> --project <path> [--strict-hygiene]` with the expected arguments."
+                        "Run `bear check <ir-file> --project <path> [--strict-hygiene] [--index <path>]` with the expected arguments."
                     );
                 }
                 projectRoot = Path.of(args[++i]);
@@ -160,6 +248,20 @@ final class BearCliCommandHandlers {
                 strictHygiene = true;
                 continue;
             }
+            if ("--index".equals(token)) {
+                if (i + 1 >= args.length) {
+                    return BearCli.failWithLegacy(
+                        err,
+                        CliCodes.EXIT_USAGE,
+                        "usage: INVALID_ARGS: expected value after --index",
+                        CliCodes.USAGE_INVALID_ARGS,
+                        "cli.args",
+                        "Run `bear check <ir-file> --project <path> [--strict-hygiene] [--index <path>]` with the expected arguments."
+                    );
+                }
+                indexPath = Path.of(args[++i]);
+                continue;
+            }
             if (token.startsWith("--") || irFile != null) {
                 return BearCli.failWithLegacy(
                     err,
@@ -167,7 +269,7 @@ final class BearCliCommandHandlers {
                     "usage: INVALID_ARGS: unexpected argument: " + token,
                     CliCodes.USAGE_INVALID_ARGS,
                     "cli.args",
-                    "Run `bear check <ir-file> --project <path> [--strict-hygiene]` with the expected arguments."
+                    "Run `bear check <ir-file> --project <path> [--strict-hygiene] [--index <path>]` with the expected arguments."
                 );
             }
             irFile = Path.of(token);
@@ -177,14 +279,14 @@ final class BearCliCommandHandlers {
             return BearCli.failWithLegacy(
                 err,
                 CliCodes.EXIT_USAGE,
-                "usage: INVALID_ARGS: expected: bear check <ir-file> --project <path> [--strict-hygiene]",
+                "usage: INVALID_ARGS: expected: bear check <ir-file> --project <path> [--strict-hygiene] [--index <path>]",
                 CliCodes.USAGE_INVALID_ARGS,
                 "cli.args",
-                "Run `bear check <ir-file> --project <path> [--strict-hygiene]` with the expected arguments."
+                "Run `bear check <ir-file> --project <path> [--strict-hygiene] [--index <path>]` with the expected arguments."
             );
         }
 
-        CheckResult result = BearCli.executeCheck(irFile, projectRoot, true, strictHygiene, null, null);
+        CheckResult result = BearCli.executeCheck(irFile, projectRoot, true, strictHygiene, null, null, indexPath);
         return BearCli.emitCheckResult(result, out, err);
     }
 
@@ -254,18 +356,80 @@ final class BearCliCommandHandlers {
         if (args.length >= 2 && "--all".equals(args[1])) {
             return runPrCheckAll(args, out, err);
         }
-        if (args.length != 6 || !"--project".equals(args[2]) || !"--base".equals(args[4])) {
+
+        String irArg = null;
+        Path projectRoot = null;
+        String baseRef = null;
+        Path indexPath = null;
+
+        for (int i = 1; i < args.length; i++) {
+            String token = args[i];
+            if ("--project".equals(token)) {
+                if (i + 1 >= args.length) {
+                    return BearCli.failWithLegacy(
+                        err,
+                        CliCodes.EXIT_USAGE,
+                        "usage: INVALID_ARGS: expected value after --project",
+                        CliCodes.USAGE_INVALID_ARGS,
+                        "cli.args",
+                        "Run `bear pr-check <ir-file> --project <path> --base <ref> [--index <path>]` with the expected arguments."
+                    );
+                }
+                projectRoot = Path.of(args[++i]).toAbsolutePath().normalize();
+                continue;
+            }
+            if ("--base".equals(token)) {
+                if (i + 1 >= args.length) {
+                    return BearCli.failWithLegacy(
+                        err,
+                        CliCodes.EXIT_USAGE,
+                        "usage: INVALID_ARGS: expected value after --base",
+                        CliCodes.USAGE_INVALID_ARGS,
+                        "cli.args",
+                        "Run `bear pr-check <ir-file> --project <path> --base <ref> [--index <path>]` with the expected arguments."
+                    );
+                }
+                baseRef = args[++i];
+                continue;
+            }
+            if ("--index".equals(token)) {
+                if (i + 1 >= args.length) {
+                    return BearCli.failWithLegacy(
+                        err,
+                        CliCodes.EXIT_USAGE,
+                        "usage: INVALID_ARGS: expected value after --index",
+                        CliCodes.USAGE_INVALID_ARGS,
+                        "cli.args",
+                        "Run `bear pr-check <ir-file> --project <path> --base <ref> [--index <path>]` with the expected arguments."
+                    );
+                }
+                indexPath = Path.of(args[++i]);
+                continue;
+            }
+            if (token.startsWith("--") || irArg != null) {
+                return BearCli.failWithLegacy(
+                    err,
+                    CliCodes.EXIT_USAGE,
+                    "usage: INVALID_ARGS: unexpected argument: " + token,
+                    CliCodes.USAGE_INVALID_ARGS,
+                    "cli.args",
+                    "Run `bear pr-check <ir-file> --project <path> --base <ref> [--index <path>]` with the expected arguments."
+                );
+            }
+            irArg = token;
+        }
+
+        if (irArg == null || projectRoot == null || baseRef == null || baseRef.isBlank()) {
             return BearCli.failWithLegacy(
                 err,
                 CliCodes.EXIT_USAGE,
-                "usage: INVALID_ARGS: expected: bear pr-check <ir-file> --project <path> --base <ref>",
+                "usage: INVALID_ARGS: expected: bear pr-check <ir-file> --project <path> --base <ref> [--index <path>]",
                 CliCodes.USAGE_INVALID_ARGS,
                 "cli.args",
-                "Run `bear pr-check <ir-file> --project <path> --base <ref>` with the expected arguments."
+                "Run `bear pr-check <ir-file> --project <path> --base <ref> [--index <path>]` with the expected arguments."
             );
         }
 
-        String irArg = args[1];
         Path irPath = Path.of(irArg);
         if (irPath.isAbsolute()) {
             return BearCli.failWithLegacy(
@@ -289,8 +453,6 @@ final class BearCliCommandHandlers {
             );
         }
 
-        Path projectRoot = Path.of(args[3]).toAbsolutePath().normalize();
-        String baseRef = args[5];
         String repoRelativePath = normalizedRelative.toString().replace('\\', '/');
         Path headIrPath = projectRoot.resolve(repoRelativePath).normalize();
         if (!headIrPath.startsWith(projectRoot)) {
@@ -303,49 +465,8 @@ final class BearCliCommandHandlers {
                 "Pass a repo-relative `ir-file` path for `bear pr-check`."
             );
         }
-        if (Files.isRegularFile(headIrPath)) {
-            try {
-                BearIr normalized = IR_PIPELINE.parseValidateNormalize(headIrPath);
-                BlockIdentityResolver.resolveSingleCommandIdentity(headIrPath, projectRoot, normalized.block().name());
-            } catch (BearIrValidationException e) {
-                return BearCli.failWithLegacy(
-                    err,
-                    CliCodes.EXIT_VALIDATION,
-                    e.formatLine(),
-                    CliCodes.IR_VALIDATION,
-                    e.path(),
-                    "Fix the IR issue at the reported path and rerun `bear pr-check <ir-file> --project <path> --base <ref>`."
-                );
-            } catch (BlockIndexValidationException e) {
-                return BearCli.failWithLegacy(
-                    err,
-                    CliCodes.EXIT_VALIDATION,
-                    "index: VALIDATION_ERROR: " + e.getMessage(),
-                    CliCodes.IR_VALIDATION,
-                    e.path(),
-                    "Fix `bear.blocks.yaml` and rerun `bear pr-check`."
-                );
-            } catch (BlockIdentityResolutionException e) {
-                return BearCli.failWithLegacy(
-                    err,
-                    CliCodes.EXIT_VALIDATION,
-                    e.line(),
-                    CliCodes.IR_VALIDATION,
-                    e.path(),
-                    e.remediation()
-                );
-            } catch (IOException e) {
-                return BearCli.failWithLegacy(
-                    err,
-                    CliCodes.EXIT_IO,
-                    "io: IO_ERROR: " + BearCli.squash(e.getMessage()),
-                    CliCodes.IO_ERROR,
-                    "input.ir",
-                    "Ensure the IR file and block index are readable, then rerun `bear pr-check`."
-                );
-            }
-        }
-        PrCheckResult result = BearCli.executePrCheck(projectRoot, repoRelativePath, baseRef);
+
+        PrCheckResult result = BearCli.executePrCheck(projectRoot, repoRelativePath, baseRef, indexPath);
         return BearCli.emitPrCheckResult(BearCli.enforcePrCheckExitEnvelope(result, repoRelativePath), out, err);
     }
 

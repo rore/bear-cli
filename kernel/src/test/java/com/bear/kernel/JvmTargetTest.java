@@ -82,16 +82,22 @@ class JvmTargetTest {
     }
 
     @Test
-    void compileWiringManifestStillUsesV2Contract(@TempDir Path tempDir) throws Exception {
+    void compileWiringManifestUsesV3Contract(@TempDir Path tempDir) throws Exception {
         BearIr ir = parseNormalizedFixture();
         JvmTarget target = new JvmTarget();
 
         target.compile(ir, tempDir, "withdraw");
         String wiring = Files.readString(tempDir.resolve("build/generated/bear/wiring/withdraw.wiring.json"));
-        assertTrue(wiring.contains("\"schemaVersion\":\"v2\""));
+        assertTrue(wiring.contains("\"schemaVersion\":\"v3\""));
         assertTrue(wiring.contains("\"blockRootSourceDir\":\"src/main/java/blocks/withdraw\""));
         assertTrue(wiring.contains("\"governedSourceRoots\":[\"src/main/java/blocks/withdraw\",\"src/main/java/blocks/_shared\"]"));
         assertTrue(wiring.contains("\"entrypointFqcn\":\"com.bear.generated.withdraw.Withdraw\""));
+        assertTrue(wiring.contains("\"blockPortBindings\":[]"));
+
+        Path sharedOwner = tempDir.resolve("build/generated/bear/src/main/java/com/bear/generated/runtime/BearSharedOwner.java");
+        assertTrue(Files.exists(sharedOwner));
+        String sharedOwnerSource = Files.readString(sharedOwner);
+        assertTrue(sharedOwnerSource.contains("public @interface BearSharedOwner"));
     }
 
     @Test
@@ -169,7 +175,44 @@ class JvmTargetTest {
         String getBalanceWrapper = Files.readString(base.resolve("Wallet_GetBalance.java"));
         assertTrue(!getBalanceWrapper.contains("computeIdempotencyKey("));
     }
+    @Test
+    void blockPortClientUsesSortedConstructorOrderAndPinnedOpErrors(@TempDir Path tempDir) throws Exception {
+        String yaml = ""
+            + "version: v1\n"
+            + "block:\n"
+            + "  name: Account\n"
+            + "  kind: logic\n"
+            + "  operations:\n"
+            + "    - name: Deposit\n"
+            + "      contract:\n"
+            + "        inputs: [{name: accountId, type: string}]\n"
+            + "        outputs: [{name: balanceCents, type: int}]\n"
+            + "      uses:\n"
+            + "        allow:\n"
+            + "          - port: transactionLog\n"
+            + "            kind: block\n"
+            + "            targetOps: [AppendTransaction]\n"
+            + "  effects:\n"
+            + "    allow:\n"
+            + "      - port: transactionLog\n"
+            + "        kind: block\n"
+            + "        targetBlock: transaction-log\n"
+            + "        targetOps: [GetTransactions, AppendTransaction]\n";
 
+        BearIr ir = parseNormalizedYaml(tempDir, yaml);
+        JvmTarget target = new JvmTarget();
+        target.compile(ir, tempDir, "account");
+
+        Path client = tempDir.resolve("build/generated/bear/src/main/java/com/bear/generated/account/Account_TransactionLogBlockClient.java");
+        String source = Files.readString(client);
+
+        assertTrue(source.contains("public Account_TransactionLogBlockClient(Object wrapperAppendTransaction, Object wrapperGetTransactions)"));
+        assertTrue(source.contains("BLOCK_PORT_MAP_MISSING_FIELD field=op"));
+        assertTrue(source.contains("BLOCK_PORT_MAP_UNKNOWN_OP op="));
+        assertTrue(source.contains("if (op == null || op.isBlank())"));
+        assertTrue(source.contains("case \"AppendTransaction\":"));
+        assertTrue(source.contains("case \"GetTransactions\":"));
+    }
     private static BearIr parseNormalizedFixture() throws Exception {
         Path fixture = TestRepoPaths.repoRoot().resolve("spec/fixtures/withdraw.bear.yaml");
         BearIrParser parser = new BearIrParser();
@@ -211,3 +254,9 @@ class JvmTargetTest {
         return files;
     }
 }
+
+
+
+
+
+

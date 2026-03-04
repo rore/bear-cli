@@ -22,14 +22,14 @@ public final class BearIrValidator {
         requireNonBlank(block.name(), "block.name");
         requireNonNull(block.kind(), "block.kind");
 
-        validateEffects(block.effects(), "block.effects");
+        validateEffects(block.effects(), "block.effects", true);
         validateImpl(block.impl());
 
         List<OperationShape> operationShapes = validateOperations(block.operations());
         validateOperationUsesWithinBlockEffects(block.effects(), operationShapes);
 
         if (block.idempotency() != null) {
-            validateBlockIdempotencyStore(block.idempotency(), effectsMap(block.effects()), "block.idempotency");
+            validateBlockIdempotencyStore(block.idempotency(), block.effects(), "block.idempotency");
         }
         validateOperationIdempotency(block, operationShapes);
 
@@ -56,7 +56,7 @@ public final class BearIrValidator {
                 );
             }
             validateContract(operation.contract(), operationPath + ".contract");
-            validateEffects(operation.uses(), operationPath + ".uses");
+            validateEffects(operation.uses(), operationPath + ".uses", false);
 
             TreeMap<String, BearIr.FieldType> inputTypes = toFieldTypeMap(operation.contract().inputs());
             TreeMap<String, BearIr.FieldType> outputTypes = toFieldTypeMap(operation.contract().outputs());
@@ -94,7 +94,7 @@ public final class BearIrValidator {
         return map;
     }
 
-    private void validateEffects(BearIr.Effects effects, String path) {
+    private void validateEffects(BearIr.Effects effects, String path, boolean blockEffects) {
         requireNonNull(effects, path);
         requireNonNull(effects.allow(), path + ".allow");
 
@@ -106,43 +106,95 @@ public final class BearIrValidator {
             if (!seenPorts.add(port.port())) {
                 throw semantic(portPath + ".port", BearIrValidationException.Code.DUPLICATE, "duplicate port: " + port.port());
             }
-
-            requireNonNull(port.ops(), portPath + ".ops");
-            Set<String> seenOps = new HashSet<>();
-            for (int j = 0; j < port.ops().size(); j++) {
-                String op = port.ops().get(j);
-                String opPath = portPath + ".ops[" + j + "]";
-                requireNonBlank(op, opPath);
-                if (!seenOps.add(op)) {
-                    throw semantic(opPath, BearIrValidationException.Code.DUPLICATE, "duplicate op: " + op);
+            BearIr.EffectPortKind kind = port.kind() == null ? BearIr.EffectPortKind.EXTERNAL : port.kind();
+            if (kind == BearIr.EffectPortKind.EXTERNAL) {
+                if (port.targetBlock() != null) {
+                    throw semantic(portPath + ".targetBlock", BearIrValidationException.Code.INVALID_VALUE, "targetBlock is not allowed for kind=external");
+                }
+                if (port.targetOps() != null) {
+                    throw semantic(portPath + ".targetOps", BearIrValidationException.Code.INVALID_VALUE, "targetOps is not allowed for kind=external");
+                }
+                requireNonEmpty(port.ops(), portPath + ".ops");
+                validateDistinctStrings(port.ops(), portPath + ".ops");
+            } else {
+                if (port.ops() != null) {
+                    throw semantic(portPath + ".ops", BearIrValidationException.Code.INVALID_VALUE, "ops is not allowed for kind=block");
+                }
+                if (blockEffects) {
+                    requireNonBlank(port.targetBlock(), portPath + ".targetBlock");
+                    requireNonEmpty(port.targetOps(), portPath + ".targetOps");
+                    validateDistinctStrings(port.targetOps(), portPath + ".targetOps");
+                } else {
+                    // uses.allow for block ports: targetBlock is forbidden; targetOps is optional but when present non-empty.
+                    if (port.targetBlock() != null) {
+                        throw semantic(portPath + ".targetBlock", BearIrValidationException.Code.INVALID_VALUE, "targetBlock is not allowed in uses.allow for kind=block");
+                    }
+                    if (port.targetOps() != null) {
+                        requireNonEmpty(port.targetOps(), portPath + ".targetOps");
+                        validateDistinctStrings(port.targetOps(), portPath + ".targetOps");
+                    }
                 }
             }
         }
     }
 
+    private void validateDistinctStrings(List<String> values, String path) {
+        Set<String> seen = new HashSet<>();
+        for (int i = 0; i < values.size(); i++) {
+            String value = values.get(i);
+            String itemPath = path + "[" + i + "]";
+            requireNonBlank(value, itemPath);
+            if (!seen.add(value)) {
+                throw semantic(itemPath, BearIrValidationException.Code.DUPLICATE, "duplicate value: " + value);
+            }
+        }
+    }
+
     private void validateOperationUsesWithinBlockEffects(BearIr.Effects blockEffects, List<OperationShape> operationShapes) {
-        Map<String, Set<String>> allowed = effectsMap(blockEffects);
+        Map<String, BearIr.EffectPort> allowed = effectsByPort(blockEffects);
         for (OperationShape shape : operationShapes) {
             List<BearIr.EffectPort> opPorts = shape.operation().uses().allow();
             for (int i = 0; i < opPorts.size(); i++) {
-                BearIr.EffectPort port = opPorts.get(i);
+                BearIr.EffectPort usePort = opPorts.get(i);
                 String portPath = shape.path() + ".uses.allow[" + i + "]";
-                if (!allowed.containsKey(port.port())) {
+                BearIr.EffectPort blockPort = allowed.get(usePort.port());
+                if (blockPort == null) {
                     throw semantic(
                         portPath + ".port",
                         BearIrValidationException.Code.UNKNOWN_REFERENCE,
-                        "unknown block effect port: " + port.port()
+                        "unknown block effect port: " + usePort.port()
                     );
                 }
-                Set<String> blockOps = allowed.get(port.port());
-                for (int j = 0; j < port.ops().size(); j++) {
-                    String op = port.ops().get(j);
-                    if (!blockOps.contains(op)) {
-                        throw semantic(
-                            portPath + ".ops[" + j + "]",
-                            BearIrValidationException.Code.UNKNOWN_REFERENCE,
-                            "unknown block effect op: " + port.port() + "." + op
-                        );
+                BearIr.EffectPortKind blockKind = blockPort.kind() == null ? BearIr.EffectPortKind.EXTERNAL : blockPort.kind();
+                BearIr.EffectPortKind useKind = usePort.kind() == null ? BearIr.EffectPortKind.EXTERNAL : usePort.kind();
+                if (blockKind != useKind) {
+                    throw semantic(portPath + ".kind", BearIrValidationException.Code.INVALID_VALUE, "uses kind must match block effects kind for port");
+                }
+                if (blockKind == BearIr.EffectPortKind.EXTERNAL) {
+                    Set<String> blockOps = new HashSet<>(blockPort.ops());
+                    for (int j = 0; j < usePort.ops().size(); j++) {
+                        String op = usePort.ops().get(j);
+                        if (!blockOps.contains(op)) {
+                            throw semantic(
+                                portPath + ".ops[" + j + "]",
+                                BearIrValidationException.Code.UNKNOWN_REFERENCE,
+                                "unknown block effect op: " + usePort.port() + "." + op
+                            );
+                        }
+                    }
+                } else {
+                    Set<String> blockTargetOps = new HashSet<>(blockPort.targetOps());
+                    if (usePort.targetOps() != null) {
+                        for (int j = 0; j < usePort.targetOps().size(); j++) {
+                            String op = usePort.targetOps().get(j);
+                            if (!blockTargetOps.contains(op)) {
+                                throw semantic(
+                                    portPath + ".targetOps[" + j + "]",
+                                    BearIrValidationException.Code.UNKNOWN_REFERENCE,
+                                    "unknown block target op: " + usePort.port() + "." + op
+                                );
+                            }
+                        }
                     }
                 }
             }
@@ -151,7 +203,7 @@ public final class BearIrValidator {
 
     private void validateBlockIdempotencyStore(
         BearIr.BlockIdempotency idempotency,
-        Map<String, Set<String>> blockEffects,
+        BearIr.Effects blockEffects,
         String path
     ) {
         requireNonNull(idempotency, path);
@@ -160,10 +212,15 @@ public final class BearIrValidator {
         requireNonBlank(idempotency.store().getOp(), path + ".store.getOp");
         requireNonBlank(idempotency.store().putOp(), path + ".store.putOp");
 
-        if (!blockEffects.containsKey(idempotency.store().port())) {
+        BearIr.EffectPort effectPort = effectsByPort(blockEffects).get(idempotency.store().port());
+        if (effectPort == null) {
             throw semantic(path + ".store.port", BearIrValidationException.Code.UNKNOWN_REFERENCE, "unknown port: " + idempotency.store().port());
         }
-        Set<String> ops = blockEffects.get(idempotency.store().port());
+        BearIr.EffectPortKind kind = effectPort.kind() == null ? BearIr.EffectPortKind.EXTERNAL : effectPort.kind();
+        if (kind != BearIr.EffectPortKind.EXTERNAL) {
+            throw semantic(path + ".store.port", BearIrValidationException.Code.INVALID_VALUE, "idempotency store must reference an external port");
+        }
+        Set<String> ops = new HashSet<>(effectPort.ops());
         if (!ops.contains(idempotency.store().getOp())) {
             throw semantic(path + ".store.getOp", BearIrValidationException.Code.UNKNOWN_REFERENCE, "unknown op: " + idempotency.store().getOp());
         }
@@ -263,6 +320,10 @@ public final class BearIrValidator {
     private boolean usesContains(BearIr.Effects uses, String portName, String opName) {
         for (BearIr.EffectPort port : uses.allow()) {
             if (!portName.equals(port.port())) {
+                continue;
+            }
+            BearIr.EffectPortKind kind = port.kind() == null ? BearIr.EffectPortKind.EXTERNAL : port.kind();
+            if (kind != BearIr.EffectPortKind.EXTERNAL) {
                 continue;
             }
             return port.ops().contains(opName);
@@ -455,10 +516,10 @@ public final class BearIrValidator {
         return tuples;
     }
 
-    private Map<String, Set<String>> effectsMap(BearIr.Effects effects) {
-        Map<String, Set<String>> map = new HashMap<>();
+    private Map<String, BearIr.EffectPort> effectsByPort(BearIr.Effects effects) {
+        Map<String, BearIr.EffectPort> map = new HashMap<>();
         for (BearIr.EffectPort port : effects.allow()) {
-            map.put(port.port(), new HashSet<>(port.ops()));
+            map.put(port.port(), port);
         }
         return map;
     }

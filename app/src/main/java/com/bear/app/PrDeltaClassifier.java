@@ -62,6 +62,7 @@ final class PrDeltaClassifier {
 
         List<PrDelta> deltas = new ArrayList<>();
         addBlockEffectDeltas(deltas, base, head);
+        addBlockPortEdgeDeltas(deltas, base, head);
         addBlockIdempotencyDeltas(deltas, base.blockIdempotency(), head.blockIdempotency());
         addAllowedDepDeltas(deltas, base.allowedDeps(), head.allowedDeps());
         addBlockInvariantDeltas(deltas, base.blockInvariants(), head.blockInvariants());
@@ -77,22 +78,22 @@ final class PrDeltaClassifier {
     }
 
     private static void addBlockEffectDeltas(List<PrDelta> deltas, PrSurface base, PrSurface head) {
-        for (String port : head.ports()) {
-            if (!base.ports().contains(port)) {
+        for (String port : head.externalPorts()) {
+            if (!base.externalPorts().contains(port)) {
                 deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.PORTS, PrChange.ADDED, port));
             }
         }
-        for (String port : base.ports()) {
-            if (!head.ports().contains(port)) {
+        for (String port : base.externalPorts()) {
+            if (!head.externalPorts().contains(port)) {
                 deltas.add(new PrDelta(PrClass.ORDINARY, PrCategory.PORTS, PrChange.REMOVED, port));
             }
         }
 
-        TreeSet<String> commonPorts = new TreeSet<>(head.ports());
-        commonPorts.retainAll(base.ports());
+        TreeSet<String> commonPorts = new TreeSet<>(head.externalPorts());
+        commonPorts.retainAll(base.externalPorts());
         for (String port : commonPorts) {
-            TreeSet<String> headOps = head.opsByPort().getOrDefault(port, new TreeSet<>());
-            TreeSet<String> baseOps = base.opsByPort().getOrDefault(port, new TreeSet<>());
+            TreeSet<String> headOps = head.externalOpsByPort().getOrDefault(port, new TreeSet<>());
+            TreeSet<String> baseOps = base.externalOpsByPort().getOrDefault(port, new TreeSet<>());
             for (String op : headOps) {
                 if (!baseOps.contains(op)) {
                     deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.OPS, PrChange.ADDED, port + "." + op));
@@ -102,6 +103,19 @@ final class PrDeltaClassifier {
                 if (!headOps.contains(op)) {
                     deltas.add(new PrDelta(PrClass.ORDINARY, PrCategory.OPS, PrChange.REMOVED, port + "." + op));
                 }
+            }
+        }
+    }
+
+    private static void addBlockPortEdgeDeltas(List<PrDelta> deltas, PrSurface base, PrSurface head) {
+        for (String edge : head.blockEdges()) {
+            if (!base.blockEdges().contains(edge)) {
+                deltas.add(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.SURFACE, PrChange.ADDED, edge));
+            }
+        }
+        for (String edge : base.blockEdges()) {
+            if (!head.blockEdges().contains(edge)) {
+                deltas.add(new PrDelta(PrClass.ORDINARY, PrCategory.SURFACE, PrChange.REMOVED, edge));
             }
         }
     }
@@ -355,11 +369,21 @@ final class PrDeltaClassifier {
     }
 
     static PrSurface toPrSurface(BearIr ir) {
-        TreeSet<String> ports = new TreeSet<>();
-        Map<String, TreeSet<String>> opsByPort = new TreeMap<>();
+        TreeSet<String> externalPorts = new TreeSet<>();
+        Map<String, TreeSet<String>> externalOpsByPort = new TreeMap<>();
+        TreeSet<String> blockEdges = new TreeSet<>();
         for (BearIr.EffectPort port : ir.block().effects().allow()) {
-            ports.add(port.port());
-            opsByPort.put(port.port(), new TreeSet<>(port.ops()));
+            BearIr.EffectPortKind kind = port.kind() == null ? BearIr.EffectPortKind.EXTERNAL : port.kind();
+            if (kind == BearIr.EffectPortKind.BLOCK) {
+                blockEdges.add(canonicalBlockEdgeKey(port));
+            } else {
+                externalPorts.add(port.port());
+                TreeSet<String> ops = new TreeSet<>();
+                if (port.ops() != null) {
+                    ops.addAll(port.ops());
+                }
+                externalOpsByPort.put(port.port(), ops);
+            }
         }
         Map<String, String> allowedDeps = new TreeMap<>();
         if (ir.block().impl() != null && ir.block().impl().allowedDeps() != null) {
@@ -400,8 +424,9 @@ final class PrDeltaClassifier {
         }
 
         return new PrSurface(
-            ports,
-            opsByPort,
+            externalPorts,
+            externalOpsByPort,
+            blockEdges,
             allowedDeps,
             ir.block().idempotency(),
             blockInvariants,
@@ -425,17 +450,40 @@ final class PrDeltaClassifier {
     private static TreeSet<String> toUsesTokens(BearIr.Effects uses) {
         TreeSet<String> tokens = new TreeSet<>();
         for (BearIr.EffectPort port : uses.allow()) {
-            for (String op : port.ops()) {
-                tokens.add(port.port() + "." + op);
+            BearIr.EffectPortKind kind = port.kind() == null ? BearIr.EffectPortKind.EXTERNAL : port.kind();
+            if (kind == BearIr.EffectPortKind.BLOCK) {
+                if (port.targetOps() != null) {
+                    for (String op : port.targetOps()) {
+                        tokens.add(port.port() + "." + op);
+                    }
+                }
+            } else if (port.ops() != null) {
+                for (String op : port.ops()) {
+                    tokens.add(port.port() + "." + op);
+                }
             }
         }
         return tokens;
+    }
+
+    private static String canonicalBlockEdgeKey(BearIr.EffectPort port) {
+        TreeSet<String> sortedOps = new TreeSet<>();
+        if (port.targetOps() != null) {
+            sortedOps.addAll(port.targetOps());
+        }
+        return "edge:" + port.port()
+            + "->"
+            + port.targetBlock()
+            + "["
+            + String.join(",", sortedOps)
+            + "]";
     }
 
     static PrSurface emptyPrSurface() {
         return new PrSurface(
             new TreeSet<>(),
             new TreeMap<>(),
+            new TreeSet<>(),
             new TreeMap<>(),
             null,
             new TreeSet<>(),

@@ -1,7 +1,7 @@
 package com.bear.kernel.ir;
 
-import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.LoaderOptions;
+import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 import org.yaml.snakeyaml.error.YAMLException;
 
@@ -96,6 +96,14 @@ public final class BearIrParser {
         throw schema(path, BearIrValidationException.Code.INVALID_ENUM, "expected 'logic'");
     }
 
+    private BearIr.EffectPortKind parseEffectPortKind(String raw, String path) {
+        return switch (raw) {
+            case "external" -> BearIr.EffectPortKind.EXTERNAL;
+            case "block" -> BearIr.EffectPortKind.BLOCK;
+            default -> throw schema(path, BearIrValidationException.Code.INVALID_ENUM, "expected 'external' or 'block'");
+        };
+    }
+
     private BearIr.FieldType parseFieldType(String raw, String path) {
         return switch (raw) {
             case "string" -> BearIr.FieldType.STRING;
@@ -167,7 +175,7 @@ public final class BearIrParser {
             }
             operations.add(new BearIr.Operation(name, contract, uses, idempotency, invariants));
         }
-        return List.copyOf(operations);
+        return operations;
     }
 
     private List<BearIr.Field> parseFields(List<?> items, String path) {
@@ -196,18 +204,25 @@ public final class BearIrParser {
             if (!(item instanceof Map<?, ?> port)) {
                 throw schema(itemPath, BearIrValidationException.Code.INVALID_TYPE, "expected mapping");
             }
-            requireOnlyKeys(port, itemPath, Set.of("port", "ops"));
+            requireOnlyKeys(port, itemPath, Set.of("port", "kind", "ops", "targetBlock", "targetOps"));
             String portName = requireString(port, "port", itemPath + ".port");
-            List<?> opsRaw = requireList(port, "ops", itemPath + ".ops");
-            List<String> ops = new ArrayList<>();
-            for (int j = 0; j < opsRaw.size(); j++) {
-                Object op = opsRaw.get(j);
-                if (!(op instanceof String opName)) {
-                    throw schema(itemPath + ".ops[" + j + "]", BearIrValidationException.Code.INVALID_TYPE, "expected string");
-                }
-                ops.add(opName);
+            BearIr.EffectPortKind kind = port.containsKey("kind")
+                ? parseEffectPortKind(requireString(port, "kind", itemPath + ".kind"), itemPath + ".kind")
+                : BearIr.EffectPortKind.EXTERNAL;
+
+            List<String> ops = null;
+            if (port.containsKey("ops")) {
+                ops = parseStringList(requireList(port, "ops", itemPath + ".ops"), itemPath + ".ops");
             }
-            ports.add(new BearIr.EffectPort(portName, ops));
+            String targetBlock = null;
+            if (port.containsKey("targetBlock")) {
+                targetBlock = requireString(port, "targetBlock", itemPath + ".targetBlock");
+            }
+            List<String> targetOps = null;
+            if (port.containsKey("targetOps")) {
+                targetOps = parseStringList(requireList(port, "targetOps", itemPath + ".targetOps"), itemPath + ".targetOps");
+            }
+            ports.add(new BearIr.EffectPort(portName, kind, ops, targetBlock, targetOps));
         }
         return new BearIr.Effects(ports);
     }
@@ -363,4 +378,3 @@ public final class BearIrParser {
         return new BearIrValidationException(BearIrValidationException.Category.SCHEMA, path, code, message);
     }
 }
-
