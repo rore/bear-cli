@@ -226,12 +226,13 @@ final class AgentTemplateRegistry {
     private AgentTemplateRegistry() {
     }
 
-    static AgentDiagnostics.AgentNextAction render(
+    static RenderResult render(
         AgentCommandContext commandContext,
         AgentDiagnostics.AgentCluster cluster
     ) {
         Template template = resolve(cluster);
-        String rerunCommand = buildRerunCommand(commandContext);
+        RerunValidationOutcome rerunValidationOutcome = validateAndRepairRerun(commandContext);
+        String rerunCommand = rerunValidationOutcome.effectiveCommand();
         ArrayList<String> renderedSteps = new ArrayList<>(template.steps().size());
         for (String step : template.steps()) {
             renderedSteps.add(interpolate(step, rerunCommand));
@@ -240,7 +241,7 @@ final class AgentTemplateRegistry {
         for (String commandTemplate : template.commands()) {
             renderedCommands.add(interpolate(commandTemplate, rerunCommand));
         }
-        return new AgentDiagnostics.AgentNextAction(
+        AgentDiagnostics.AgentNextAction nextAction = new AgentDiagnostics.AgentNextAction(
             cluster.category().name(),
             cluster.clusterId(),
             template.title(),
@@ -248,6 +249,125 @@ final class AgentTemplateRegistry {
             List.copyOf(renderedCommands),
             template.links()
         );
+        return new RenderResult(nextAction, rerunValidationOutcome);
+    }
+
+    static AgentDiagnostics.AgentNextAction troubleshootingOnly(String primaryClusterId) {
+        return new AgentDiagnostics.AgentNextAction(
+            "INFRA",
+            primaryClusterId,
+            "Capture deterministic diagnostics and escalate",
+            List.of(
+                "BEAR emitted a non-repairable nextAction command.",
+                "Capture CODE/PATH diagnostics and follow troubleshooting routing."
+            ),
+            List.of(),
+            List.of("troubleshooting")
+        );
+    }
+
+    private static RerunValidationOutcome validateAndRepairRerun(AgentCommandContext commandContext) {
+        String renderedCommand = buildRerunCommand(commandContext);
+        if (!isValidationEligible(commandContext)) {
+            return RerunValidationOutcome.valid(renderedCommand);
+        }
+        ParsedContext firstParse = parseCommandContext(renderedCommand);
+        AgentCommandContextEquivalence.ComparisonResult firstComparison = compare(commandContext, firstParse.context());
+        if (firstParse.context() != null && firstComparison.equivalent()) {
+            return RerunValidationOutcome.valid(renderedCommand);
+        }
+
+        AgentCommandContext repairedContext = commandContext.repairedForRerun();
+        String correctedCommand = buildRerunCommand(repairedContext);
+        ParsedContext secondParse = parseCommandContext(correctedCommand);
+        AgentCommandContextEquivalence.ComparisonResult secondComparison = compare(commandContext, secondParse.context());
+
+        String parseFailureSummary = joinSummary(firstParse.failureSummary(), secondParse.failureSummary());
+        String equivalenceFailureSummary = joinSummary(firstComparison.summary(), secondComparison.summary());
+
+        if (secondParse.context() != null && secondComparison.equivalent()) {
+            return RerunValidationOutcome.repairedValid(
+                renderedCommand,
+                correctedCommand,
+                parseFailureSummary,
+                firstComparison.summary()
+            );
+        }
+
+        return RerunValidationOutcome.hardInvalid(
+            renderedCommand,
+            correctedCommand,
+            parseFailureSummary,
+            equivalenceFailureSummary
+        );
+    }
+
+    private static boolean isValidationEligible(AgentCommandContext commandContext) {
+        if (commandContext == null) {
+            return false;
+        }
+        if ("all".equals(commandContext.mode())) {
+            if (commandContext.projectPath() == null || commandContext.projectPath().isBlank()) {
+                return false;
+            }
+            return !"pr-check".equals(commandContext.command())
+                || (commandContext.baseRef() != null && !commandContext.baseRef().isBlank());
+        }
+        if (commandContext.irPath() == null || commandContext.irPath().isBlank()) {
+            return false;
+        }
+        if (commandContext.projectPath() == null || commandContext.projectPath().isBlank()) {
+            return false;
+        }
+        return !"pr-check".equals(commandContext.command())
+            || (commandContext.baseRef() != null && !commandContext.baseRef().isBlank());
+    }
+
+    private static AgentCommandContextEquivalence.ComparisonResult compare(
+        AgentCommandContext expected,
+        AgentCommandContext actual
+    ) {
+        if (actual == null) {
+            return new AgentCommandContextEquivalence.ComparisonResult(false, List.of("parse failure"));
+        }
+        return AgentCommandContextEquivalence.compare(expected, actual);
+    }
+
+    private static ParsedContext parseCommandContext(String commandLine) {
+        String[] tokens = tokenize(commandLine);
+        java.io.ByteArrayOutputStream errBytes = new java.io.ByteArrayOutputStream();
+        java.io.PrintStream err = new java.io.PrintStream(errBytes);
+        AgentCommandContext parsed = BearCliCommandHandlers.parseAgentCommandContext(tokens, err);
+        String failureSummary = CliText.normalizeLf(errBytes.toString(java.nio.charset.StandardCharsets.UTF_8)).trim();
+        return new ParsedContext(parsed, failureSummary);
+    }
+
+    private static String[] tokenize(String commandLine) {
+        if (commandLine == null || commandLine.isBlank()) {
+            return new String[0];
+        }
+        ArrayList<String> tokens = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inQuotes = false;
+        for (int i = 0; i < commandLine.length(); i++) {
+            char ch = commandLine.charAt(i);
+            if (ch == '"') {
+                inQuotes = !inQuotes;
+                continue;
+            }
+            if (Character.isWhitespace(ch) && !inQuotes) {
+                if (!current.isEmpty()) {
+                    tokens.add(current.toString());
+                    current.setLength(0);
+                }
+                continue;
+            }
+            current.append(ch);
+        }
+        if (!current.isEmpty()) {
+            tokens.add(current.toString());
+        }
+        return tokens.toArray(String[]::new);
     }
 
     private static String buildRerunCommand(AgentCommandContext commandContext) {
@@ -256,6 +376,18 @@ final class AgentTemplateRegistry {
 
     private static String interpolate(String template, String rerunCommand) {
         return template.replace("{rerunCommand}", rerunCommand);
+    }
+
+    private static String joinSummary(String first, String second) {
+        String firstNormalized = first == null ? "" : first.trim();
+        String secondNormalized = second == null ? "" : second.trim();
+        if (firstNormalized.isBlank()) {
+            return secondNormalized;
+        }
+        if (secondNormalized.isBlank() || firstNormalized.equals(secondNormalized)) {
+            return firstNormalized;
+        }
+        return firstNormalized + " | " + secondNormalized;
     }
 
     private static Template resolve(AgentDiagnostics.AgentCluster cluster) {
@@ -326,6 +458,18 @@ final class AgentTemplateRegistry {
         return new Template(title, List.copyOf(steps), List.copyOf(commands), List.copyOf(links));
     }
 
+    record RenderResult(
+        AgentDiagnostics.AgentNextAction nextAction,
+        RerunValidationOutcome rerunValidationOutcome
+    ) {
+    }
+
+    private record ParsedContext(
+        AgentCommandContext context,
+        String failureSummary
+    ) {
+    }
+
     private record Template(
         String title,
         List<String> steps,
@@ -334,3 +478,5 @@ final class AgentTemplateRegistry {
     ) {
     }
 }
+
+

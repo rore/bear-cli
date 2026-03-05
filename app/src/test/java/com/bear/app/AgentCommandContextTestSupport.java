@@ -3,7 +3,6 @@ package com.bear.app;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -55,25 +54,8 @@ final class AgentCommandContextTestSupport {
     }
 
     static void assertEquivalent(AgentCommandContext expected, AgentCommandContext actual) {
-        org.junit.jupiter.api.Assertions.assertEquals(expected.command(), actual.command(), "command mismatch");
-        org.junit.jupiter.api.Assertions.assertEquals(expected.mode(), actual.mode(), "mode mismatch");
-        org.junit.jupiter.api.Assertions.assertEquals(normalize(expected.irPath()), normalize(actual.irPath()), "irPath mismatch");
-        org.junit.jupiter.api.Assertions.assertEquals(
-            normalizePathEquivalence(expected.projectPath()),
-            normalizePathEquivalence(actual.projectPath()),
-            "projectPath mismatch"
-        );
-        org.junit.jupiter.api.Assertions.assertEquals(expected.baseRef(), actual.baseRef(), "baseRef mismatch");
-        org.junit.jupiter.api.Assertions.assertEquals(expected.collectAll(), actual.collectAll(), "collectAll mismatch");
-        org.junit.jupiter.api.Assertions.assertEquals(expected.agent(), actual.agent(), "agent mismatch");
-        org.junit.jupiter.api.Assertions.assertEquals(expected.strictHygiene(), actual.strictHygiene(), "strictHygiene mismatch");
-        org.junit.jupiter.api.Assertions.assertEquals(expected.strictOrphans(), actual.strictOrphans(), "strictOrphans mismatch");
-        org.junit.jupiter.api.Assertions.assertEquals(expected.failFast(), actual.failFast(), "failFast mismatch");
-        org.junit.jupiter.api.Assertions.assertEquals(
-            normalizePathEquivalence(expected.indexPath()),
-            normalizePathEquivalence(actual.indexPath()),
-            "indexPath mismatch"
-        );
+        AgentCommandContextEquivalence.ComparisonResult comparison = AgentCommandContextEquivalence.compare(expected, actual);
+        org.junit.jupiter.api.Assertions.assertTrue(comparison.equivalent(), comparison.summary());
     }
 
     static String firstCommand(String json) {
@@ -114,19 +96,5 @@ final class AgentCommandContextTestSupport {
             commands.add(commandMatcher.group(1).replace("\\\"", "\""));
         }
         return List.copyOf(commands);
-    }
-
-    private static String normalize(String value) {
-        if (value == null) {
-            return null;
-        }
-        return value.replace('\\', '/');
-    }
-
-    private static String normalizePathEquivalence(String value) {
-        if (value == null) {
-            return null;
-        }
-        return normalize(Path.of(value).normalize().toAbsolutePath().toString());
     }
 }

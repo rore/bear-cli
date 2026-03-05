@@ -61,3 +61,9 @@ Deterministic agent-loop reliability patch-set (CommandContext rerun fidelity, r
 
 - Bootstrap hardening follow-up: added explicit `AGENT_PACKAGE_PARITY_PRECONDITION` in packaged `BOOTSTRAP.md`, made done-gate examples require `--agent` in agent protocol docs, and locked both via `BearPackageDocsConsistencyTest` token assertions.
 
+- NextAction reliability hardening v1.1 implemented: parser-validated rerun rendering with one-step repair, deterministic `NEXT_ACTION_COMMAND_INVALID` warning/error signaling, hard-invalid troubleshooting-only fallback, canonical repo-relative `--blocks` emission, and launcher execution hint in packaged BOOTSTRAP; full `./gradlew test` passed.
+- Agent reliability verification matrix re-run (post-fix):
+  - `./gradlew :app:test --tests com.bear.app.AgentDiagnosticsTest --tests com.bear.app.AgentLoopReliabilityRegressionTest --tests com.bear.app.BearCliAgentModeTest --tests com.bear.app.AllModeOptionParserTest --tests com.bear.app.BearPackageDocsConsistencyTest --tests com.bear.app.ContextDocsConsistencyTest`
+  - `./gradlew test`
+
+

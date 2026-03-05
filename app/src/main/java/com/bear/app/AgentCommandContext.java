@@ -103,7 +103,7 @@ record AgentCommandContext(
             options.strictOrphans(),
             options.failFast(),
             null,
-            normalizePathToken(options.blocksPath()),
+            normalizeBlocksPathToken(options.repoRoot(), options.blocksPath()),
             normalizeOnlyNames(options.onlyNames())
         );
     }
@@ -121,13 +121,45 @@ record AgentCommandContext(
             options.strictOrphans(),
             false,
             null,
-            normalizePathToken(options.blocksPath()),
+            normalizeBlocksPathToken(options.repoRoot(), options.blocksPath()),
             normalizeOnlyNames(options.onlyNames())
         );
     }
 
     String collectMode() {
         return collectAll ? "all" : "first";
+    }
+
+    AgentCommandContext repairedForRerun() {
+        if (!"all".equals(mode) || blocksPath == null || blocksPath.isBlank()) {
+            return this;
+        }
+        if (projectPath == null || projectPath.isBlank()) {
+            return this;
+        }
+        try {
+            String repairedBlocks = RepoPathNormalizer.toRepoRelativeOrThrow(Path.of(projectPath), Path.of(blocksPath));
+            if (blocksPath.equals(repairedBlocks)) {
+                return this;
+            }
+            return new AgentCommandContext(
+                command,
+                mode,
+                irPath,
+                projectPath,
+                baseRef,
+                collectAll,
+                agent,
+                strictHygiene,
+                strictOrphans,
+                failFast,
+                indexPath,
+                repairedBlocks,
+                onlyNames
+            );
+        } catch (RuntimeException ex) {
+            return this;
+        }
     }
 
     List<String> toCliArgsForRerun() {
@@ -205,6 +237,17 @@ record AgentCommandContext(
             }
         }
         return Set.copyOf(normalized);
+    }
+
+    private static String normalizeBlocksPathToken(Path repoRoot, Path blocksPath) {
+        if (blocksPath == null) {
+            return null;
+        }
+        try {
+            return RepoPathNormalizer.toRepoRelativeOrThrow(repoRoot, blocksPath);
+        } catch (IllegalArgumentException ex) {
+            return normalizePathToken(blocksPath);
+        }
     }
 
     private static String normalizePathToken(Path path) {

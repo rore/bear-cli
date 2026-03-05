@@ -98,6 +98,8 @@ class BearPackageDocsConsistencyTest {
         assertContains(bootstrap, "`bear pr-check --all --project <repoRoot> --base <ref> [--collect=all] --agent`");
         assertContains(bootstrap, "`bear check --all --project <repoRoot> [--collect=all] --agent => 0`");
         assertContains(bootstrap, "`bear pr-check --all --project <repoRoot> --base <ref> [--collect=all] --agent => 0`");
+        assertContains(bootstrap, "Execute `nextAction.commands` exactly as written.");
+        assertContains(bootstrap, "If a command starts with `bear` and `bear` is not on PATH");
         assertFalse(bootstrap.contains("[--collect=all] [--agent]"), "Bootstrap done-gate examples must require --agent in agent protocol docs");
     }
 
@@ -174,6 +176,8 @@ class BearPackageDocsConsistencyTest {
         assertTrue(content.contains(token), "Expected exact token missing: " + token);
     }
 }
+
+
 
 
 

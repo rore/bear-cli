@@ -65,13 +65,10 @@ After failure in `--agent` mode:
 1. If JSON `nextAction.commands` is present, execute only those commands.
 2. If `nextAction` is `null`, use `.bear/agent/TROUBLESHOOTING.md` key routing and escalate with deterministic evidence when required.
 
-Supported BEAR commands for agent loop:
-1. `bear validate`
-2. `bear compile`
-3. `bear fix`
-4. `bear check`
-5. `bear pr-check`
-6. `bear unblock`
+
+Execution note:
+1. Execute `nextAction.commands` exactly as written.
+2. If a command starts with `bear` and `bear` is not on PATH, run the same command arguments via the repo-local launcher under `.bear/tools/bear-cli/bin/bear*` or `bin/bear*` for that repo.
 
 Forbidden:
 1. ad-hoc scripts or speculative tool flags as gate remediation
@@ -126,5 +123,10 @@ Required evidence before completion:
 1. `bear check --all --project <repoRoot> [--collect=all] --agent => 0`
 2. `bear pr-check --all --project <repoRoot> --base <ref> [--collect=all] --agent => 0`
 3. completion report follows `.bear/agent/REPORTING.md` exactly
+
+
+
+
+
 
 

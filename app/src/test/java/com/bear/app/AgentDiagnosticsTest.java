@@ -243,7 +243,84 @@ class AgentDiagnosticsTest {
         AgentCommandContext reparsedPrAll = AgentCommandContextTestSupport.parseCommandContext(prAllRerun);
         AgentCommandContextTestSupport.assertEquivalent(expectedPrAll, reparsedPrAll);
     }
+    @Test
+    void rerunRepairEmitsWarningProblemAndUsesRepoRelativeBlocksPath() {
+        Path repoRoot = Path.of(".").toAbsolutePath().normalize();
+        String absoluteBlocks = repoRoot.resolve("bear.blocks.yaml").toString().replace('/', '\\');
 
+        AgentCommandContext context = new AgentCommandContext(
+            "check",
+            "all",
+            null,
+            repoRoot.toString(),
+            null,
+            true,
+            true,
+            false,
+            false,
+            false,
+            null,
+            absoluteBlocks,
+            java.util.Set.of()
+        );
+
+        AgentDiagnostics.AgentPayload payload = AgentDiagnostics.payload(
+            context,
+            CliCodes.EXIT_IO,
+            List.of(problem(AgentDiagnostics.AgentCategory.INFRA, CliCodes.IO_ERROR, null, "UNMAPPED_REASON", "project.tests")),
+            true
+        );
+
+        assertNotNull(payload.nextAction());
+        assertFalse(payload.nextAction().commands().isEmpty());
+        String rerun = payload.nextAction().commands().get(0);
+        assertTrue(rerun.contains("--blocks bear.blocks.yaml"), rerun);
+        assertTrue(payload.problems().stream().anyMatch(problem ->
+            CliCodes.NEXT_ACTION_COMMAND_INVALID.equals(problem.failureCode())
+                && problem.severity() == AgentDiagnostics.AgentSeverity.WARNING
+        ));
+    }
+
+    @Test
+    void hardInvalidRerunRoutesToTroubleshootingWithoutCommands() {
+        Path repoRoot = Path.of(".").toAbsolutePath().normalize();
+        Path outsideRoot = repoRoot.getParent() == null
+            ? repoRoot.resolveSibling("outside")
+            : repoRoot.getParent().resolve("outside");
+        String outsideBlocks = outsideRoot.resolve("bear.blocks.yaml").toString();
+
+        AgentCommandContext context = new AgentCommandContext(
+            "check",
+            "all",
+            null,
+            repoRoot.toString(),
+            null,
+            true,
+            true,
+            false,
+            false,
+            false,
+            null,
+            outsideBlocks,
+            java.util.Set.of()
+        );
+
+        AgentDiagnostics.AgentPayload payload = AgentDiagnostics.payload(
+            context,
+            CliCodes.EXIT_IO,
+            List.of(problem(AgentDiagnostics.AgentCategory.INFRA, CliCodes.IO_ERROR, null, "UNMAPPED_REASON", "project.tests")),
+            true
+        );
+
+        assertNotNull(payload.nextAction());
+        assertEquals("INFRA", payload.nextAction().kind());
+        assertTrue(payload.nextAction().commands().isEmpty());
+        assertTrue(payload.nextAction().links().contains("troubleshooting"));
+        assertTrue(payload.problems().stream().anyMatch(problem ->
+            CliCodes.NEXT_ACTION_COMMAND_INVALID.equals(problem.failureCode())
+                && problem.severity() == AgentDiagnostics.AgentSeverity.ERROR
+        ));
+    }
     @Test
     void infraProblemsMustNotCarryRuleId() {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> AgentDiagnostics.problem(
@@ -368,5 +445,7 @@ class AgentDiagnosticsTest {
         );
     }
 }
+
+
 
 

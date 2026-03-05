@@ -1,6 +1,7 @@
 package com.bear.app;
 
 import java.nio.file.Path;
+import java.util.Locale;
 
 final class RepoPathNormalizer {
     private RepoPathNormalizer() {
@@ -58,6 +59,54 @@ final class RepoPathNormalizer {
         return normalizedPath.startsWith(normalizedPrefix);
     }
 
+    static String toRepoRelativeOrThrow(Path repoRoot, Path candidatePath) {
+        if (repoRoot == null || candidatePath == null) {
+            throw new IllegalArgumentException("repoRoot and candidatePath are required");
+        }
+        Path normalizedRoot = repoRoot.toAbsolutePath().normalize();
+        Path normalizedCandidate = candidatePath.isAbsolute()
+            ? candidatePath.normalize()
+            : normalizedRoot.resolve(candidatePath).normalize();
+        if (!normalizedCandidate.startsWith(normalizedRoot)) {
+            throw new IllegalArgumentException("path must be inside repo root");
+        }
+        Path relative = normalizedRoot.relativize(normalizedCandidate);
+        String normalizedRelative = normalizePathForIdentity(relative.toString());
+        if (normalizedRelative.isBlank() || normalizedRelative.startsWith("..")) {
+            throw new IllegalArgumentException("path must be repo-relative");
+        }
+        return normalizedRelative;
+    }
+
+    static boolean equivalentPathMeaning(String left, String right, Path anchor) {
+        return normalizePathForComparison(left, anchor).equals(normalizePathForComparison(right, anchor));
+    }
+
+    static String normalizePathForComparison(String rawPath, Path anchor) {
+        if (rawPath == null || rawPath.isBlank()) {
+            return "";
+        }
+        String normalized;
+        try {
+            Path candidate = Path.of(rawPath);
+            Path resolved;
+            if (candidate.isAbsolute()) {
+                resolved = candidate.normalize();
+            } else if (anchor != null) {
+                resolved = anchor.resolve(candidate).normalize();
+            } else {
+                resolved = candidate.toAbsolutePath().normalize();
+            }
+            normalized = normalizePathForIdentity(resolved.toString());
+        } catch (RuntimeException ex) {
+            normalized = normalizePathForIdentity(rawPath);
+        }
+        if (isWindows()) {
+            return normalized.toLowerCase(Locale.ROOT);
+        }
+        return normalized;
+    }
+
     private static String stripTrailingSlash(String value) {
         if (value == null || value.isBlank()) {
             return "";
@@ -73,5 +122,9 @@ final class RepoPathNormalizer {
             return true;
         }
         return normalizedPath.matches("^[A-Za-z]:/$");
+    }
+
+    private static boolean isWindows() {
+        return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win");
     }
 }

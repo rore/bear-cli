@@ -148,13 +148,43 @@ final class AgentDiagnostics {
             ));
         }
         normalized.sort(problemComparator(commandContext.command()));
-        List<ClusterInternal> fullClusters = cluster(commandContext.command(), normalized);
+        List<AgentProblem> effectiveProblems = List.copyOf(normalized);
+        List<ClusterInternal> fullClusters = cluster(commandContext.command(), effectiveProblems);
         ClusterInternal primaryCluster = selectPrimaryCluster(commandContext.command(), fullClusters);
+        AgentTemplateRegistry.RenderResult renderResult = null;
 
-        List<AgentProblem> retained = retainProblems(commandContext.command(), normalized, fullClusters, primaryCluster, MAX_VIOLATIONS);
-        AgentNextAction nextAction = primaryCluster == null
-            ? null
-            : AgentTemplateRegistry.render(commandContext, primaryCluster.toPublicCluster());
+        if (primaryCluster != null) {
+            renderResult = AgentTemplateRegistry.render(commandContext, primaryCluster.toPublicCluster());
+            RerunValidationOutcome rerunValidationOutcome = renderResult.rerunValidationOutcome();
+            if (rerunValidationOutcome.status() != RerunValidationOutcome.Status.VALID) {
+                AgentSeverity severity = rerunValidationOutcome.status() == RerunValidationOutcome.Status.REPAIRED_VALID
+                    ? AgentSeverity.WARNING
+                    : AgentSeverity.ERROR;
+                AgentProblem syntheticProblem = rerunValidationProblem(rerunValidationOutcome, severity);
+                ArrayList<AgentProblem> augmented = new ArrayList<>(effectiveProblems);
+                augmented.add(syntheticProblem);
+                augmented.sort(problemComparator(commandContext.command()));
+                effectiveProblems = List.copyOf(augmented);
+                fullClusters = cluster(commandContext.command(), effectiveProblems);
+                primaryCluster = selectPrimaryCluster(commandContext.command(), fullClusters);
+            }
+        }
+
+        List<AgentProblem> retained = retainProblems(commandContext.command(), effectiveProblems, fullClusters, primaryCluster, MAX_VIOLATIONS);
+        AgentNextAction nextAction = null;
+        if (primaryCluster != null) {
+            if (renderResult == null) {
+                renderResult = AgentTemplateRegistry.render(commandContext, primaryCluster.toPublicCluster());
+            }
+            if (renderResult.rerunValidationOutcome().status() == RerunValidationOutcome.Status.HARD_INVALID) {
+                nextAction = AgentTemplateRegistry.troubleshootingOnly(primaryCluster.clusterId());
+            } else if (renderResult.nextAction().primaryClusterId().equals(primaryCluster.clusterId())) {
+                nextAction = renderResult.nextAction();
+            } else {
+                nextAction = AgentTemplateRegistry.render(commandContext, primaryCluster.toPublicCluster()).nextAction();
+            }
+        }
+
         return new AgentPayload(
             SCHEMA_VERSION,
             commandContext.command(),
@@ -162,15 +192,47 @@ final class AgentDiagnostics {
             commandContext.collectMode(),
             exitCode == CliCodes.EXIT_OK ? "ok" : "fail",
             exitCode,
-            retained.size() < normalized.size(),
+            retained.size() < effectiveProblems.size(),
             MAX_VIOLATIONS,
-            Math.max(0, normalized.size() - retained.size()),
+            Math.max(0, effectiveProblems.size() - retained.size()),
             List.copyOf(retained),
             toPublicClusters(fullClusters),
             nextAction,
             Map.of()
         );
     }
+
+    private static AgentProblem rerunValidationProblem(
+        RerunValidationOutcome outcome,
+        AgentSeverity severity
+    ) {
+        LinkedHashMap<String, String> evidence = new LinkedHashMap<>();
+        evidence.put("invalidCommand", outcome.renderedCommand());
+        evidence.put("correctedCommand", outcome.effectiveCommand());
+        if (outcome.parseFailureSummary() != null && !outcome.parseFailureSummary().isBlank()) {
+            evidence.put("parseFailure", outcome.parseFailureSummary());
+        }
+        if (outcome.equivalenceFailureSummary() != null && !outcome.equivalenceFailureSummary().isBlank()) {
+            evidence.put("equivalenceFailure", outcome.equivalenceFailureSummary());
+        }
+        String message = severity == AgentSeverity.WARNING
+            ? "nextAction command repaired deterministically"
+            : "nextAction command invalid and non-repairable";
+        return problem(
+            AgentCategory.INFRA,
+            CliCodes.NEXT_ACTION_COMMAND_INVALID,
+            null,
+            CliCodes.NEXT_ACTION_COMMAND_INVALID,
+            severity,
+            null,
+            "agent.nextAction",
+            null,
+            CliCodes.NEXT_ACTION_COMMAND_INVALID,
+            message,
+            evidence
+        );
+    }
+
     static String toJson(AgentPayload payload) {
         StringBuilder out = new StringBuilder(4096);
         JsonWriter writer = new JsonWriter(out);
@@ -456,7 +518,7 @@ final class AgentDiagnostics {
     private static int clusterRank(String command, ClusterInternal cluster) {
         int best = Integer.MAX_VALUE;
         for (AgentProblem problem : cluster.problems()) {
-            best = Math.min(best, exitRank(command, problem.failureCode()));
+            best = Math.min(best, problemRank(command, problem));
         }
         return best;
     }
@@ -474,7 +536,7 @@ final class AgentDiagnostics {
 
     private static Comparator<AgentProblem> problemComparator(String command) {
         return Comparator
-            .comparingInt((AgentProblem problem) -> exitRank(command, problem.failureCode()))
+             .comparingInt((AgentProblem problem) -> problemRank(command, problem))
             .thenComparingInt(problem -> problem.severity().order)
             .thenComparing(problem -> problem.category().name())
             .thenComparing(AgentProblem::failureCode)
@@ -501,12 +563,20 @@ final class AgentDiagnostics {
         return AllModeAggregation.severityRankCheck(exitCode);
     }
 
+
+    private static int problemRank(String command, AgentProblem problem) {
+        if (CliCodes.NEXT_ACTION_COMMAND_INVALID.equals(problem.failureCode()) && problem.severity() == AgentSeverity.WARNING) {
+            return Integer.MAX_VALUE - 1;
+        }
+        return exitRank(command, problem.failureCode());
+    }
+
     private static int failureCodeToExitCode(String failureCode) {
         if (failureCode == null) {
             return CliCodes.EXIT_INTERNAL;
         }
         return switch (failureCode) {
-            case CliCodes.USAGE_INVALID_ARGS, CliCodes.USAGE_UNKNOWN_COMMAND -> CliCodes.EXIT_USAGE;
+            case CliCodes.USAGE_INVALID_ARGS, CliCodes.USAGE_UNKNOWN_COMMAND, CliCodes.NEXT_ACTION_COMMAND_INVALID -> CliCodes.EXIT_USAGE;
             case CliCodes.IR_VALIDATION, CliCodes.MANIFEST_INVALID, CliCodes.POLICY_INVALID, CliCodes.INDEX_REQUIRED_MISSING -> CliCodes.EXIT_VALIDATION;
             case CliCodes.DRIFT_MISSING_BASELINE, CliCodes.DRIFT_DETECTED -> CliCodes.EXIT_DRIFT;
             case CliCodes.TEST_FAILURE, CliCodes.COMPILE_FAILURE, CliCodes.TEST_TIMEOUT, CliCodes.INVARIANT_VIOLATION -> CliCodes.EXIT_TEST_FAILURE;
@@ -833,3 +903,9 @@ final class AgentDiagnostics {
         }
     }
 }
+
+
+
+
+
+

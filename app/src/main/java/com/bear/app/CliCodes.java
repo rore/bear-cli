@@ -42,4 +42,5 @@ final class CliCodes {
     static final String MANIFEST_INVALID = "MANIFEST_INVALID";
     static final String INVARIANT_VIOLATION = "INVARIANT_VIOLATION";
     static final String UNBLOCK_LOCKED = "UNBLOCK_LOCKED";
+    static final String NEXT_ACTION_COMMAND_INVALID = "NEXT_ACTION_COMMAND_INVALID";
 }
