@@ -58,3 +58,6 @@ Deterministic agent-loop reliability patch-set (CommandContext rerun fidelity, r
 - Boundary SVG annotation placement: moved "Violation: boundary bypass" label adjacent to the red bypass arc to avoid ambiguity with the governed-boundary outline.
 
 - Boundary SVG label tweak: moved "Violation: boundary bypass" further right to avoid overlap with the adapter box while staying near the red bypass arc.
+
+- Bootstrap hardening follow-up: added explicit `AGENT_PACKAGE_PARITY_PRECONDITION` in packaged `BOOTSTRAP.md`, made done-gate examples require `--agent` in agent protocol docs, and locked both via `BearPackageDocsConsistencyTest` token assertions.
+

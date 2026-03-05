@@ -92,6 +92,13 @@ class BearPackageDocsConsistencyTest {
         assertContains(bootstrap, "INDEX_REQUIRED_PREFLIGHT");
         assertContains(bootstrap, "POST_FAILURE_DISCIPLINE");
         assertContains(bootstrap, "COMPLETE_DISCIPLINE");
+        assertContains(bootstrap, "AGENT_PACKAGE_PARITY_PRECONDITION");
+        assertContains(bootstrap, "PROCESS_VIOLATION|AGENT_PACKAGE_PARITY_PRECONDITION|<missingPath>");
+        assertContains(bootstrap, "`bear check --all --project <repoRoot> [--collect=all] --agent`");
+        assertContains(bootstrap, "`bear pr-check --all --project <repoRoot> --base <ref> [--collect=all] --agent`");
+        assertContains(bootstrap, "`bear check --all --project <repoRoot> [--collect=all] --agent => 0`");
+        assertContains(bootstrap, "`bear pr-check --all --project <repoRoot> --base <ref> [--collect=all] --agent => 0`");
+        assertFalse(bootstrap.contains("[--collect=all] [--agent]"), "Bootstrap done-gate examples must require --agent in agent protocol docs");
     }
 
     @Test
@@ -167,6 +174,7 @@ class BearPackageDocsConsistencyTest {
         assertTrue(content.contains(token), "Expected exact token missing: " + token);
     }
 }
+
 
 
 

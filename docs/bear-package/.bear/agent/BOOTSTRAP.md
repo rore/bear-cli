@@ -27,8 +27,8 @@ Bootstrap guardrails:
 8. After a gate failure in `--agent` mode, follow `nextAction.commands` only.
 9. If `nextAction` is `null`, route to `.bear/agent/TROUBLESHOOTING.md` using `(category, failureCode, ruleId|reasonKey)`.
 10. Completion requires both gates and reporting contract compliance:
-- `bear check --all --project <repoRoot> [--collect=all] [--agent]`
-- `bear pr-check --all --project <repoRoot> --base <ref> [--collect=all] [--agent]`
+- `bear check --all --project <repoRoot> [--collect=all] --agent`
+- `bear pr-check --all --project <repoRoot> --base <ref> [--collect=all] --agent`
 
 ## Implementation Preconditions
 
@@ -42,14 +42,17 @@ Mandatory stop conditions:
 1. `GREENFIELD_HARD_STOP`:
 - if `spec/*.bear.yaml` is empty, do not edit implementation.
 - first create IR, then run `bear validate <ir-file>` and `bear compile <ir-file> --project <repoRoot>` (or `compile --all` after index preflight).
-2. `INDEX_REQUIRED_PREFLIGHT`:
+2. `AGENT_PACKAGE_PARITY_PRECONDITION`:
+- before implementation edits, `.bear/agent/TROUBLESHOOTING.md` and `.bear/agent/REPORTING.md` must both exist and be readable.
+- if any required file is missing/unreadable, stop with `PROCESS_VIOLATION|AGENT_PACKAGE_PARITY_PRECONDITION|<missingPath>` and escalate.
+3. `INDEX_REQUIRED_PREFLIGHT`:
 - before any `--all` gate, `bear.blocks.yaml` must exist and be readable.
 - if missing/unreadable, stop and resolve preflight before continuing.
-3. `POST_FAILURE_DISCIPLINE`:
+4. `POST_FAILURE_DISCIPLINE`:
 - after any gate failure in `--agent` mode, execute only `nextAction.commands`.
 - if `nextAction` is `null`, route deterministically via troubleshooting.
 - any command variant drift is a process violation and must stop.
-4. `COMPLETE_DISCIPLINE`:
+5. `COMPLETE_DISCIPLINE`:
 - report `Run outcome: COMPLETE` only after canonical done gates are green.
 
 ## Command Surface
@@ -120,6 +123,8 @@ Read on demand:
 ## Done Gate Contract
 
 Required evidence before completion:
-1. `bear check --all --project <repoRoot> [--collect=all] [--agent] => 0`
-2. `bear pr-check --all --project <repoRoot> --base <ref> [--collect=all] [--agent] => 0`
+1. `bear check --all --project <repoRoot> [--collect=all] --agent => 0`
+2. `bear pr-check --all --project <repoRoot> --base <ref> [--collect=all] --agent => 0`
 3. completion report follows `.bear/agent/REPORTING.md` exactly
+
+
