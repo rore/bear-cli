@@ -46,10 +46,6 @@ flowchart LR
 - Implementation can evolve freely inside those guardrails.
 - CI gets deterministic governance signals from `check` and `pr-check`.
 
-<p align="center">
-  <img src="assets/bear-boundary.svg" alt="BEAR boundaries: blocks interact through declared ports; direct cross-boundary calls are violations" width="100%" />
-</p>
-
 ## What you get
 
 - Boundary power expansion becomes explicit and machine-parseable in PRs.
@@ -57,6 +53,10 @@ flowchart LR
 - Every non-zero failure is actionable: `CODE`, `PATH`, `REMEDIATION`.
 
 BEAR = Block Enforceable Architectural Representation.
+
+<p align="center">
+  <img src="assets/bear-boundary.svg" alt="BEAR boundaries: blocks interact through declared ports; direct cross-boundary calls are violations" width="100%" />
+</p>
 
 ## What BEAR is not (preview non-goals)
 
