@@ -183,6 +183,9 @@ In `pr-check --all`, the boundary summary uses the full boundary-expanding delta
 
 ## GitHub Actions Examples
 
+Canonical sample workflow:
+- [examples/github-actions-bear-ci.yml](examples/github-actions-bear-ci.yml)
+
 Ubuntu runner (`enforce`):
 
 ```yaml
@@ -204,6 +207,12 @@ Windows runner (`enforce`):
   shell: powershell
   run: .\.bear\ci\bear-gates.ps1 --mode enforce
 ```
+
+The sample workflow shows the intended GitHub pattern:
+- checkout with full history so BEAR base resolution has the expected git context
+- set up Java before invoking the vendored BEAR wrapper
+- run `.bear/ci/bear-gates.sh --mode enforce`
+- upload `build/bear/ci/bear-ci-report.json` and `build/bear/ci/bear-ci-summary.md` as artifacts
 
 Runtime note:
 - `bear-gates.sh` is a thin bash launcher that requires `pwsh`

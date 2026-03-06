@@ -20,6 +20,7 @@ The CI-owned governance feature is now fully implemented end-to-end, including p
 
 ## Session Notes
 
+- Added a docs-only GitHub Actions sample at `docs/public/examples/github-actions-bear-ci.yml` and linked it from `CI_INTEGRATION.md` to show the intended downstream wrapper usage without turning workflow YAML into a packaged runtime artifact.
 - Extended the shipped downstream CI wrapper with reviewer UX outputs: exact `ALLOW_ENTRY_CANDIDATE` generation for enforce-mode boundary expansion, `prCheck.allowEntryCandidate` in `bear-ci-report.json`, deterministic `build/bear/ci/bear-ci-summary.md`, and automatic append to `GITHUB_STEP_SUMMARY` when present.
 - The wrapper's allow-entry candidate and markdown boundary section now use the full boundary-expanding delta set in `pr-check --all` across repo-level plus block-level deltas, while keeping that combined set wrapper-internal only.
 - Tightened the packaged bash launcher so it stays a thin `pwsh`-dependent forwarder with deterministic remediation when `pwsh` is unavailable; no second shell decision engine was introduced.

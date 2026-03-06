@@ -154,7 +154,15 @@ class BearPackageDocsConsistencyTest {
         assertContains(install, ".\\.bear\\ci\\bear-gates.ps1 --mode observe --base-sha HEAD");
         assertContains(ciIntegration, "schemaVersion=bear.ci.governance.v1");
         assertContains(ciIntegration, "PR-CHECK NOT_RUN: BASE_UNRESOLVED");
+        assertContains(ciIntegration, "examples/github-actions-bear-ci.yml");
         assertContains(ciIntegration, "./.bear/ci/bear-gates.sh --mode enforce");
+        assertTrue(Files.exists(repoRoot.resolve("docs/public/examples/github-actions-bear-ci.yml")), "GitHub Actions sample must exist");
+        String githubSample = Files.readString(repoRoot.resolve("docs/public/examples/github-actions-bear-ci.yml"));
+        assertContains(githubSample, "actions/checkout@v4");
+        assertContains(githubSample, "actions/setup-java@v4");
+        assertContains(githubSample, "./.bear/ci/bear-gates.sh --mode enforce");
+        assertContains(githubSample, "build/bear/ci/bear-ci-report.json");
+        assertContains(githubSample, "build/bear/ci/bear-ci-summary.md");
         assertContains(packageReadme, ".bear/ci/bear-gates.ps1");
     }
 

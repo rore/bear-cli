@@ -1,0 +1,39 @@
+name: bear-ci-governance
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  governance:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Run BEAR governance
+        run: ./.bear/ci/bear-gates.sh --mode enforce
+
+      - name: Upload BEAR CI report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bear-ci-governance-report
+          path: |
+            build/bear/ci/bear-ci-report.json
+            build/bear/ci/bear-ci-summary.md
+          if-no-files-found: error
