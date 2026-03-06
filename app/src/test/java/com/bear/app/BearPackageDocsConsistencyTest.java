@@ -95,6 +95,8 @@ class BearPackageDocsConsistencyTest {
         assertMatchesHeading(troubleshooting, "(?m)^##\\s+GREENFIELD_PR_CHECK_POLICY\\s*$");
         assertMatchesHeading(troubleshooting, "(?m)^###\\s+Exact\\s+Template\\s+Keys\\s+\\(AgentTemplateRegistry\\.EXACT\\)\\s*$");
         assertMatchesHeading(troubleshooting, "(?m)^###\\s+Failure\\s+Default\\s+Keys\\s+\\(AgentTemplateRegistry\\.FAILURE_DEFAULTS\\)\\s*$");
+        assertContains(troubleshooting, "`POST_FAILURE_DISCIPLINE`");
+        assertContains(troubleshooting, "do not move/copy impl or exception classes into `_shared` as a containment workaround.");
 
         assertContains(contracts, "In automation, `--agent` JSON on stdout is the authoritative control interface.");
 
@@ -105,6 +107,7 @@ class BearPackageDocsConsistencyTest {
         assertContains(bootstrap, "COMPLETE_DISCIPLINE");
         assertContains(bootstrap, "allowed run outcomes are fixed: `COMPLETE | BLOCKED | WAITING_FOR_BASELINE_REVIEW`.");
         assertContains(bootstrap, "do not run ad-hoc gate reruns unless rerun is explicitly listed in `nextAction.commands`.");
+        assertContains(bootstrap, "never move/copy impl or exception classes into `_shared`.");
         assertContains(bootstrap, "AGENT_PACKAGE_PARITY_PRECONDITION");
         assertContains(bootstrap, "PROCESS_VIOLATION|AGENT_PACKAGE_PARITY_PRECONDITION|<missingPath>");
         assertContains(bootstrap, "`bear check --all --project <repoRoot> [--collect=all] --agent`");

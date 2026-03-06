@@ -776,6 +776,32 @@ final class CheckCommandService {
             }
             if (testResult.status() == ProjectTestStatus.COMPILE_FAILURE) {
                 String markerLine = ProjectTestRunner.firstCompileFailureLine(testResult.output());
+                if (isContainmentCompileMismatch(testResult, markerLine)) {
+                    String containmentLine = "check: CONTAINMENT_REQUIRED: CONTAINMENT_METADATA_MISMATCH: project compile preflight failed";
+                    if (markerLine != null && !markerLine.isBlank()) {
+                        containmentLine += "; line: " + markerLine;
+                    }
+                    containmentLine += phaseTaskSuffix(testResult);
+                    diagnostics.add(containmentLine);
+                    diagnostics.addAll(CliText.tailLines(testResult.output()));
+                    return checkFailure(
+                        CliCodes.EXIT_TEST_FAILURE,
+                        diagnostics,
+                        "CONTAINMENT",
+                        CliCodes.CONTAINMENT_NOT_VERIFIED,
+                        "project.tests",
+                        "Run `bear compile --all --project <path>` once, rerun the same `bear check`, and if the same containment/classpath signature persists stop and escalate.",
+                        containmentLine,
+                        List.of(defaultProblem(
+                            CliCodes.CONTAINMENT_NOT_VERIFIED,
+                            "project.tests",
+                            containmentLine,
+                            blockKey,
+                            null,
+                            CliCodes.CONTAINMENT_METADATA_MISMATCH
+                        ))
+                    );
+                }
                 String compileLine = "check: COMPILE_FAILURE: project compile preflight failed";
                 if (markerLine != null && !markerLine.isBlank()) {
                     compileLine += "; line: " + markerLine;
@@ -1015,6 +1041,22 @@ final class CheckCommandService {
 
     private static String markerWriteFailureSuffix(IOException error) {
         return CheckDiagnosticsFormatter.markerWriteFailureSuffix(error);
+    }
+
+    private static boolean isContainmentCompileMismatch(ProjectTestResult testResult, String markerLine) {
+        return containsContainmentCompileSignal(markerLine)
+            || containsContainmentCompileSignal(testResult.output())
+            || containsContainmentCompileSignal(testResult.lastObservedTask());
+    }
+
+    private static boolean containsContainmentCompileSignal(String text) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
+        return text.contains("compileBearImpl__shared")
+            || text.contains("build/generated/bear/gradle/bear-containment.gradle")
+            || text.contains("bear-containment.gradle")
+            || text.contains("CONTAINMENT_REQUIRED:");
     }
 
     private static CheckResult validateWiringManifestSemantics(WiringManifest manifest, String path) {

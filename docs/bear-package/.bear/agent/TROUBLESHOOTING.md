@@ -113,6 +113,7 @@ IR schema cutover reminders:
 - inspect containment metadata for diagnostic evidence.
 - run exactly one deterministic repair: `bear compile --all --project <repoRoot>`.
 - rerun the same `bear check`; if the same containment/classpath signature persists, escalate with evidence.
+- do not move/copy impl or exception classes into `_shared` as a containment workaround.
 
 ## SPEC_POLICY_CONFLICT
 
@@ -156,6 +157,7 @@ This table is synchronized with runtime template maps by test coverage in `BearP
 - `INFRA|DRIFT_MISSING_BASELINE|DRIFT_MISSING_BASELINE`
 - `INFRA|IO_ERROR|PROJECT_TEST_LOCK`
 - `INFRA|IO_ERROR|PROJECT_TEST_BOOTSTRAP`
+- `INFRA|CONTAINMENT_NOT_VERIFIED|CONTAINMENT_METADATA_MISMATCH`
 - `INFRA|IO_GIT|MERGE_BASE_FAILED`
 - `INFRA|IO_GIT|NOT_A_GIT_REPO`
 - `INFRA|IO_ERROR|READ_HEAD_FAILED`
@@ -265,6 +267,7 @@ Labels:
 1. `AGENT_PACKAGE_PARITY_PRECONDITION`
 2. `GREENFIELD_HARD_STOP`
 3. `INDEX_REQUIRED_PREFLIGHT`
+4. `POST_FAILURE_DISCIPLINE`
 
 Label guidance:
 1. `AGENT_PACKAGE_PARITY_PRECONDITION`:
@@ -273,6 +276,9 @@ Label guidance:
 - `spec/*.bear.yaml` empty and implementation edits attempted before successful `bear validate` + `bear compile`.
 3. `INDEX_REQUIRED_PREFLIGHT`:
 - index-required workflow inferred but `bear.blocks.yaml` preflight is unmet before `--all` gates.
+4. `POST_FAILURE_DISCIPLINE`:
+- after a failing `--agent` gate, a non-`nextAction.commands` command was executed.
+- evidence is the first non-allowed command string after the failing gate.
 
 Deterministic handling:
 1. classify `Gate blocker` as `OTHER`.

@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class AgentNextActionCommandReliabilityTest {
@@ -41,6 +42,40 @@ class AgentNextActionCommandReliabilityTest {
         assertRoundTrip(prCheckSingle, CliCodes.EXIT_BOUNDARY_EXPANSION);
         assertRoundTrip(checkAll, CliCodes.EXIT_IO);
         assertRoundTrip(prCheckAll, CliCodes.EXIT_BOUNDARY_EXPANSION);
+    }
+
+    @Test
+    void containmentMetadataMismatchTemplateIncludesBoundedCompileAndRoundTripsRerun() {
+        Path repoRoot = Path.of(".").toAbsolutePath().normalize();
+        Path blocksPath = repoRoot.resolve("bear.blocks.yaml");
+        AgentCommandContext expected = AgentCommandContext.forCheckAll(
+            new AllCheckOptions(repoRoot, blocksPath, Set.of(), false, false, true, true, true)
+        );
+
+        AgentDiagnostics.AgentPayload payload = AgentDiagnostics.payload(
+            expected,
+            CliCodes.EXIT_TEST_FAILURE,
+            List.of(AgentDiagnostics.problem(
+                AgentDiagnostics.AgentCategory.INFRA,
+                CliCodes.CONTAINMENT_NOT_VERIFIED,
+                null,
+                CliCodes.CONTAINMENT_METADATA_MISMATCH,
+                AgentDiagnostics.AgentSeverity.ERROR,
+                null,
+                "project.tests",
+                null,
+                CliCodes.CONTAINMENT_METADATA_MISMATCH,
+                "containment compile mismatch",
+                java.util.Map.of()
+            )),
+            true
+        );
+
+        assertNotNull(payload.nextAction());
+        assertEquals("bear compile --all --project " + repoRoot.toString().replace('\\', '/'), payload.nextAction().commands().get(0));
+        String rerun = AgentCommandContextTestSupport.firstRerunCommand(AgentDiagnostics.toJson(payload));
+        AgentCommandContext reparsed = AgentCommandContextTestSupport.parseCommandContext(rerun);
+        AgentCommandContextTestSupport.assertEquivalent(expected, reparsed);
     }
 
     private static void assertRoundTrip(AgentCommandContext expected, int exitCode) {

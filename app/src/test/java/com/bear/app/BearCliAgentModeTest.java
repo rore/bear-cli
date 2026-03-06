@@ -290,6 +290,87 @@ class BearCliAgentModeTest {
     }
 
     @Test
+    void checkAgentModeEmitsContainmentMetadataMismatchReasonKey(@TempDir Path tempDir) throws Exception {
+        Path fixture = TestRepoPaths.repoRoot().resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode());
+        writeWorkingWithdrawImpl(tempDir);
+
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho ^> Task :compileBearImpl__shared FAILED\r\necho error: illegal character: '\\u0000'\r\nexit /b 1\r\n",
+            "#!/usr/bin/env sh\necho \"> Task :compileBearImpl__shared FAILED\"\necho \"error: illegal character: '\\\\u0000'\"\nexit 1\n"
+        );
+
+        String key = "bear.cli.test.gradleUserHomeOverride";
+        String previous = System.getProperty(key);
+        try {
+            System.setProperty(key, "NONE");
+            CliRunResult run = runCli(new String[] {
+                "check",
+                fixture.toString(),
+                "--project",
+                tempDir.toString(),
+                "--collect=all",
+                "--agent"
+            });
+
+            assertEquals(CliCodes.EXIT_TEST_FAILURE, run.exitCode());
+            assertTrue(run.stdout().contains("\"failureCode\":\"CONTAINMENT_NOT_VERIFIED\""), run.stdout());
+            assertTrue(run.stdout().contains("\"reasonKey\":\"CONTAINMENT_METADATA_MISMATCH\""), run.stdout());
+            assertTrue(run.stdout().contains("\"title\":\"Apply bounded containment repair\""), run.stdout());
+            assertTrue(run.stdout().contains("bear compile --all --project " + tempDir.toString().replace('\\', '/')), run.stdout());
+            String rerun = AgentCommandContextTestSupport.firstRerunCommand(run.stdout());
+            AgentCommandContext reparsed = AgentCommandContextTestSupport.parseCommandContext(rerun);
+            AgentCommandContext expected = AgentCommandContext.forCheckSingle(
+                fixture,
+                tempDir,
+                null,
+                false,
+                true,
+                true
+            );
+            AgentCommandContextTestSupport.assertEquivalent(expected, reparsed);
+            assertEquals("", run.stderr());
+        } finally {
+            restoreSystemProperty(key, previous);
+        }
+    }
+
+    @Test
+    void checkAgentModeKeepsGenericCompileFailureWhenContainmentSignalsAreAbsent(@TempDir Path tempDir) throws Exception {
+        Path fixture = TestRepoPaths.repoRoot().resolve("spec/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode());
+        writeWorkingWithdrawImpl(tempDir);
+
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho ^> Task :compileJava FAILED\r\necho error: illegal character: '\\u0000'\r\nexit /b 1\r\n",
+            "#!/usr/bin/env sh\necho \"> Task :compileJava FAILED\"\necho \"error: illegal character: '\\\\u0000'\"\nexit 1\n"
+        );
+
+        String key = "bear.cli.test.gradleUserHomeOverride";
+        String previous = System.getProperty(key);
+        try {
+            System.setProperty(key, "NONE");
+            CliRunResult run = runCli(new String[] {
+                "check",
+                fixture.toString(),
+                "--project",
+                tempDir.toString(),
+                "--collect=all",
+                "--agent"
+            });
+
+            assertEquals(CliCodes.EXIT_TEST_FAILURE, run.exitCode());
+            assertTrue(run.stdout().contains("\"failureCode\":\"COMPILE_FAILURE\""), run.stdout());
+            assertTrue(!run.stdout().contains("\"reasonKey\":\"CONTAINMENT_METADATA_MISMATCH\""), run.stdout());
+            assertEquals("", run.stderr());
+        } finally {
+            restoreSystemProperty(key, previous);
+        }
+    }
+
+    @Test
     void prCheckAgentModeEmitsReadHeadFailedReasonKey(@TempDir Path tempDir) {
         CliRunResult run = runCli(new String[] {
             "pr-check",
@@ -343,6 +424,15 @@ class BearCliAgentModeTest {
                 tempDir,
                 "@echo off\r\necho unable to unzip gradle-8.12.1-bin.zip\r\nexit /b 1\r\n",
                 "#!/usr/bin/env sh\necho \"unable to unzip gradle-8.12.1-bin.zip\"\nexit 1\n"
+            );
+            observed.addAll(extractReasonKeys(runCli(new String[] {
+                "check", fixture.toString(), "--project", tempDir.toString(), "--collect=all", "--agent"
+            }).stdout()));
+
+            writeProjectWrapper(
+                tempDir,
+                "@echo off\r\necho ^> Task :compileBearImpl__shared FAILED\r\necho error: illegal character: '\\u0000'\r\nexit /b 1\r\n",
+                "#!/usr/bin/env sh\necho \"> Task :compileBearImpl__shared FAILED\"\necho \"error: illegal character: '\\\\u0000'\"\nexit 1\n"
             );
             observed.addAll(extractReasonKeys(runCli(new String[] {
                 "check", fixture.toString(), "--project", tempDir.toString(), "--collect=all", "--agent"

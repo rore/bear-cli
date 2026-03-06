@@ -25,8 +25,9 @@ Bootstrap guardrails:
 6. For machine loops, run gates with `--agent` (usually with `--collect=all`).
 7. In `--agent` mode, stdout JSON is the control interface; stderr is diagnostics/evidence.
 8. After a gate failure in `--agent` mode, follow `nextAction.commands` only.
-9. If `nextAction` is `null`, route to `.bear/agent/TROUBLESHOOTING.md` using `(category, failureCode, ruleId|reasonKey)`.
-10. Completion requires both gates and minimal core reporting contract compliance:
+9. On containment/classpath mismatch, run one `bear compile --all --project <repoRoot>` repair and rerun once; never move/copy impl or exception classes into `_shared`.
+10. If `nextAction` is `null`, route to `.bear/agent/TROUBLESHOOTING.md` using `(category, failureCode, ruleId|reasonKey)`.
+11. Completion requires both gates and minimal core reporting contract compliance:
 - `bear check --all --project <repoRoot> [--collect=all] --agent`
 - `bear pr-check --all --project <repoRoot> --base <ref> [--collect=all] --agent`
 

@@ -71,6 +71,17 @@ final class AgentTemplateRegistry {
             List.of("bear unblock", "{rerunCommand}"),
             List.of("troubleshooting#io_error")
         ));
+        registerExact(AgentDiagnostics.AgentCategory.INFRA, CliCodes.CONTAINMENT_NOT_VERIFIED, CliCodes.CONTAINMENT_METADATA_MISMATCH, template(
+            "Apply bounded containment repair",
+            List.of(
+                "Inspect containment/classpath diagnostics only; do not move or copy impl classes into `_shared`.",
+                "Run `bear compile --all --project {projectRoot}` exactly once.",
+                "Re-run: {rerunCommand}",
+                "If the same containment/classpath signature persists, stop and escalate with the captured evidence."
+            ),
+            List.of("bear compile --all --project {projectRoot}", "{rerunCommand}"),
+            List.of("troubleshooting#containment_metadata_mismatch")
+        ));
         registerExact(AgentDiagnostics.AgentCategory.INFRA, CliCodes.IO_ERROR, "PROJECT_TEST_BOOTSTRAP", template(
             "Recover from project test bootstrap IO",
             List.of(
@@ -244,11 +255,11 @@ final class AgentTemplateRegistry {
         String rerunCommand = rerunValidationOutcome.effectiveCommand();
         ArrayList<String> renderedSteps = new ArrayList<>(template.steps().size());
         for (String step : template.steps()) {
-            renderedSteps.add(interpolate(step, rerunCommand));
+            renderedSteps.add(interpolate(step, rerunCommand, commandContext));
         }
         ArrayList<String> renderedCommands = new ArrayList<>(template.commands().size());
         for (String commandTemplate : template.commands()) {
-            renderedCommands.add(interpolate(commandTemplate, rerunCommand));
+            renderedCommands.add(interpolate(commandTemplate, rerunCommand, commandContext));
         }
         AgentDiagnostics.AgentNextAction nextAction = new AgentDiagnostics.AgentNextAction(
             cluster.category().name(),
@@ -383,8 +394,13 @@ final class AgentTemplateRegistry {
         return commandContext.rerunCommand();
     }
 
-    private static String interpolate(String template, String rerunCommand) {
-        return template.replace("{rerunCommand}", rerunCommand);
+    private static String interpolate(String template, String rerunCommand, AgentCommandContext commandContext) {
+        String projectRoot = commandContext == null || commandContext.projectPath() == null || commandContext.projectPath().isBlank()
+            ? "<repoRoot>"
+            : commandContext.projectPath();
+        return template
+            .replace("{rerunCommand}", rerunCommand)
+            .replace("{projectRoot}", projectRoot);
     }
 
     private static String joinSummary(String first, String second) {
