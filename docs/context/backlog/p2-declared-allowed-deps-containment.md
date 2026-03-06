@@ -1,5 +1,9 @@
 # P2: Declared allowed dependencies (Boundary + Containment)
 
+## Status
+
+Completed for Java+Gradle in P2.
+
 ## Summary
 
 Allow block impl logic to use explicitly allowlisted allowed dependencies while keeping boundary expansion visible and deterministic.

@@ -10,13 +10,13 @@ Long-form historical notes are archived in `docs/context/archive/archive-state-h
 
 ## Current Focus
 
-Diagnose Codex Windows app access and permission behavior on this machine, with focus on the sandboxed shell launch failure (`CreateProcessWithLogonW` 1385) and the working operator path outside the sandbox.
+Roadmap/program-board alignment is complete; the next product work is CI boundary governance + telemetry unification, with Maven containment parity remaining optional future expansion.
 
 ## Next Concrete Task
 
-1. Confirm the smallest reproducible sandbox failure in the Codex Windows app and document the failing path precisely.
-2. Verify which capabilities still work with approval/escalation (`read`, `git`, repo edits, broader repo-parent reads) and use that as the temporary execution mode.
-3. Record final diagnosis and working local fix for future sessions.
+1. Start docs/context/backlog/p2-ci-owned-bear-gates.md when ready for the next feature slice.
+2. Keep structural tests evidence-only by default unless there is a deliberate strict-mode product decision.
+3. Treat Maven containment parity as optional until there is a concrete Maven adopter need.
 
 ## Session Notes
 
@@ -38,6 +38,9 @@ Diagnose Codex Windows app access and permission behavior on this machine, with 
 - Added `CanonicalDoneGateMatcher` and rewrote `RunReportLint` to enforce structured-field rules (`Status`, `Run outcome`, canonical done-gates, WAITING baseline pinned-v1 checks, and scoped completion-claim guard).
 - Added deterministic event-model lint helper `AgentLoopEventLint` and regression coverage for exact ordered `nextAction.commands` execution after failing `--agent` gate runs.
 - Added mechanical dependency baseline test `AgentNextActionCommandReliabilityTest` and updated docs and report regression suites.
+- Audited roadmap queue against implementation/tests/docs: generated structural tests and Gradle allowed-deps containment are already shipped; current remaining queued feature work is CI governance/telemetry unification, with Maven containment parity still optional future expansion.
+- Updated roadmap.md, program-board.md, and the P2 allowed-deps backlog doc to remove already-shipped items from the active queue and mark Gradle allowed-deps containment completed.
+- Verification attempt for ContextDocsConsistencyTest was blocked three times by the same Gradle cache IO error after prescribed retry flow: AccessDeniedException on C:\Users\I347041\AppData\Local\Temp\bear-cli-gradle-home\caches\modules-2\files-2.1\org.yaml\snakeyaml\2.2\...\snakeyaml-2.2.jar.
 - Verification:
   - `./gradlew.bat --no-daemon :app:test --tests com.bear.app.RunReportLintTest --tests com.bear.app.AgentLoopReliabilityRegressionTest --tests com.bear.app.BearPackageDocsConsistencyTest --tests com.bear.app.AgentNextActionCommandReliabilityTest --tests com.bear.app.CanonicalDoneGateMatcherTest`
   - `./gradlew.bat --no-daemon :app:test --tests com.bear.app.ContextDocsConsistencyTest --tests com.bear.app.BearPackageDocsConsistencyTest`

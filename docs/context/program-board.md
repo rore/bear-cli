@@ -5,7 +5,7 @@ Context entrypoint:
 
 ## Last Updated
 
-2026-03-05
+2026-03-06
 
 ## Current Milestone
 
@@ -57,9 +57,12 @@ Preview standing note:
 
 ## Ready Queue (Ordered, Execution Work Items)
 
-1. P2 stabilization: structural-test evidence bake period + strict-mode rollout decision
-2. P2 CI boundary governance + telemetry unification: canonical CI-owned gates with explicit enforce/observe policy modes
-3. P3 prep: Maven allowed-deps containment parity
+1. P2 CI boundary governance + telemetry unification: canonical CI-owned gates with explicit enforce/observe policy modes
+2. P3 optional expansion: Maven allowed-deps containment parity
+
+Queue note:
+- Generated structural tests are already shipped and documented; no separate rollout feature remains queued while evidence-only default stays acceptable.
+- Gradle allowed-deps containment is already shipped; remaining parity work is Maven-only.
 
 ## Recently Completed (P2)
 
@@ -208,7 +211,7 @@ Detailed locked spec text was moved to:
   - `docs/context/backlog/p1-preview-closure-gaps.md` (parked; non-blocking for product development)
 - `P2`
   - `docs/context/backlog/p2-bear-fix-generated-only.md` (`Completed`)
-  - `docs/context/backlog/p2-declared-allowed-deps-containment.md` (`In Progress`)
+  - `docs/context/backlog/p2-declared-allowed-deps-containment.md` (`Completed`)
   - `docs/context/backlog/p2-ci-owned-bear-gates.md` (`Queued`)
 - `P3`
   - `docs/context/backlog/p3-maven-allowed-deps-containment.md` (`Queued`)

@@ -58,17 +58,21 @@ Preview definition of done:
 ## Post-Preview Priorities
 
 Priority 2:
-1. `bear fix` for generated artifacts only.
-2. Generated structural tests.
-3. Minimal taste-invariants rule pack.
-4. Boundary regression suite.
-5. Better PR diff ergonomics.
+1. CI boundary governance + telemetry unification.
+2. Minimal taste-invariants rule pack.
+3. Boundary regression suite.
+4. Better PR diff ergonomics.
 
 Priority 3:
-1. Capability templates.
-2. Broader boundary-escape coverage.
-3. Multi-block and multi-module composition hardening.
-4. Optional deterministic policy hooks.
+1. Maven allowed-deps containment parity (optional future expansion).
+2. Capability templates.
+3. Broader boundary-escape coverage.
+4. Multi-block and multi-module composition hardening.
+5. Optional deterministic policy hooks.
+
+Shipped in active post-Preview work already:
+1. `bear fix` for generated artifacts only.
+2. Generated structural tests (default evidence-only; opt-in strict mode remains available via JVM property).
 
 ## Out of Scope (Current Roadmap)
 
