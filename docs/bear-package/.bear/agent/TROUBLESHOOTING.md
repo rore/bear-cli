@@ -166,6 +166,7 @@ This table is synchronized with runtime template maps by test coverage in `BearP
 - `GOVERNANCE|BOUNDARY_BYPASS|`
 - `GOVERNANCE|BOUNDARY_EXPANSION|`
 - `INFRA|IR_VALIDATION|`
+- `INFRA|INDEX_REQUIRED_MISSING|`
 - `INFRA|POLICY_INVALID|`
 - `INFRA|DRIFT_DETECTED|`
 - `INFRA|IO_ERROR|`

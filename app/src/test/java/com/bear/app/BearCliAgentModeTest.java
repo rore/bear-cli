@@ -70,6 +70,74 @@ class BearCliAgentModeTest {
     }
 
     @Test
+    void checkAllAgentModeMissingIndexEmitsJsonWithDeterministicNextAction(@TempDir Path tempDir) {
+        CliRunResult run = runCli(new String[] {
+            "check",
+            "--all",
+            "--project",
+            tempDir.toString(),
+            "--agent"
+        });
+
+        assertEquals(CliCodes.EXIT_VALIDATION, run.exitCode());
+        assertTrue(run.stdout().startsWith("{\"schemaVersion\":\"bear.nextAction.v1\""));
+        assertTrue(run.stdout().contains("\"failureCode\":\"INDEX_REQUIRED_MISSING\""), run.stdout());
+        assertTrue(run.stdout().contains("\"reasonKey\":\"INDEX_REQUIRED_MISSING\""), run.stdout());
+        assertTrue(run.stdout().contains("\"title\":\"Satisfy index preflight before --all gates\""), run.stdout());
+
+        String rerun = AgentCommandContextTestSupport.firstRerunCommand(run.stdout());
+        AgentCommandContext reparsed = AgentCommandContextTestSupport.parseCommandContext(rerun);
+        AgentCommandContext expected = AgentCommandContext.forCheckAll(
+            new AllCheckOptions(
+                tempDir.toAbsolutePath().normalize(),
+                tempDir.resolve("bear.blocks.yaml").toAbsolutePath().normalize(),
+                Set.of(),
+                false,
+                false,
+                false,
+                false,
+                true
+            )
+        );
+        AgentCommandContextTestSupport.assertEquivalent(expected, reparsed);
+        assertEquals("", run.stderr());
+    }
+
+    @Test
+    void prCheckAllAgentModeMissingIndexEmitsJsonWithDeterministicNextAction(@TempDir Path tempDir) {
+        CliRunResult run = runCli(new String[] {
+            "pr-check",
+            "--all",
+            "--project",
+            tempDir.toString(),
+            "--base",
+            "HEAD",
+            "--agent"
+        });
+
+        assertEquals(CliCodes.EXIT_VALIDATION, run.exitCode());
+        assertTrue(run.stdout().startsWith("{\"schemaVersion\":\"bear.nextAction.v1\""));
+        assertTrue(run.stdout().contains("\"failureCode\":\"INDEX_REQUIRED_MISSING\""), run.stdout());
+        assertTrue(run.stdout().contains("\"reasonKey\":\"INDEX_REQUIRED_MISSING\""), run.stdout());
+        assertTrue(run.stdout().contains("\"title\":\"Satisfy index preflight before --all gates\""), run.stdout());
+
+        String rerun = AgentCommandContextTestSupport.firstRerunCommand(run.stdout());
+        AgentCommandContext reparsed = AgentCommandContextTestSupport.parseCommandContext(rerun);
+        AgentCommandContext expected = AgentCommandContext.forPrCheckAll(
+            new AllPrCheckOptions(
+                tempDir.toAbsolutePath().normalize(),
+                tempDir.resolve("bear.blocks.yaml").toAbsolutePath().normalize(),
+                Set.of(),
+                false,
+                "HEAD",
+                false,
+                true
+            )
+        );
+        AgentCommandContextTestSupport.assertEquivalent(expected, reparsed);
+        assertEquals("", run.stderr());
+    }
+    @Test
     void checkAgentModeEmitsProjectTestLockReasonKey(@TempDir Path tempDir) throws Exception {
         Path fixture = TestRepoPaths.repoRoot().resolve("spec/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode());

@@ -28,9 +28,34 @@ final class CheckAllCommandService {
         if (options == null) {
             return CliCodes.EXIT_USAGE;
         }
-        Integer missingIndexExit = AllModeIndexPreflight.failIfMissing(options.blocksPath(), err);
-        if (missingIndexExit != null) {
-            return missingIndexExit;
+        if (AllModeIndexPreflight.isMissing(options.blocksPath())) {
+            if (options.agent()) {
+                AgentDiagnostics.AgentProblem problem = AgentDiagnostics.problem(
+                    AgentDiagnostics.AgentCategory.INFRA,
+                    CliCodes.INDEX_REQUIRED_MISSING,
+                    null,
+                    CliCodes.INDEX_REQUIRED_MISSING,
+                    AgentDiagnostics.AgentSeverity.ERROR,
+                    null,
+                    "bear.blocks.yaml",
+                    null,
+                    CliCodes.INDEX_REQUIRED_MISSING,
+                    AllModeIndexPreflight.MISSING_INDEX_LINE,
+                    Map.of()
+                );
+                AgentDiagnostics.AgentPayload payload = AgentDiagnostics.payload(
+                    AgentCommandContext.forCheckAll(options),
+                    CliCodes.EXIT_VALIDATION,
+                    List.of(problem),
+                    true
+                );
+                out.println(AgentDiagnostics.toJson(payload));
+                return CliCodes.EXIT_VALIDATION;
+            }
+            Integer missingIndexExit = AllModeIndexPreflight.failIfMissing(options.blocksPath(), err);
+            if (missingIndexExit != null) {
+                return missingIndexExit;
+            }
         }
 
         BlockIndex index;

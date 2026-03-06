@@ -140,6 +140,15 @@ final class AgentTemplateRegistry {
             List.of("{rerunCommand}"),
             List.of("troubleshooting#boundary_expansion")
         ));
+        registerFailureDefault(AgentDiagnostics.AgentCategory.INFRA, CliCodes.INDEX_REQUIRED_MISSING, template(
+            "Satisfy index preflight before --all gates",
+            List.of(
+                "Create `bear.blocks.yaml` at repo root or pass a repo-relative `--blocks` path.",
+                "Re-run: {rerunCommand}"
+            ),
+            List.of("{rerunCommand}"),
+            List.of("troubleshooting#process_violation")
+        ));
         registerFailureDefault(AgentDiagnostics.AgentCategory.INFRA, CliCodes.IR_VALIDATION, template(
             "Fix validation error",
             List.of(

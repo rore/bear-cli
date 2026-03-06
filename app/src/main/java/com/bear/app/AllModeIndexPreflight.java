@@ -5,16 +5,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 final class AllModeIndexPreflight {
-    private static final String MISSING_INDEX_LINE =
+    static final String MISSING_INDEX_LINE =
         "index: VALIDATION_ERROR: INDEX_REQUIRED_MISSING: bear.blocks.yaml: project=.";
-    private static final String MISSING_INDEX_REMEDIATION =
+    static final String MISSING_INDEX_REMEDIATION =
         "Create bear.blocks.yaml or run non---all command";
 
     private AllModeIndexPreflight() {
     }
 
+    static boolean isMissing(Path blocksPath) {
+        return !Files.isRegularFile(blocksPath);
+    }
+
     static Integer failIfMissing(Path blocksPath, PrintStream err) {
-        if (Files.isRegularFile(blocksPath)) {
+        if (!isMissing(blocksPath)) {
             return null;
         }
         return BearCli.failWithLegacy(
