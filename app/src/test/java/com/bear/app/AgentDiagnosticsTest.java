@@ -116,6 +116,112 @@ class AgentDiagnosticsTest {
     }
 
     @Test
+    void nonPrCheckAndUnavailablePrCheckPayloadsKeepExtensionsEmpty() {
+        AgentDiagnostics.AgentPayload checkPayload = AgentDiagnostics.payload(
+            "check",
+            "single",
+            "first",
+            CliCodes.EXIT_IO,
+            List.of(problem(AgentDiagnostics.AgentCategory.INFRA, CliCodes.IO_ERROR, null, "PROJECT_TEST_LOCK", "build.gradle"))
+        );
+        String checkJson = AgentDiagnostics.toJson(checkPayload);
+        assertTrue(checkJson.contains("\"extensions\":{}"), checkJson);
+        assertFalse(checkJson.contains("\"prGovernance\""), checkJson);
+
+        AgentDiagnostics.AgentPayload prPayload = AgentDiagnostics.payloadForPrCheck(
+            prCheckResult(CliCodes.EXIT_IO, null),
+            "single",
+            false
+        );
+        String prJson = AgentDiagnostics.toJson(prPayload);
+        assertTrue(prJson.contains("\"extensions\":{}"), prJson);
+        assertFalse(prJson.contains("\"prGovernance\""), prJson);
+    }
+
+    @Test
+    void prCheckPayloadIncludesDeterministicGovernanceExtension() {
+        PrGovernanceTelemetry.Snapshot snapshot = PrGovernanceTelemetry.single(
+            CliCodes.EXIT_BOUNDARY_EXPANSION,
+            List.of(
+                new PrDelta(PrClass.ORDINARY, PrCategory.PORTS, PrChange.REMOVED, "z-key"),
+                new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.ALLOWED_DEPS, PrChange.ADDED, "a-key")
+            ),
+            List.of(PrGovernanceTelemetry.multiBlockPortImplAllowed(
+                new MultiBlockPortImplAllowedSignal(
+                    "demo.impl.AllowedImpl",
+                    "z.pkg,a.pkg",
+                    "src\\main\\java\\demo\\AllowedImpl.java"
+                )
+            ))
+        );
+
+        AgentDiagnostics.AgentPayload payload = AgentDiagnostics.payloadForPrCheck(
+            prCheckResult(CliCodes.EXIT_BOUNDARY_EXPANSION, snapshot),
+            "single",
+            false
+        );
+
+        assertEquals(
+            "{\"schemaVersion\":\"bear.nextAction.v1\",\"command\":\"pr-check\",\"mode\":\"single\",\"collectMode\":\"first\",\"status\":\"fail\",\"exitCode\":5,\"truncated\":false,\"maxViolations\":200,\"suppressedViolations\":0,\"problems\":[],\"clusters\":[],\"nextAction\":null,\"extensions\":{\"prGovernance\":{\"classifications\":[\"CI_BOUNDARY_EXPANSION\",\"CI_DEPENDENCY_POWER_EXPANSION\"],\"deltas\":[{\"category\":\"ALLOWED_DEPS\",\"change\":\"ADDED\",\"class\":\"BOUNDARY_EXPANDING\",\"deltaId\":\"BOUNDARY_EXPANDING|ALLOWED_DEPS|ADDED|a-key\",\"key\":\"a-key\"},{\"category\":\"PORTS\",\"change\":\"REMOVED\",\"class\":\"ORDINARY\",\"deltaId\":\"ORDINARY|PORTS|REMOVED|z-key\",\"key\":\"z-key\"}],\"governanceSignals\":[{\"details\":{\"generatedPackages\":[\"a.pkg\",\"z.pkg\"],\"implClassFqcn\":\"demo.impl.AllowedImpl\"},\"path\":\"src/main/java/demo/AllowedImpl.java\",\"type\":\"MULTI_BLOCK_PORT_IMPL_ALLOWED\"}],\"hasBoundaryExpansion\":true,\"hasDeltas\":true,\"schemaVersion\":\"bear.pr-governance.v1\",\"scope\":\"single\"}}}",
+            AgentDiagnostics.toJson(payload)
+        );
+    }
+
+    @Test
+    void prCheckAllPayloadAggregatesBlockTelemetryAndNormalizesOrdering() {
+        PrGovernanceTelemetry.BlockSnapshot beta = PrGovernanceTelemetry.block(
+            "beta",
+            "spec/beta.bear.yaml",
+            CliCodes.EXIT_OK,
+            List.of(new PrDelta(PrClass.ORDINARY, PrCategory.SURFACE, PrChange.CHANGED, "beta.surface")),
+            List.of()
+        );
+        PrGovernanceTelemetry.BlockSnapshot alpha = PrGovernanceTelemetry.block(
+            "alpha",
+            "spec/alpha.bear.yaml",
+            CliCodes.EXIT_OK,
+            List.of(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.ALLOWED_DEPS, PrChange.ADDED, "alpha.dep")),
+            List.of(PrGovernanceTelemetry.multiBlockPortImplAllowed(
+                new MultiBlockPortImplAllowedSignal(
+                    "demo.impl.AlphaImpl",
+                    "z.alpha,a.alpha",
+                    "src/main/java/demo/AlphaImpl.java"
+                )
+            ))
+        );
+
+        String firstJson = AgentDiagnostics.toJson(AgentDiagnostics.payloadForPrCheckAll(
+            AgentCommandContext.minimal("pr-check", "all", "all", true),
+            CliCodes.EXIT_BOUNDARY_EXPANSION,
+            List.of(),
+            PrGovernanceTelemetry.all(
+                CliCodes.EXIT_BOUNDARY_EXPANSION,
+                List.of(new PrDelta(PrClass.ORDINARY, PrCategory.ALLOWED_DEPS, PrChange.CHANGED, "repo:_shared:g:a@1->2")),
+                List.of(),
+                List.of(beta, alpha)
+            )
+        ));
+
+        String secondJson = AgentDiagnostics.toJson(AgentDiagnostics.payloadForPrCheckAll(
+            AgentCommandContext.minimal("pr-check", "all", "all", true),
+            CliCodes.EXIT_BOUNDARY_EXPANSION,
+            List.of(),
+            PrGovernanceTelemetry.all(
+                CliCodes.EXIT_BOUNDARY_EXPANSION,
+                List.of(new PrDelta(PrClass.ORDINARY, PrCategory.ALLOWED_DEPS, PrChange.CHANGED, "repo:_shared:g:a@1->2")),
+                List.of(),
+                List.of(alpha, beta)
+            )
+        ));
+
+        assertEquals(firstJson, secondJson);
+        assertTrue(firstJson.contains("\"scope\":\"all\""), firstJson);
+        assertTrue(firstJson.contains("\"classifications\":[\"CI_BOUNDARY_EXPANSION\",\"CI_DEPENDENCY_POWER_EXPANSION\"]"), firstJson);
+        assertTrue(firstJson.contains("\"deltas\":[{\"category\":\"ALLOWED_DEPS\",\"change\":\"CHANGED\",\"class\":\"ORDINARY\",\"deltaId\":\"ORDINARY|ALLOWED_DEPS|CHANGED|repo:_shared:g:a@1->2\",\"key\":\"repo:_shared:g:a@1->2\"}]"), firstJson);
+        assertTrue(firstJson.indexOf("\"blockId\":\"alpha\"") < firstJson.indexOf("\"blockId\":\"beta\""), firstJson);
+        assertTrue(firstJson.contains("\"generatedPackages\":[\"a.alpha\",\"z.alpha\"]"), firstJson);
+    }
+    @Test
     void governanceRegistryRuleIdsProduceTemplateBackedNextAction() {
         for (String ruleId : GovernanceRuleRegistry.PUBLIC_RULE_IDS) {
             AgentDiagnostics.AgentPayload payload = AgentDiagnostics.payload(
@@ -420,6 +526,24 @@ class AgentDiagnosticsTest {
         );
         assertEquals(first.id(), firstRepeat.id());
     }
+    private static PrCheckResult prCheckResult(int exitCode, PrGovernanceTelemetry.Snapshot snapshot) {
+        return new PrCheckResult(
+            exitCode,
+            List.of(),
+            List.of(),
+            null,
+            null,
+            null,
+            null,
+            null,
+            List.of(),
+            snapshot != null && snapshot.hasBoundaryExpansion(),
+            snapshot != null && snapshot.hasDeltas(),
+            List.of(),
+            List.of(),
+            snapshot
+        );
+    }
     private static AgentDiagnostics.AgentProblem problem(
         AgentDiagnostics.AgentCategory category,
         String failureCode,
@@ -445,6 +569,8 @@ class AgentDiagnosticsTest {
         );
     }
 }
+
+
 
 
 

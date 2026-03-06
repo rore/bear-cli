@@ -133,7 +133,7 @@ Top-level JSON fields (v1):
 
 - `schemaVersion`, `command`, `mode`, `collectMode`, `status`, `exitCode`
 - `truncated`, `maxViolations`, `suppressedViolations`
-- `problems[]`, `clusters[]`, `nextAction|null`, `extensions` (empty object in v1)
+- `problems[]`, `clusters[]`, `nextAction|null`, `extensions`
 
 Problem fields:
 
@@ -150,6 +150,24 @@ Cluster fields:
 
 - `kind`, `primaryClusterId`, `title`, `steps[]`, `commands[]`, `links[]`
 
+`extensions` fields:
+
+- top-level `extensions` object is always present.
+- for non-`pr-check` commands, and for `pr-check` paths where telemetry is unavailable, `extensions` is `{}`.
+- when telemetry is available for `pr-check` or `pr-check --all`, `extensions.prGovernance` is present.
+
+`extensions.prGovernance` fields (`schemaVersion=bear.pr-governance.v1`):
+
+- `scope` is `single` or `all`.
+- `hasDeltas`, `hasBoundaryExpansion`, `classifications[]`, `deltas[]`, `governanceSignals[]` are always present when `prGovernance` is present.
+- all-mode also adds `blocks[]`.
+- top-level all-mode `hasDeltas`, `hasBoundaryExpansion`, and `classifications[]` aggregate repo-level plus per-block evidence.
+- top-level all-mode `deltas[]` remains repo-level only; per-block deltas live under `blocks[]`.
+- `classifications[]` uses fixed canonical class order, not lexical order.
+- each delta entry has `class`, `category`, `change`, `key`, `deltaId` where `deltaId=<class>|<category>|<change>|<key>`.
+- each governance signal entry has `type`, `path`, and `details`.
+- `details` keys are emitted in deterministic lexicographic order.
+
 ### Deterministic ordering and truncation
 
 Ordering guarantees for arrays:
@@ -157,6 +175,7 @@ Ordering guarantees for arrays:
 1. `problems[]`: existing exit-rank logic for the command, then `severity`, `category`, `failureCode`, `ruleId|reasonKey`, `blockId`, `file`, `span`.
 2. `clusters[]`: canonical cluster order derived from ordered problems.
 3. `cluster.files[]`: lexicographic, capped to first 50 (`filesTruncated=true` when capped).
+4. when present, `extensions.prGovernance.classifications[]` uses fixed canonical class order; `deltas[]` sort by class, category, change, key; `blocks[]` sort by block name ascending; and `governanceSignals[].details` keys sort lexicographically.
 
 Truncation (`MAX_VIOLATIONS=200`):
 
@@ -188,4 +207,6 @@ Known exact infra mappings in v1:
 - [commands-pr-check.md](commands-pr-check.md)
 - [commands-validate.md](commands-validate.md)
 - [troubleshooting.md](troubleshooting.md)
+
+
 
