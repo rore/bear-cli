@@ -57,7 +57,7 @@ Preview standing note:
 
 ## Ready Queue (Ordered, Execution Work Items)
 
-1. P2 CI boundary governance + telemetry unification: canonical CI-owned gates with explicit enforce/observe policy modes
+1. P2 CI boundary governance + PR diff ergonomics + telemetry unification: canonical CI-owned gates with explicit enforce/observe policy modes
 2. P3 optional expansion: Maven allowed-deps containment parity
 
 Queue note:

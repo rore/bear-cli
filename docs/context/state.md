@@ -10,7 +10,7 @@ Long-form historical notes are archived in `docs/context/archive/archive-state-h
 
 ## Current Focus
 
-Stabilized local Gradle execution by moving wrapper cache and build outputs off temp-backed paths and into ignored repo-local directories; next product work remains CI governance + telemetry unification.
+Stabilized local Gradle execution by moving wrapper cache and build outputs off temp-backed paths and into ignored repo-local directories; next product work remains combined CI boundary governance, PR diff ergonomics, and telemetry unification.
 
 ## Next Concrete Task
 
@@ -24,6 +24,7 @@ Stabilized local Gradle execution by moving wrapper cache and build outputs off 
 - RunReportLint and related tests were tightened around gate results, blocker evidence, canonical done-gates, and deterministic reporting structure.
 - Added BEAR run-grading rubric and pinned fast-by-default verification guidance in the always-load context docs.
 - Audited roadmap queue against implementation and tests: generated structural tests and Gradle allowed-deps containment are already shipped; the next real feature slice is combined CI boundary governance, PR diff ergonomics, and telemetry unification.
+- Parked `Target-Adaptable CLI + Initial Node/TypeScript Target` in `docs/context/future.md` as a future initiative rather than an active roadmap item, and stored the full deferred spec in `docs/context/backlog/future-target-adaptable-cli-node.md`.
 - Updated roadmap.md, program-board.md, and the P2 allowed-deps backlog doc to remove already-shipped items from the active queue and mark Gradle allowed-deps containment completed.
 - Stabilized local Gradle execution by moving wrapper cache to repo-local .bear-gradle-user-home and build outputs to ignored repo-local .bear-build/<runId>; added .bear-gradle-user-home/ to .gitignore.
 - Verification: ./gradlew.bat --no-daemon :app:test --tests com.bear.app.ContextDocsConsistencyTest

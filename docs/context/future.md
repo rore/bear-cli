@@ -152,6 +152,26 @@ Status:
 v0 supports:
 - JVM (Java) only
 
+### Target-Adaptable CLI + Initial Node/TypeScript Target
+
+Future initiative only; not part of the active P2/P3 queue.
+
+Full spec: `docs/context/backlog/future-target-adaptable-cli-node.md`
+
+Planned direction:
+- refactor CLI core behind one target dispatch seam while preserving byte-stable JVM behavior
+- keep IR unchanged; target selection is detector/pin based (`.bear/target.id`), not IR-driven
+- move JVM behavior behind `JvmTarget` without behavior change first
+- add a strict Node/TypeScript + pnpm profile as an initial scan-only target
+- Node first slice should support deterministic generate/drift/pr-check governance and governed-root import containment before any Node test-runner work
+- later follow-ups may add covered undeclared-reach checks, repo-level dependency governance, and pnpm verification runner support
+
+Guardrails:
+- no IR schema changes
+- no exit-code expansion
+- no broad docs neutralization sweep
+- CLI core remains target-agnostic outside a single dispatch boundary
+
 ---
 
 ## Plugin Architecture
