@@ -19,7 +19,7 @@ Run report MUST start with this concise template and order:
 
 `Review scope:` MUST follow:
 1. max 8 comma-separated entries.
-2. when `Run outcome: WAITING_FOR_BASELINE_REVIEW`, first two entries are exactly `bear.blocks.yaml`, `spec/*.bear.yaml`.
+2. when `Run outcome: WAITING_FOR_BASELINE_REVIEW`, first two entries are exactly `bear.blocks.yaml`, `bear-ir/*.bear.yaml`.
 
 ## Agent Loop Contract
 
@@ -59,7 +59,7 @@ Conditional required fields:
 - `Gate blocker: <...>`
 2. when `Run outcome` is `WAITING_FOR_BASELINE_REVIEW`:
 - `Gate blocker: BOUNDARY_EXPANSION`
-- `Baseline review scope: ...` including `bear.blocks.yaml` and `spec/*.bear.yaml` (pinned v1 contract)
+- `Baseline review scope: ...` including `bear.blocks.yaml` and `bear-ir/*.bear.yaml` (pinned v1 contract)
 
 Additional fields are allowed but ignored by core lint.
 
@@ -106,13 +106,13 @@ These may be included when useful, but are non-authoritative for pass/fail:
 
 ## Decomposition Checkpoint Rule
 
-1. `Decomposition contract consulted: yes (before IR authoring)` is required when `IR delta` indicates `spec/*.bear.yaml` authoring/modification.
+1. `Decomposition contract consulted: yes (before IR authoring)` is required when `IR delta` indicates `bear-ir/*.bear.yaml` authoring/modification.
 2. `Decomposition contract consulted: n/a (no IR authoring/change in this run)` is required when no IR authoring/modification occurred.
 
 ## GREENFIELD_BASELINE_WAITING_SEMANTICS
 
 Use `Run outcome: WAITING_FOR_BASELINE_REVIEW` only when all are true:
-1. run is greenfield baseline (`spec/*.bear.yaml` newly introduced in this PR),
+1. run is greenfield baseline (`bear-ir/*.bear.yaml` newly introduced in this PR),
 2. `pr-check` fails with boundary expansion (`exit=5`),
 3. expansion corresponds to newly introduced blocks/contracts/ports in this PR.
 
@@ -131,7 +131,7 @@ Keep report output compact and stable:
 
 ```text
 Status: tests=PASS; check=0; pr-check=0 base=origin/main; outcome=COMPLETE
-IR delta: modified spec/withdraw.bear.yaml
+IR delta: modified bear-ir/withdraw.bear.yaml
 Decomposition contract consulted: yes (before IR authoring)
 Gate results:
 - bear check --all --project . --collect=all --agent => 0
@@ -143,7 +143,7 @@ Run outcome: COMPLETE
 
 ```text
 Status: tests=PASS; check=0; pr-check=5 base=origin/main; outcome=WAITING_FOR_BASELINE_REVIEW
-IR delta: added spec/*.bear.yaml and bear.blocks.yaml
+IR delta: added bear-ir/*.bear.yaml and bear.blocks.yaml
 Decomposition contract consulted: yes (before IR authoring)
 Gate results:
 - bear check --all --project . --collect=all --agent => 0
@@ -151,14 +151,14 @@ Gate results:
 Run outcome: WAITING_FOR_BASELINE_REVIEW
 Required next action: boundary governance review and baseline merge
 Gate blocker: BOUNDARY_EXPANSION
-Baseline review scope: bear.blocks.yaml, spec/*.bear.yaml
+Baseline review scope: bear.blocks.yaml, bear-ir/*.bear.yaml
 ```
 
 ## Minimal BLOCKED Example
 
 ```text
 Status: tests=PASS; check=0; pr-check=5 base=origin/main; outcome=BLOCKED
-IR delta: modified spec/account.bear.yaml
+IR delta: modified bear-ir/account.bear.yaml
 Decomposition contract consulted: yes (before IR authoring)
 Gate results:
 - bear check --all --project . --collect=all --agent => 0

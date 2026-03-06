@@ -96,7 +96,7 @@ Implementation note:
 - `0` no boundary-expanding deltas
 - `5` boundary-expanding deltas found
 - `7` structural bypass (`CODE=BOUNDARY_BYPASS`)
-- `2` validation failure (including shared policy parse/schema failure: `CODE=POLICY_INVALID`, `PATH=spec/_shared.policy.yaml`)
+- `2` validation failure (including shared policy parse/schema failure: `CODE=POLICY_INVALID`, `PATH=bear-policy/_shared.policy.yaml`)
 - `64` usage failure
 - `70` internal failure
 - `74` IO or git failure

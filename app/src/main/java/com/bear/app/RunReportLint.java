@@ -109,8 +109,8 @@ final class RunReportLint {
             String baselineScope = fieldValue(lines, "Baseline review scope:");
             if (baselineScope == null
                 || !baselineScope.contains("bear.blocks.yaml")
-                || !baselineScope.contains("spec/*.bear.yaml")) {
-                violations.add("Baseline review scope must include bear.blocks.yaml and spec/*.bear.yaml (pinned v1 contract).");
+                || !baselineScope.contains("bear-ir/*.bear.yaml")) {
+                violations.add("Baseline review scope must include bear.blocks.yaml and bear-ir/*.bear.yaml (pinned v1 contract).");
             }
         }
 
@@ -128,14 +128,14 @@ final class RunReportLint {
             return false;
         }
         String normalized = irDelta.replace('\\', '/').toLowerCase(Locale.ROOT);
-        boolean referencesSpecIr = normalized.contains("spec/*.bear.yaml")
-            || normalized.matches(".*spec/[^\\s,;]+\\.bear\\.ya?ml.*");
+        boolean referencesBearIr = normalized.contains("bear-ir/*.bear.yaml")
+            || normalized.matches(".*bear-ir/[^\\s,;]+\\.bear\\.ya?ml.*");
         boolean indicatesChange = normalized.contains("added")
             || normalized.contains("modified")
             || normalized.contains("authored")
             || normalized.contains("changed")
             || normalized.contains("updated");
-        return referencesSpecIr && indicatesChange;
+        return referencesBearIr && indicatesChange;
     }
 
     private static ParsedStatus parseStatus(String statusLine, List<String> violations) {

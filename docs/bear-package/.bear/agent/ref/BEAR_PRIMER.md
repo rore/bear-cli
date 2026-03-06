@@ -13,7 +13,7 @@ You declare structure in IR, generate deterministic artifacts, implement only us
 - Block:
   - one backend logic unit with explicit contract and allowed effects.
 - IR:
-  - BEAR YAML (`spec/*.bear.yaml`) declaring block boundary.
+  - BEAR YAML (`bear-ir/*.bear.yaml`) declaring block boundary.
 - Contract:
   - input/output fields for the block API.
 - Effects:

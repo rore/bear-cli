@@ -19,7 +19,7 @@ class BlockIndexParserTest {
             + "version: v1\n"
             + "blocks:\n"
             + "  - name: alpha\n"
-            + "    ir: spec/a.bear.yaml\n"
+            + "    ir: bear-ir/a.bear.yaml\n"
             + "    projectRoot: services/a\n", StandardCharsets.UTF_8);
 
         BlockIndex parsed = new BlockIndexParser().parse(tempDir, index);
@@ -35,10 +35,10 @@ class BlockIndexParserTest {
             + "version: v1\n"
             + "blocks:\n"
             + "  - name: alpha\n"
-            + "    ir: spec/a.bear.yaml\n"
+            + "    ir: bear-ir/a.bear.yaml\n"
             + "    projectRoot: services/a\n"
             + "  - name: beta\n"
-            + "    ir: spec/b.bear.yaml\n"
+            + "    ir: bear-ir/b.bear.yaml\n"
             + "    projectRoot: services/a\n", StandardCharsets.UTF_8);
 
         BlockIndex parsed = new BlockIndexParser().parse(tempDir, index);
@@ -52,7 +52,7 @@ class BlockIndexParserTest {
             + "version: v1\n"
             + "blocks:\n"
             + "  - name: Alpha\n"
-            + "    ir: spec/a.bear.yaml\n"
+            + "    ir: bear-ir/a.bear.yaml\n"
             + "    projectRoot: services/a\n", StandardCharsets.UTF_8);
 
         BlockIndexValidationException error = assertThrows(
@@ -69,7 +69,7 @@ class BlockIndexParserTest {
             + "version: v1\n"
             + "blocks:\n"
             + "  - name: alpha\n"
-            + "    ir: spec/a.bear.yaml\n"
+            + "    ir: bear-ir/a.bear.yaml\n"
             + "    projectRoot: .\n", StandardCharsets.UTF_8);
 
         BlockIndex parsed = new BlockIndexParser().parse(tempDir, index);
@@ -101,10 +101,10 @@ class BlockIndexParserTest {
             + "version: v1\n"
             + "blocks:\n"
             + "  - name: alpha\n"
-            + "    ir: spec/a.bear.yaml\n"
+            + "    ir: bear-ir/a.bear.yaml\n"
             + "    projectRoot: services/a\n"
             + "  - name: beta\n"
-            + "    ir: spec/a.bear.yaml\n"
+            + "    ir: bear-ir/a.bear.yaml\n"
             + "    projectRoot: services/a\n", StandardCharsets.UTF_8);
 
         BlockIndexValidationException error = assertThrows(

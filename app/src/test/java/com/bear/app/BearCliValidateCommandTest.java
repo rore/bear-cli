@@ -18,8 +18,8 @@ class BearCliValidateCommandTest {
     @Test
     void validateFixturePrintsGoldenCanonicalYaml() throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
-        Path golden = repoRoot.resolve("spec/golden/withdraw.canonical.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
+        Path golden = repoRoot.resolve("testdata/golden/withdraw.canonical.yaml");
 
         CliRunResult run = runCli(new String[] { "validate", fixture.toString() });
         assertEquals(0, run.exitCode);
@@ -85,7 +85,7 @@ class BearCliValidateCommandTest {
         String previous = System.getProperty(key);
         try {
             System.setProperty(key, "true");
-            CliRunResult run = runCli(new String[] { "validate", "spec/fixtures/withdraw.bear.yaml" });
+            CliRunResult run = runCli(new String[] { "validate", "bear-ir/fixtures/withdraw.bear.yaml" });
             assertEquals(70, run.exitCode);
             assertTrue(run.stderr.startsWith("internal: INTERNAL_ERROR:"));
             assertFailureEnvelope(

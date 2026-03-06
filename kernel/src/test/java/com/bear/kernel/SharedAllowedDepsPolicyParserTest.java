@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class SharedAllowedDepsPolicyParserTest {
     @Test
     void parseValidPolicySortsDependencies(@TempDir Path tempDir) throws Exception {
-        Path policy = tempDir.resolve("spec/_shared.policy.yaml");
+        Path policy = tempDir.resolve("bear-policy/_shared.policy.yaml");
         Files.createDirectories(policy.getParent());
         Files.writeString(policy, ""
             + "version: v1\n"
@@ -39,7 +39,7 @@ class SharedAllowedDepsPolicyParserTest {
 
     @Test
     void parseMissingPolicyReturnsEmpty(@TempDir Path tempDir) throws Exception {
-        Path policy = tempDir.resolve("spec/_shared.policy.yaml");
+        Path policy = tempDir.resolve("bear-policy/_shared.policy.yaml");
         SharedAllowedDepsPolicyParser parser = new SharedAllowedDepsPolicyParser();
         SharedAllowedDepsPolicy parsed = parser.parse(policy);
         assertEquals(0, parsed.allowedDeps().size());
@@ -47,7 +47,7 @@ class SharedAllowedDepsPolicyParserTest {
 
     @Test
     void parseRejectsUnknownKeys(@TempDir Path tempDir) throws Exception {
-        Path policy = tempDir.resolve("spec/_shared.policy.yaml");
+        Path policy = tempDir.resolve("bear-policy/_shared.policy.yaml");
         Files.createDirectories(policy.getParent());
         Files.writeString(policy, ""
             + "version: v1\n"
@@ -63,7 +63,7 @@ class SharedAllowedDepsPolicyParserTest {
 
     @Test
     void parseRejectsInvalidVersionOrScope(@TempDir Path tempDir) throws Exception {
-        Path policy = tempDir.resolve("spec/_shared.policy.yaml");
+        Path policy = tempDir.resolve("bear-policy/_shared.policy.yaml");
         Files.createDirectories(policy.getParent());
         Files.writeString(policy, ""
             + "version: v2\n"
@@ -85,7 +85,7 @@ class SharedAllowedDepsPolicyParserTest {
 
     @Test
     void parseRejectsDuplicateMavenEntries(@TempDir Path tempDir) throws Exception {
-        Path policy = tempDir.resolve("spec/_shared.policy.yaml");
+        Path policy = tempDir.resolve("bear-policy/_shared.policy.yaml");
         Files.createDirectories(policy.getParent());
         Files.writeString(policy, ""
             + "version: v1\n"
@@ -104,7 +104,7 @@ class SharedAllowedDepsPolicyParserTest {
 
     @Test
     void parseRejectsMalformedCoordinatesAndUnpinnedVersions(@TempDir Path tempDir) throws Exception {
-        Path policy = tempDir.resolve("spec/_shared.policy.yaml");
+        Path policy = tempDir.resolve("bear-policy/_shared.policy.yaml");
         Files.createDirectories(policy.getParent());
         SharedAllowedDepsPolicyParser parser = new SharedAllowedDepsPolicyParser();
 

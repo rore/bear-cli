@@ -32,7 +32,7 @@ class RunReportLintTest {
     void missingGateResultsFails() {
         String report = """
             Status: tests=PASS; check=0; pr-check=0 base=origin/main; outcome=COMPLETE
-            IR delta: modified spec/withdraw.bear.yaml
+            IR delta: modified bear-ir/withdraw.bear.yaml
             Decomposition contract consulted: yes (before IR authoring)
             Run outcome: COMPLETE
             """;
@@ -46,7 +46,7 @@ class RunReportLintTest {
     void gateResultsWithoutGateLinesFails() {
         String report = """
             Status: tests=PASS; check=0; pr-check=0 base=origin/main; outcome=COMPLETE
-            IR delta: modified spec/withdraw.bear.yaml
+            IR delta: modified bear-ir/withdraw.bear.yaml
             Decomposition contract consulted: yes (before IR authoring)
             Gate results:
             Run outcome: COMPLETE
@@ -82,7 +82,7 @@ class RunReportLintTest {
             Run outcome: WAITING_FOR_BASELINE_REVIEW
             Required next action: boundary governance review and baseline merge
             Gate blocker: BOUNDARY_EXPANSION
-            Baseline review scope: bear.blocks.yaml, spec/*.bear.yaml
+            Baseline review scope: bear.blocks.yaml, bear-ir/*.bear.yaml
             """;
 
         RunReportLint.ReportLintResult lint = RunReportLint.lint(report);
@@ -94,7 +94,7 @@ class RunReportLintTest {
     void completeRequiresZeroStatusAndCanonicalDoneGates() {
         String report = """
             Status: tests=PASS; check=0; pr-check=7 base=origin/main; outcome=COMPLETE
-            IR delta: modified spec/withdraw.bear.yaml
+            IR delta: modified bear-ir/withdraw.bear.yaml
             Decomposition contract consulted: yes (before IR authoring)
             Gate results:
             - bear check --all --project . --agent => 0
@@ -112,7 +112,7 @@ class RunReportLintTest {
     void blockedRequiresGateBlocker() {
         String report = """
             Status: tests=PASS; check=0; pr-check=5 base=origin/main; outcome=BLOCKED
-            IR delta: modified spec/account.bear.yaml
+            IR delta: modified bear-ir/account.bear.yaml
             Decomposition contract consulted: yes (before IR authoring)
             Gate results:
             - bear check --all --project . --collect=all --agent => 0
@@ -130,7 +130,7 @@ class RunReportLintTest {
     void blockedPassesWithRequiredCoreFields() {
         String report = """
             Status: tests=PASS; check=0; pr-check=5 base=origin/main; outcome=BLOCKED
-            IR delta: modified spec/account.bear.yaml
+            IR delta: modified bear-ir/account.bear.yaml
             Decomposition contract consulted: yes (before IR authoring)
             Gate results:
             - bear check --all --project . --collect=all --agent => 0
@@ -148,7 +148,7 @@ class RunReportLintTest {
     void waitingRequiresPinnedBaselineRules() {
         String report = """
             Status: tests=PASS; check=0; pr-check=5 base=origin/main; outcome=WAITING_FOR_BASELINE_REVIEW
-            IR delta: added spec/wallet.bear.yaml
+            IR delta: added bear-ir/wallet.bear.yaml
             Decomposition contract consulted: yes (before IR authoring)
             Gate results:
             - bear check --all --project . --collect=all --agent => 0
@@ -156,7 +156,7 @@ class RunReportLintTest {
             Run outcome: WAITING_FOR_BASELINE_REVIEW
             Required next action: boundary governance review and baseline merge
             Gate blocker: BOUNDARY_EXPANSION
-            Baseline review scope: spec/*.bear.yaml
+            Baseline review scope: bear-ir/*.bear.yaml
             """;
 
         RunReportLint.ReportLintResult lint = RunReportLint.lint(report);
@@ -185,11 +185,26 @@ class RunReportLintTest {
         assertTrue(lint.violations().stream().anyMatch(v -> v.contains("must not claim completion")));
     }
 
+
+    @Test
+    void productSpecDeltaDoesNotRequireIrDecompositionCheckpoint() {
+        String report = """
+            Status: tests=PASS; check=0; pr-check=0 base=origin/main; outcome=COMPLETE
+            IR delta: modified spec/SPEC.feature-extension.md
+            Gate results:
+            - bear check --all --project . --collect=all --agent => 0
+            - bear pr-check --all --project . --base origin/main --collect=all --agent => 0
+            Run outcome: COMPLETE
+            """;
+
+        RunReportLint.ReportLintResult lint = RunReportLint.lint(report);
+        assertTrue(lint.ok());
+    }
     @Test
     void completePassesWithCanonicalZeroDoneGatesAndAgentMode() {
         String report = """
             Status: tests=PASS; check=0; pr-check=0 base=origin/main; outcome=COMPLETE
-            IR delta: modified spec/withdraw.bear.yaml
+            IR delta: modified bear-ir/withdraw.bear.yaml
             Decomposition contract consulted: yes (before IR authoring)
             Gate results:
             - bear check --all --project . --collect=all --agent => 0
@@ -205,7 +220,7 @@ class RunReportLintTest {
     void extrasAreAllowedWhenCoreIsValid() {
         String report = """
             Status: tests=PASS; check=0; pr-check=0 base=origin/main; outcome=COMPLETE
-            IR delta: modified spec/withdraw.bear.yaml
+            IR delta: modified bear-ir/withdraw.bear.yaml
             Decomposition contract consulted: yes (before IR authoring)
             Gate results:
             - bear check --all --project . --collect=all --agent => 0

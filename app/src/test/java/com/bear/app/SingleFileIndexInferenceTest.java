@@ -105,10 +105,10 @@ class SingleFileIndexInferenceTest {
                 version: v1
                 blocks:
                   - name: account
-                    ir: spec/account.bear.yaml
+                    ir: bear-ir/account.bear.yaml
                     projectRoot: .
                   - name: transaction-log
-                    ir: spec/transaction-log.bear.yaml
+                    ir: bear-ir/transaction-log.bear.yaml
                     projectRoot: .
                 """,
                 StandardCharsets.UTF_8

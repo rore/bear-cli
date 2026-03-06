@@ -80,6 +80,6 @@ Contract:
 
 Direction lock:
 - no IR schema changes in this slice.
-- path-scoped shared policy is implemented at `spec/_shared.policy.yaml`.
+- path-scoped shared policy is implemented at `bear-policy/_shared.policy.yaml`.
 - shared policy add/change are boundary-expanding in `pr-check`; removal is ordinary.
 - `pr-check --all` renders shared-policy deltas once in `REPO DELTA:` before `SUMMARY`.

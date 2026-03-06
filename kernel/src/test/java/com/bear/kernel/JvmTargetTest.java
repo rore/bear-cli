@@ -214,7 +214,7 @@ class JvmTargetTest {
         assertTrue(source.contains("case \"GetTransactions\":"));
     }
     private static BearIr parseNormalizedFixture() throws Exception {
-        Path fixture = TestRepoPaths.repoRoot().resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = TestRepoPaths.repoRoot().resolve("bear-ir/fixtures/withdraw.bear.yaml");
         BearIrParser parser = new BearIrParser();
         BearIrValidator validator = new BearIrValidator();
         BearIrNormalizer normalizer = new BearIrNormalizer();

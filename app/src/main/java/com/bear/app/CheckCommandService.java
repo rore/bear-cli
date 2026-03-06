@@ -23,7 +23,7 @@ final class CheckCommandService {
     private static final String GENERATED_BEAR_ROOT = "build/generated/bear";
     private static final String GENERATED_WIRING_PREFIX = GENERATED_BEAR_ROOT + "/wiring/";
     private static final String CONTAINMENT_ENTRYPOINT_PATH = "build/generated/bear/gradle/bear-containment.gradle";
-    private static final String SHARED_POLICY_PATH = "spec/_shared.policy.yaml";
+    private static final String SHARED_POLICY_PATH = "bear-policy/_shared.policy.yaml";
     private static final int WIRING_DETAIL_LIMIT = 20;
     private static final String RUNTIME_LEGACY_PREFIX = "runtime/src/main/java/com/bear/generated/runtime/";
     private static final String RUNTIME_CANONICAL_PREFIX = "src/main/java/com/bear/generated/runtime/";
@@ -534,7 +534,7 @@ final class CheckCommandService {
                         "HYGIENE",
                         CliCodes.HYGIENE_UNEXPECTED_PATHS,
                         selectedUnexpectedPaths.get(0),
-                        "Remove unexpected tool directories or allowlist them in `.bear/policy/hygiene-allowlist.txt`, then rerun `bear check`.",
+                        "Remove unexpected tool directories or allowlist them in `bear-policy/hygiene-allowlist.txt`, then rerun `bear check`.",
                         firstLine,
                         problems
                     );
@@ -770,13 +770,13 @@ final class CheckCommandService {
                     "CONTAINMENT",
                     CliCodes.CONTAINMENT_NOT_VERIFIED,
                     SHARED_POLICY_PATH,
-                    "Add dependency to `spec/_shared.policy.yaml` with exact pinned version, or remove external dependency usage from `src/main/java/blocks/_shared/**`, then rerun `bear check`.",
+                    "Add dependency to `bear-policy/_shared.policy.yaml` with exact pinned version, or remove external dependency usage from `src/main/java/blocks/_shared/**`, then rerun `bear check`.",
                     violationLine
                 );
             }
             if (testResult.status() == ProjectTestStatus.COMPILE_FAILURE) {
                 String markerLine = ProjectTestRunner.firstCompileFailureLine(testResult.output());
-                if (isContainmentCompileMismatch(testResult, markerLine)) {
+                if (hasContainmentFailureSignal(testResult, markerLine)) {
                     String containmentLine = "check: CONTAINMENT_REQUIRED: CONTAINMENT_METADATA_MISMATCH: project compile preflight failed";
                     if (markerLine != null && !markerLine.isBlank()) {
                         containmentLine += "; line: " + markerLine;
@@ -820,7 +820,35 @@ final class CheckCommandService {
                 );
             }
             if (testResult.status() == ProjectTestStatus.FAILED) {
-                diagnostics.add("check: TEST_FAILED: project tests failed");
+                String markerLine = ProjectTestRunner.firstRelevantProjectTestFailureLine(testResult.output());
+                if (hasContainmentFailureSignal(testResult, markerLine)) {
+                    String containmentLine = "check: CONTAINMENT_REQUIRED: CONTAINMENT_METADATA_MISMATCH: project tests failed";
+                    if (markerLine != null && !markerLine.isBlank()) {
+                        containmentLine += "; line: " + markerLine;
+                    }
+                    containmentLine += phaseTaskSuffix(testResult);
+                    diagnostics.add(containmentLine);
+                    diagnostics.addAll(CliText.tailLines(testResult.output()));
+                    return checkFailure(
+                        CliCodes.EXIT_TEST_FAILURE,
+                        diagnostics,
+                        "CONTAINMENT",
+                        CliCodes.CONTAINMENT_NOT_VERIFIED,
+                        "project.tests",
+                        "Run `bear compile --all --project <path>` once, rerun the same `bear check`, and if the same containment/classpath signature persists stop and escalate.",
+                        containmentLine,
+                        List.of(defaultProblem(
+                            CliCodes.CONTAINMENT_NOT_VERIFIED,
+                            "project.tests",
+                            containmentLine,
+                            blockKey,
+                            null,
+                            CliCodes.CONTAINMENT_METADATA_MISMATCH
+                        ))
+                    );
+                }
+                String testFailureLine = "check: TEST_FAILED: project tests failed";
+                diagnostics.add(testFailureLine);
                 diagnostics.addAll(CliText.tailLines(testResult.output()));
                 return checkFailure(
                     CliCodes.EXIT_TEST_FAILURE,
@@ -829,7 +857,7 @@ final class CheckCommandService {
                     CliCodes.TEST_FAILURE,
                     "project.tests",
                     "Fix project tests and rerun `bear check <ir-file> --project <path>`.",
-                    "check: TEST_FAILED: project tests failed"
+                    testFailureLine
                 );
             }
             if (testResult.status() == ProjectTestStatus.INVARIANT_VIOLATION) {
@@ -1043,20 +1071,8 @@ final class CheckCommandService {
         return CheckDiagnosticsFormatter.markerWriteFailureSuffix(error);
     }
 
-    private static boolean isContainmentCompileMismatch(ProjectTestResult testResult, String markerLine) {
-        return containsContainmentCompileSignal(markerLine)
-            || containsContainmentCompileSignal(testResult.output())
-            || containsContainmentCompileSignal(testResult.lastObservedTask());
-    }
-
-    private static boolean containsContainmentCompileSignal(String text) {
-        if (text == null || text.isBlank()) {
-            return false;
-        }
-        return text.contains("compileBearImpl__shared")
-            || text.contains("build/generated/bear/gradle/bear-containment.gradle")
-            || text.contains("bear-containment.gradle")
-            || text.contains("CONTAINMENT_REQUIRED:");
+    private static boolean hasContainmentFailureSignal(ProjectTestResult testResult, String markerLine) {
+        return ContainmentFailureClassifier.hasContainmentSignal(testResult, markerLine);
     }
 
     private static CheckResult validateWiringManifestSemantics(WiringManifest manifest, String path) {

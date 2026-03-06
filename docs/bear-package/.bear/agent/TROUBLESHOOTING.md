@@ -49,7 +49,7 @@ Explicit non-remediations:
 ## Deterministic Remediation by Failure Class
 
 1. `CODE=POLICY_INVALID`:
-- fix `.bear/policy/*.txt` format/order/path exactness.
+- fix `bear-policy/*.txt` format/order/path exactness.
 
 2. `CODE=BLOCK_PORT_INDEX_REQUIRED`:
 - single-file command on IR with `kind=block` effects requires a resolved index path: explicit `--index` or inferred `<project>/bear.blocks.yaml`.
@@ -273,7 +273,7 @@ Label guidance:
 1. `AGENT_PACKAGE_PARITY_PRECONDITION`:
 - required files missing before implementation start (`.bear/agent/CONTRACTS.md`, `.bear/agent/TROUBLESHOOTING.md`, `.bear/agent/REPORTING.md`, `.bear/agent/ref/IR_REFERENCE.md`).
 2. `GREENFIELD_HARD_STOP`:
-- `spec/*.bear.yaml` empty and implementation edits attempted before successful `bear validate` + `bear compile`.
+- `bear-ir/*.bear.yaml` empty and implementation edits attempted before successful `bear validate` + `bear compile`.
 3. `INDEX_REQUIRED_PREFLIGHT`:
 - index-required workflow inferred but `bear.blocks.yaml` preflight is unmet before `--all` gates.
 4. `POST_FAILURE_DISCIPLINE`:

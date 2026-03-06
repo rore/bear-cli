@@ -15,7 +15,7 @@ class AgentLoopReliabilityRegressionTest {
     @Test
     void regressionScenarioKeepsRerunEquivalentIdsUniqueAndReportGuarded() {
         AgentCommandContext context = AgentCommandContext.forCheckSingle(
-            Path.of("spec/account-service.bear.yaml"),
+            Path.of("bear-ir/account-service.bear.yaml"),
             Path.of("."),
             null,
             false,
@@ -77,7 +77,7 @@ class AgentLoopReliabilityRegressionTest {
 
         String incompleteReport = """
             Status: tests=PASS; check=7; pr-check=5 base=origin/main; outcome=COMPLETE
-            IR delta: added spec/account-service.bear.yaml
+            IR delta: added bear-ir/account-service.bear.yaml
             Gate results:
             - bear check --all --project . --agent => 7
             Run outcome: COMPLETE
@@ -88,7 +88,7 @@ class AgentLoopReliabilityRegressionTest {
 
         String completeReport = """
             Status: tests=PASS; check=0; pr-check=0 base=origin/main; outcome=COMPLETE
-            IR delta: added spec/account-service.bear.yaml
+            IR delta: added bear-ir/account-service.bear.yaml
             Decomposition contract consulted: yes (before IR authoring)
             Gate results:
             - bear check --all --project . --collect=all --agent => 0

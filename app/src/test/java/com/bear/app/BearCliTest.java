@@ -103,7 +103,7 @@ class BearCliTest {
     @Test
     void compileFixtureGeneratesArtifactsAndPreservesExistingImpl(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
 
         Path impl = tempDir.resolve("src/main/java/blocks/withdraw/impl/WithdrawImpl.java");
         Files.createDirectories(impl.getParent());
@@ -186,7 +186,7 @@ class BearCliTest {
     @Test
     void fixRegeneratesArtifactsAndPreservesExistingImpl(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
 
         Path impl = tempDir.resolve("src/main/java/blocks/withdraw/impl/WithdrawImpl.java");
         Files.createDirectories(impl.getParent());
@@ -209,7 +209,7 @@ class BearCliTest {
     @Test
     void fixDeterministicRerunIsByteIdentical(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
 
         assertEquals(0, runCli(new String[] { "fix", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         Path generated = tempDir.resolve("build/generated/bear/src/main/java/com/bear/generated/withdraw/Withdraw_ExecuteWithdraw.java");
@@ -275,7 +275,7 @@ class BearCliTest {
     @Test
     void checkMissingBaselineIsDriftError(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
 
         CliRunResult run = runCli(new String[] { "check", fixture.toString(), "--project", tempDir.toString() });
         assertEquals(3, run.exitCode);
@@ -292,7 +292,7 @@ class BearCliTest {
     @Test
     void checkEmptyBaselineIsDriftError(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         Path emptyBaseline = tempDir.resolve("build/generated/bear");
         Files.createDirectories(emptyBaseline);
 
@@ -311,7 +311,7 @@ class BearCliTest {
     @Test
     void checkPassesWithNoDriftAndDoesNotMutateBaseline(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
 
         CliRunResult compile = runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() });
         assertEquals(0, compile.exitCode);
@@ -337,7 +337,7 @@ class BearCliTest {
     @Test
     void checkPassesWhenProjectPathIsRelative() throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         Path relativeProjectRoot = Path.of("build/tmp/check-relative-project-" + System.nanoTime());
         Path absoluteProjectRoot = relativeProjectRoot.toAbsolutePath().normalize();
         Files.createDirectories(absoluteProjectRoot);
@@ -363,7 +363,7 @@ class BearCliTest {
     @Test
     void checkReportsAddedRemovedChangedInDeterministicOrderAndDoesNotMutate(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
 
         CliRunResult compile = runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() });
         assertEquals(0, compile.exitCode);
@@ -401,7 +401,7 @@ class BearCliTest {
     @Test
     void checkWiringDriftUsesCanonicalPathWithoutDuplicates(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
 
         Path wiring = tempDir.resolve("build/generated/bear/wiring/withdraw.wiring.json");
@@ -425,7 +425,7 @@ class BearCliTest {
     @Test
     void checkLegacyRuntimePathPresenceFailsDrift(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -450,7 +450,7 @@ class BearCliTest {
     @Test
     void checkMissingCanonicalRuntimeFailsDrift(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -472,7 +472,7 @@ class BearCliTest {
     @Test
     void checkCanonicalRuntimeOnlyPasses(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -489,7 +489,7 @@ class BearCliTest {
     @Test
     void checkEmitsCapabilityAddedBoundarySignalAndDrift(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
 
         Path manifest = tempDir.resolve("build/generated/bear/surfaces/withdraw.surface.json");
@@ -513,7 +513,7 @@ class BearCliTest {
     @Test
     void checkEmitsCapabilityOpAddedBoundarySignalAndDrift(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
 
         Path manifest = tempDir.resolve("build/generated/bear/surfaces/withdraw.surface.json");
@@ -537,7 +537,7 @@ class BearCliTest {
     @Test
     void checkEmitsInvariantRelaxedBoundarySignalAndDrift(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
 
         Path manifest = tempDir.resolve("build/generated/bear/surfaces/withdraw.surface.json");
@@ -561,7 +561,7 @@ class BearCliTest {
     @Test
     void checkBoundarySignalOrderingIsTypeThenKey(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
 
         Path manifest = tempDir.resolve("build/generated/bear/surfaces/withdraw.surface.json");
@@ -591,7 +591,7 @@ class BearCliTest {
     @Test
     void checkWarnsWhenBaselineManifestMissing(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
 
         Path manifest = tempDir.resolve("build/generated/bear/surfaces/withdraw.surface.json");
@@ -611,7 +611,7 @@ class BearCliTest {
     @Test
     void checkWarnsWhenBaselineManifestInvalid(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
 
         Path manifest = tempDir.resolve("build/generated/bear/surfaces/withdraw.surface.json");
@@ -631,7 +631,7 @@ class BearCliTest {
     @Test
     void checkWarnsOnBaselineStampMismatch(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
 
         Path manifest = tempDir.resolve("build/generated/bear/surfaces/withdraw.surface.json");
@@ -654,7 +654,7 @@ class BearCliTest {
     @Test
     void checkFailsInternalWhenCandidateManifestMissingOrInvalid(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
 
         String previous = System.getProperty("bear.check.test.candidateManifestMode");
@@ -692,7 +692,7 @@ class BearCliTest {
     @Test
     void checkMissingProjectWrapperReturnsIoError(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
 
         CliRunResult compile = runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() });
         assertEquals(0, compile.exitCode);
@@ -725,7 +725,7 @@ class BearCliTest {
             check.stderr,
             "CONTAINMENT_UNSUPPORTED_TARGET",
             "project.root",
-            "Containment enforcement in P2 requires Java+Gradle with wrapper at project root; remove `impl.allowedDeps`/`spec/_shared.policy.yaml` scope usage or use supported target, then rerun `bear check`."
+            "Containment enforcement in P2 requires Java+Gradle with wrapper at project root; remove `impl.allowedDeps`/`bear-policy/_shared.policy.yaml` scope usage or use supported target, then rerun `bear check`."
         );
     }
 
@@ -747,7 +747,7 @@ class BearCliTest {
             single.stderr,
             "CONTAINMENT_UNSUPPORTED_TARGET",
             "project.root",
-            "Containment enforcement in P2 requires Java+Gradle with wrapper at project root; remove `impl.allowedDeps`/`spec/_shared.policy.yaml` scope usage or use supported target, then rerun `bear check`."
+            "Containment enforcement in P2 requires Java+Gradle with wrapper at project root; remove `impl.allowedDeps`/`bear-policy/_shared.policy.yaml` scope usage or use supported target, then rerun `bear check`."
         );
 
         writeBlockIndex(tempDir, ""
@@ -1092,7 +1092,7 @@ class BearCliTest {
     @Test
     void checkContainmentInScopeFromSharedPolicyOnlyRequiresMarkers(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -1100,7 +1100,7 @@ class BearCliTest {
             "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
             "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
         );
-        Path policy = tempDir.resolve("spec/_shared.policy.yaml");
+        Path policy = tempDir.resolve("bear-policy/_shared.policy.yaml");
         Files.createDirectories(policy.getParent());
         Files.writeString(
             policy,
@@ -1120,7 +1120,7 @@ class BearCliTest {
     @Test
     void checkContainmentInScopeFromSharedSourcesOnlyRequiresMarkers(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -1140,7 +1140,7 @@ class BearCliTest {
     @Test
     void checkDoesNotActivateContainmentForEmptySharedDirWithoutPolicy(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -1157,7 +1157,7 @@ class BearCliTest {
     @Test
     void checkWithoutContainmentScopeDoesNotPreflightContainmentEntrypoint(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -1175,7 +1175,7 @@ class BearCliTest {
     @Test
     void checkSharedPolicyInvalidFailsValidation(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -1183,7 +1183,7 @@ class BearCliTest {
             "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
             "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
         );
-        Path policy = tempDir.resolve("spec/_shared.policy.yaml");
+        Path policy = tempDir.resolve("bear-policy/_shared.policy.yaml");
         Files.createDirectories(policy.getParent());
         Files.writeString(
             policy,
@@ -1201,8 +1201,8 @@ class BearCliTest {
         assertFailureEnvelope(
             check.stderr,
             "POLICY_INVALID",
-            "spec/_shared.policy.yaml",
-            "Fix `spec/_shared.policy.yaml` (version/scope/schema and pinned allowedDeps) and rerun `bear check`."
+            "bear-policy/_shared.policy.yaml",
+            "Fix `bear-policy/_shared.policy.yaml` (version/scope/schema and pinned allowedDeps) and rerun `bear check`."
         );
     }
 
@@ -1227,8 +1227,8 @@ class BearCliTest {
         assertFailureEnvelope(
             check.stderr,
             "CONTAINMENT_NOT_VERIFIED",
-            "spec/_shared.policy.yaml",
-            "Add dependency to `spec/_shared.policy.yaml` with exact pinned version, or remove external dependency usage from `src/main/java/blocks/_shared/**`, then rerun `bear check`."
+            "bear-policy/_shared.policy.yaml",
+            "Add dependency to `bear-policy/_shared.policy.yaml` with exact pinned version, or remove external dependency usage from `src/main/java/blocks/_shared/**`, then rerun `bear check`."
         );
     }
 
@@ -1544,6 +1544,70 @@ class BearCliTest {
         assertTrue(stderr.contains("DETAIL: check: CONTAINMENT_REQUIRED: SHARED_DEPS_VIOLATION:"));
     }
 
+
+    @Test
+    void checkAllMapsContainmentCompileFailureToContainmentLane(@TempDir Path tempDir) throws Exception {
+        Path irDir = tempDir.resolve("bear-ir");
+        Files.createDirectories(irDir);
+        Path alphaIr = irDir.resolve("alpha.bear.yaml");
+        Files.writeString(alphaIr, fixtureIrWithAllowedDepForBlock("alpha", "com.fasterxml.jackson.core:jackson-databind", "2.17.2"), StandardCharsets.UTF_8);
+
+        Path projectRoot = tempDir.resolve("services/shared");
+        Files.createDirectories(projectRoot);
+        assertEquals(0, runCli(new String[] { "compile", alphaIr.toString(), "--project", projectRoot.toString() }).exitCode);
+        writeWorkingBlockImpl(projectRoot, "alpha");
+        writeProjectWrapper(
+            projectRoot,
+            "@echo off\r\necho ^> Task :compileBearImpl__shared FAILED\r\necho package blocks.account.impl does not exist\r\nexit /b 1\r\n",
+            "#!/usr/bin/env sh\necho \"> Task :compileBearImpl__shared FAILED\"\necho \"package blocks.account.impl does not exist\"\nexit 1\n"
+        );
+
+        writeBlockIndex(tempDir, ""
+            + "version: v1\n"
+            + "blocks:\n"
+            + "  - name: alpha\n"
+            + "    ir: bear-ir/alpha.bear.yaml\n"
+            + "    projectRoot: services/shared\n");
+
+        CliRunResult run = runCli(new String[] { "check", "--all", "--project", tempDir.toString() });
+        assertEquals(4, run.exitCode);
+        String stderr = normalizeLf(run.stderr);
+        assertTrue(stderr.contains("BLOCK: alpha"));
+        assertTrue(stderr.contains("BLOCK_CODE: CONTAINMENT_NOT_VERIFIED"));
+        assertTrue(stderr.contains("DETAIL: check: CONTAINMENT_REQUIRED: CONTAINMENT_METADATA_MISMATCH:"));
+    }
+
+    @Test
+    void checkAllMapsContainmentGenericFailureToContainmentLane(@TempDir Path tempDir) throws Exception {
+        Path irDir = tempDir.resolve("bear-ir");
+        Files.createDirectories(irDir);
+        Path alphaIr = irDir.resolve("alpha.bear.yaml");
+        Files.writeString(alphaIr, fixtureIrWithAllowedDepForBlock("alpha", "com.fasterxml.jackson.core:jackson-databind", "2.17.2"), StandardCharsets.UTF_8);
+
+        Path projectRoot = tempDir.resolve("services/shared");
+        Files.createDirectories(projectRoot);
+        assertEquals(0, runCli(new String[] { "compile", alphaIr.toString(), "--project", projectRoot.toString() }).exitCode);
+        writeWorkingBlockImpl(projectRoot, "alpha");
+        writeProjectWrapper(
+            projectRoot,
+            "@echo off\r\necho ^> Task :compileBearImpl__shared\r\necho build/generated/bear/gradle/bear-containment.gradle\r\necho package blocks.account.impl does not exist\r\nexit /b 1\r\n",
+            "#!/usr/bin/env sh\necho \"> Task :compileBearImpl__shared\"\necho \"build/generated/bear/gradle/bear-containment.gradle\"\necho \"package blocks.account.impl does not exist\"\nexit 1\n"
+        );
+
+        writeBlockIndex(tempDir, ""
+            + "version: v1\n"
+            + "blocks:\n"
+            + "  - name: alpha\n"
+            + "    ir: bear-ir/alpha.bear.yaml\n"
+            + "    projectRoot: services/shared\n");
+
+        CliRunResult run = runCli(new String[] { "check", "--all", "--project", tempDir.toString() });
+        assertEquals(4, run.exitCode);
+        String stderr = normalizeLf(run.stderr);
+        assertTrue(stderr.contains("BLOCK: alpha"));
+        assertTrue(stderr.contains("BLOCK_CODE: CONTAINMENT_NOT_VERIFIED"));
+        assertTrue(stderr.contains("DETAIL: check: CONTAINMENT_REQUIRED: CONTAINMENT_METADATA_MISMATCH: root-level project tests failed for projectRoot services/shared"));
+    }
     @Test
     void checkOmitsContainmentSkipInfoWhenContainmentRequiredMissing(@TempDir Path tempDir) throws Exception {
         Path specDir = tempDir.resolve("spec");
@@ -1629,7 +1693,7 @@ class BearCliTest {
     @Test
     void checkWithoutAllowedDepsKeepsImplOnNormalCompilePath(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
 
@@ -1684,7 +1748,7 @@ class BearCliTest {
     @Test
     void checkRunsProjectTestsAndPasses(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
 
         CliRunResult compile = runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() });
         assertEquals(0, compile.exitCode);
@@ -1704,7 +1768,7 @@ class BearCliTest {
     @Test
     void checkSetsGradleUserHomeByDefault(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
 
@@ -1729,7 +1793,7 @@ class BearCliTest {
     @Test
     void checkProjectTestGradleLockReturnsIoError(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
 
@@ -1764,7 +1828,7 @@ class BearCliTest {
     @Test
     void checkProjectTestGradleBootstrapFailureReturnsIoError(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
 
@@ -1799,7 +1863,7 @@ class BearCliTest {
     @Test
     void checkProjectTestFailureReturnsExit4AndTail(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
 
         CliRunResult compile = runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() });
         assertEquals(0, compile.exitCode);
@@ -1829,7 +1893,7 @@ class BearCliTest {
     @Test
     void checkProjectTestTimeoutReturnsExit4(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
 
         CliRunResult compile = runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() });
         assertEquals(0, compile.exitCode);
@@ -1872,7 +1936,7 @@ class BearCliTest {
     @Test
     void checkDriftShortCircuitsAndDoesNotRunProjectTests(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
 
         CliRunResult compile = runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() });
         assertEquals(0, compile.exitCode);
@@ -1902,7 +1966,7 @@ class BearCliTest {
     @Test
     void checkUndeclaredReachReturnsExit6AndSkipsProjectTests(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
 
@@ -1933,7 +1997,7 @@ class BearCliTest {
     @Test
     void checkReflectionDispatchForbiddenReturnsDedicatedCodeAndSkipsProjectTests(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
 
@@ -1964,7 +2028,7 @@ class BearCliTest {
     @Test
     void checkReflectionDispatchForbiddenDetectsNoTargetTokenAliasCase(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
 
@@ -1990,7 +2054,7 @@ class BearCliTest {
     @Test
     void checkUndeclaredReachDetectsCoveredHttpSurfaces(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
 
@@ -2019,7 +2083,7 @@ class BearCliTest {
     @Test
     void checkUndeclaredReachSkipsExcludedPaths(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
 
@@ -2045,7 +2109,7 @@ class BearCliTest {
     @Test
     void checkUndeclaredReachOrderingIsDeterministic(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
 
@@ -2070,7 +2134,7 @@ class BearCliTest {
     @Test
     void checkDefaultModeIgnoresHygieneSeedPaths(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         Files.createDirectories(tempDir.resolve(".g"));
@@ -2087,7 +2151,7 @@ class BearCliTest {
     @Test
     void checkStrictHygieneFailsOnUnexpectedSeedPath(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         Files.createDirectories(tempDir.resolve(".g"));
@@ -2104,18 +2168,18 @@ class BearCliTest {
             check.stderr,
             "HYGIENE_UNEXPECTED_PATHS",
             ".g",
-            "Remove unexpected tool directories or allowlist them in `.bear/policy/hygiene-allowlist.txt`, then rerun `bear check`."
+            "Remove unexpected tool directories or allowlist them in `bear-policy/hygiene-allowlist.txt`, then rerun `bear check`."
         );
     }
 
     @Test
     void checkStrictHygieneRespectsAllowlist(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         Files.createDirectories(tempDir.resolve(".g"));
-        Path allowlist = tempDir.resolve(".bear/policy/hygiene-allowlist.txt");
+        Path allowlist = tempDir.resolve("bear-policy/hygiene-allowlist.txt");
         Files.createDirectories(allowlist.getParent());
         Files.writeString(allowlist, ".g\n", StandardCharsets.UTF_8);
         writeProjectWrapper(
@@ -2131,7 +2195,7 @@ class BearCliTest {
     @Test
     void checkStrictHygieneNeverFlagsBearGradleUserHome(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         Files.createDirectories(tempDir.resolve(".bear-gradle-user-home"));
@@ -2148,7 +2212,7 @@ class BearCliTest {
     @Test
     void checkInvalidPolicyAllowlistReturnsPolicyInvalid(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -2156,7 +2220,7 @@ class BearCliTest {
             "@echo off\r\necho TEST_OK\r\nexit /b 0\r\n",
             "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n"
         );
-        Path policy = tempDir.resolve(".bear/policy/reflection-allowlist.txt");
+        Path policy = tempDir.resolve("bear-policy/reflection-allowlist.txt");
         Files.createDirectories(policy.getParent());
         Files.writeString(policy, "z/path.java\na/path.java\n", StandardCharsets.UTF_8);
 
@@ -2166,7 +2230,7 @@ class BearCliTest {
         assertFailureEnvelope(
             check.stderr,
             "POLICY_INVALID",
-            ".bear/policy/reflection-allowlist.txt",
+            "bear-policy/reflection-allowlist.txt",
             "Fix the policy contract file and rerun `bear check`."
         );
     }
@@ -2174,7 +2238,7 @@ class BearCliTest {
     @Test
     void checkDriftTakesPrecedenceOverUndeclaredReach(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
 
         Files.writeString(
@@ -2199,7 +2263,7 @@ class BearCliTest {
     @Test
     void checkBoundaryBypassDirectImplUsageFails(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -2233,7 +2297,7 @@ class BearCliTest {
     @Test
     void checkCollectAllBoundaryBypassFindingsAreDeterministicallyOrdered(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -2282,7 +2346,7 @@ class BearCliTest {
     @Test
     void checkBoundaryBypassReflectionClassloadingFails(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -2312,7 +2376,7 @@ class BearCliTest {
     @Test
     void checkBoundaryBypassReflectionClassloadingAllowlistPasses(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -2332,7 +2396,7 @@ class BearCliTest {
             + "}\n",
             StandardCharsets.UTF_8
         );
-        Path allowlist = tempDir.resolve(".bear/policy/reflection-allowlist.txt");
+        Path allowlist = tempDir.resolve("bear-policy/reflection-allowlist.txt");
         Files.createDirectories(allowlist.getParent());
         Files.writeString(allowlist, "src/main/java/com/example/Bypass.java\n", StandardCharsets.UTF_8);
 
@@ -2343,7 +2407,7 @@ class BearCliTest {
     @Test
     void checkBoundaryBypassGovernedServiceBindingFails(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
 
@@ -2373,7 +2437,7 @@ class BearCliTest {
     @Test
     void checkBoundaryBypassGovernedModuleBindingFails(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
 
@@ -2406,7 +2470,7 @@ class BearCliTest {
     @Test
     void checkAllowsWrapperOfDefaultWiringPath(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -2439,7 +2503,7 @@ class BearCliTest {
     @Test
     void checkBoundaryBypassImplContainmentFailsForExternalResolvedCall(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeProjectWrapper(
             tempDir,
@@ -2486,7 +2550,7 @@ class BearCliTest {
     @Test
     void checkBoundaryBypassImplPurityViolationFailsForStaticMutableState(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeProjectWrapper(
             tempDir,
@@ -2528,7 +2592,7 @@ class BearCliTest {
     @Test
     void checkBoundaryBypassImplStateDependencyFails(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeProjectWrapper(
             tempDir,
@@ -2578,7 +2642,7 @@ class BearCliTest {
     @Test
     void checkBoundaryBypassScopedImportPolicyFailsForSharedPure(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -2613,7 +2677,7 @@ class BearCliTest {
     @Test
     void checkBoundaryBypassSharedPureNewInitializerFailsWhenNotAllowlisted(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -2649,7 +2713,7 @@ class BearCliTest {
     @Test
     void checkBoundaryBypassIgnoresImplTextInCommentsAndStrings(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -2678,7 +2742,7 @@ class BearCliTest {
     @Test
     void checkBoundaryBypassNullPortWiringTopLevelFails(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -2714,7 +2778,7 @@ class BearCliTest {
     @Test
     void checkBoundaryBypassNullPortNestedExpressionDoesNotFail(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -2744,7 +2808,7 @@ class BearCliTest {
     @Test
     void checkBoundaryBypassGeneratedPortImplOutsideGovernedRootsFails(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -2779,7 +2843,7 @@ class BearCliTest {
     @Test
     void checkBoundaryBypassGeneratedPortImplInsideBlockRootPasses(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -2806,7 +2870,7 @@ class BearCliTest {
     @Test
     void checkBoundaryBypassGeneratedPortImplInsideSharedRootPasses(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -2834,7 +2898,7 @@ class BearCliTest {
     @Test
     void checkBoundaryBypassFailsWhenMarkerIsUsedOutsideShared(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
         writeProjectWrapper(
@@ -2872,7 +2936,7 @@ class BearCliTest {
     @Test
     void checkBoundaryBypassEffectsMissingRequiredPortUsageFails(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeProjectWrapper(
             tempDir,
@@ -2963,7 +3027,7 @@ class BearCliTest {
     @Test
     void checkBoundaryBypassEffectsHelperPassThroughAndSuppression(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeProjectWrapper(
             tempDir,
@@ -3039,7 +3103,7 @@ class BearCliTest {
     @Test
     void checkBlockedMarkerIsAdvisoryAndSuccessfulCheckClears(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
 
@@ -3434,7 +3498,7 @@ class BearCliTest {
             run.stderr,
             "HYGIENE_UNEXPECTED_PATHS",
             ".g",
-            "Remove unexpected tool directories or allowlist them in `.bear/policy/hygiene-allowlist.txt`, then rerun `bear check --all`."
+            "Remove unexpected tool directories or allowlist them in `bear-policy/hygiene-allowlist.txt`, then rerun `bear check --all`."
         );
     }
 
@@ -3442,7 +3506,7 @@ class BearCliTest {
     void checkAllStrictHygieneAllowlistPasses(@TempDir Path tempDir) throws Exception {
         MultiBlockFixture fixture = createMultiBlockFixture(tempDir);
         Files.createDirectories(fixture.repoRoot().resolve(".g"));
-        Path allowlist = fixture.repoRoot().resolve(".bear/policy/hygiene-allowlist.txt");
+        Path allowlist = fixture.repoRoot().resolve("bear-policy/hygiene-allowlist.txt");
         Files.createDirectories(allowlist.getParent());
         Files.writeString(allowlist, ".g\n", StandardCharsets.UTF_8);
 
@@ -3575,7 +3639,7 @@ class BearCliTest {
     @Test
     void checkPreservesRootCauseWhenBlockedMarkerWriteFails(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
 
@@ -3900,9 +3964,9 @@ class BearCliTest {
     @Test
     void prCheckRejectsAbsoluteIrPath(@TempDir Path tempDir) throws Exception {
         Path repo = initGitRepo(tempDir.resolve("repo"));
-        Path ir = repo.resolve("spec/withdraw.bear.yaml");
+        Path ir = repo.resolve("bear-ir/withdraw.bear.yaml");
         Files.createDirectories(ir.getParent());
-        Files.writeString(ir, Files.readString(TestRepoPaths.repoRoot().resolve("spec/fixtures/withdraw.bear.yaml")));
+        Files.writeString(ir, Files.readString(TestRepoPaths.repoRoot().resolve("bear-ir/fixtures/withdraw.bear.yaml")));
         gitCommitAll(repo, "add ir");
 
         CliRunResult run = runCli(new String[] {
@@ -3921,11 +3985,11 @@ class BearCliTest {
     @Test
     void prCheckMissingBaseRefReturnsIo(@TempDir Path tempDir) throws Exception {
         Path repo = initGitRepo(tempDir.resolve("repo"));
-        writeFixtureIr(repo.resolve("spec/withdraw.bear.yaml"));
+        writeFixtureIr(repo.resolve("bear-ir/withdraw.bear.yaml"));
         gitCommitAll(repo, "add ir");
 
         CliRunResult run = runCli(new String[] {
-            "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "missing-ref"
+            "pr-check", "bear-ir/withdraw.bear.yaml", "--project", repo.toString(), "--base", "missing-ref"
         });
         assertEquals(74, run.exitCode);
         assertTrue(normalizeLf(run.stderr).startsWith("pr-check: IO_ERROR: MERGE_BASE_FAILED:"));
@@ -3959,11 +4023,11 @@ class BearCliTest {
     @Test
     void prCheckNoDeltaReturnsOk(@TempDir Path tempDir) throws Exception {
         Path repo = initGitRepo(tempDir.resolve("repo"));
-        writeFixtureIr(repo.resolve("spec/withdraw.bear.yaml"));
+        writeFixtureIr(repo.resolve("bear-ir/withdraw.bear.yaml"));
         gitCommitAll(repo, "add ir");
 
         CliRunResult run = runCli(new String[] {
-            "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD"
+            "pr-check", "bear-ir/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD"
         });
         assertEquals(0, run.exitCode);
         assertEquals("pr-check: OK: NO_BOUNDARY_EXPANSION\n", normalizeLf(run.stdout));
@@ -3973,7 +4037,7 @@ class BearCliTest {
     @Test
     void prCheckFailsWhenGeneratedPortImplLivesOutsideGovernedRoots(@TempDir Path tempDir) throws Exception {
         Path repo = initGitRepo(tempDir.resolve("repo"));
-        writeFixtureIr(repo.resolve("spec/withdraw.bear.yaml"));
+        writeFixtureIr(repo.resolve("bear-ir/withdraw.bear.yaml"));
         Files.createDirectories(repo.resolve("src/main/java/com/acme"));
         Files.writeString(
             repo.resolve("src/main/java/com/acme/AppPortAdapter.java"),
@@ -3986,7 +4050,7 @@ class BearCliTest {
         gitCommitAll(repo, "add ir and external port adapter");
 
         CliRunResult run = runCli(new String[] {
-            "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD"
+            "pr-check", "bear-ir/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD"
         });
         assertEquals(7, run.exitCode);
         String stderr = normalizeLf(run.stderr);
@@ -4003,7 +4067,7 @@ class BearCliTest {
     @Test
     void prCheckAllowsGeneratedPortImplInsideSharedGovernedRoot(@TempDir Path tempDir) throws Exception {
         Path repo = initGitRepo(tempDir.resolve("repo"));
-        writeFixtureIr(repo.resolve("spec/withdraw.bear.yaml"));
+        writeFixtureIr(repo.resolve("bear-ir/withdraw.bear.yaml"));
         Files.createDirectories(repo.resolve("src/main/java/blocks/_shared"));
         Files.writeString(
             repo.resolve("src/main/java/blocks/_shared/AppPortAdapter.java"),
@@ -4016,7 +4080,7 @@ class BearCliTest {
         gitCommitAll(repo, "add ir and shared adapter");
 
         CliRunResult run = runCli(new String[] {
-            "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD"
+            "pr-check", "bear-ir/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD"
         });
         assertEquals(0, run.exitCode);
         assertEquals("pr-check: OK: NO_BOUNDARY_EXPANSION\n", normalizeLf(run.stdout));
@@ -4025,7 +4089,7 @@ class BearCliTest {
     @Test
     void prCheckPrintsGovernanceSignalWhenMultiBlockPortImplIsAllowedByMarker(@TempDir Path tempDir) throws Exception {
         Path repo = initGitRepo(tempDir.resolve("repo"));
-        writeFixtureIr(repo.resolve("spec/withdraw.bear.yaml"));
+        writeFixtureIr(repo.resolve("bear-ir/withdraw.bear.yaml"));
         Files.createDirectories(repo.resolve("src/main/java/blocks/_shared"));
         Files.writeString(
             repo.resolve("src/main/java/blocks/_shared/MegaAdapter.java"),
@@ -4040,7 +4104,7 @@ class BearCliTest {
         gitCommitAll(repo, "add ir and allowed multi-block adapter");
 
         CliRunResult run = runCli(new String[] {
-            "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD"
+            "pr-check", "bear-ir/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD"
         });
         assertEquals(0, run.exitCode);
         String stdout = normalizeLf(run.stdout);
@@ -4054,7 +4118,7 @@ class BearCliTest {
     @Test
     void prCheckFailsWhenMarkerIsUsedOutsideSharedForGeneratedPortImplementer(@TempDir Path tempDir) throws Exception {
         Path repo = initGitRepo(tempDir.resolve("repo"));
-        writeFixtureIr(repo.resolve("spec/withdraw.bear.yaml"));
+        writeFixtureIr(repo.resolve("bear-ir/withdraw.bear.yaml"));
         Files.createDirectories(repo.resolve("src/main/java/blocks/withdraw/adapters"));
         Files.writeString(
             repo.resolve("src/main/java/blocks/withdraw/adapters/LocalPortAdapter.java"),
@@ -4068,7 +4132,7 @@ class BearCliTest {
         gitCommitAll(repo, "add ir and marker misuse");
 
         CliRunResult run = runCli(new String[] {
-            "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD"
+            "pr-check", "bear-ir/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD"
         });
         assertEquals(7, run.exitCode);
         String stderr = normalizeLf(run.stderr);
@@ -4086,7 +4150,7 @@ class BearCliTest {
     @Test
     void prCheckUsesFixedTempLayoutWithWiringOnlyOutputs(@TempDir Path tempDir) throws Exception {
         Path repo = initGitRepo(tempDir.resolve("repo"));
-        writeFixtureIr(repo.resolve("spec/withdraw.bear.yaml"));
+        writeFixtureIr(repo.resolve("bear-ir/withdraw.bear.yaml"));
         gitCommitAll(repo, "add ir");
 
         String key = "bear.prcheck.test.keepTemp";
@@ -4095,7 +4159,7 @@ class BearCliTest {
         try {
             System.setProperty(key, "true");
             CliRunResult run = runCli(new String[] {
-                "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD"
+                "pr-check", "bear-ir/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD"
             });
             assertEquals(0, run.exitCode);
 
@@ -4125,12 +4189,12 @@ class BearCliTest {
     @Test
     void prCheckAllPrintsAggregatedGovernanceSignalsBeforeSummaryOnSuccess(@TempDir Path tempDir) throws Exception {
         Path repo = initGitRepo(tempDir.resolve("repo"));
-        writeFixtureIr(repo.resolve("spec/withdraw.bear.yaml"));
+        writeFixtureIr(repo.resolve("bear-ir/withdraw.bear.yaml"));
         writeBlockIndex(repo, ""
             + "version: v1\n"
             + "blocks:\n"
             + "  - name: withdraw\n"
-            + "    ir: spec/withdraw.bear.yaml\n"
+            + "    ir: bear-ir/withdraw.bear.yaml\n"
             + "    projectRoot: .\n");
         Files.createDirectories(repo.resolve("src/main/java/blocks/_shared"));
         Files.writeString(
@@ -4163,21 +4227,21 @@ class BearCliTest {
         Files.writeString(repo.resolve("README.md"), "base\n", StandardCharsets.UTF_8);
         gitCommitAll(repo, "base");
 
-        writeFixtureIr(repo.resolve("spec/withdraw.bear.yaml"));
+        writeFixtureIr(repo.resolve("bear-ir/withdraw.bear.yaml"));
         gitCommitAll(repo, "add ir");
 
         CliRunResult run = runCli(new String[] {
-            "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
+            "pr-check", "bear-ir/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
         });
         String stderr = normalizeLf(run.stderr);
         assertEquals(5, run.exitCode);
-        assertTrue(stderr.contains("pr-check: INFO: BASE_IR_MISSING_AT_MERGE_BASE: spec/withdraw.bear.yaml: treated_as_empty_base"));
+        assertTrue(stderr.contains("pr-check: INFO: BASE_IR_MISSING_AT_MERGE_BASE: bear-ir/withdraw.bear.yaml: treated_as_empty_base"));
         assertTrue(stderr.contains("pr-delta: BOUNDARY_EXPANDING: PORTS: ADDED: idempotency"));
         assertTrue(stderr.contains("pr-check: FAIL: BOUNDARY_EXPANSION_DETECTED"));
         assertFailureEnvelope(
             run.stderr,
             "BOUNDARY_EXPANSION",
-            "spec/withdraw.bear.yaml",
+            "bear-ir/withdraw.bear.yaml",
             "Review boundary-expanding deltas and route through explicit boundary review."
         );
     }
@@ -4187,7 +4251,7 @@ class BearCliTest {
         Path repo = initGitRepo(tempDir.resolve("repo"));
         Files.writeString(repo.resolve("README.md"), "base\n", StandardCharsets.UTF_8);
         gitCommitAll(repo, "base");
-        writeFixtureIr(repo.resolve("spec/withdraw.bear.yaml"));
+        writeFixtureIr(repo.resolve("bear-ir/withdraw.bear.yaml"));
         gitCommitAll(repo, "add ir");
 
         String key = "bear.cli.test.expectedBoundaryExpansionExit.pr-check";
@@ -4195,7 +4259,7 @@ class BearCliTest {
         try {
             System.setProperty(key, "9");
             CliRunResult run = runCli(new String[] {
-                "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
+                "pr-check", "bear-ir/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
             });
             String stderr = normalizeLf(run.stderr);
             assertEquals(70, run.exitCode);
@@ -4218,12 +4282,12 @@ class BearCliTest {
         Path repo = initGitRepo(tempDir.resolve("repo"));
         Files.writeString(repo.resolve("README.md"), "base\n", StandardCharsets.UTF_8);
         gitCommitAll(repo, "base");
-        writeFixtureIr(repo.resolve("spec/withdraw.bear.yaml"));
+        writeFixtureIr(repo.resolve("bear-ir/withdraw.bear.yaml"));
         writeBlockIndex(repo, ""
             + "version: v1\n"
             + "blocks:\n"
             + "  - name: withdraw\n"
-            + "    ir: spec/withdraw.bear.yaml\n"
+            + "    ir: bear-ir/withdraw.bear.yaml\n"
             + "    projectRoot: .\n");
         gitCommitAll(repo, "add ir + index");
 
@@ -4252,7 +4316,7 @@ class BearCliTest {
     @Test
     void prCheckOrdinaryOpsDeltaReturnsZero(@TempDir Path tempDir) throws Exception {
         Path repo = initGitRepo(tempDir.resolve("repo"));
-        Path ir = repo.resolve("spec/withdraw.bear.yaml");
+        Path ir = repo.resolve("bear-ir/withdraw.bear.yaml");
         String base = fixtureIrContent();
         Files.createDirectories(ir.getParent());
         Files.writeString(ir, base, StandardCharsets.UTF_8);
@@ -4270,7 +4334,7 @@ class BearCliTest {
         gitCommitAll(repo, "ordinary op change");
 
         CliRunResult run = runCli(new String[] {
-            "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
+            "pr-check", "bear-ir/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
         });
         String stderr = normalizeLf(run.stderr);
         assertEquals(0, run.exitCode);
@@ -4282,7 +4346,7 @@ class BearCliTest {
     @Test
     void prCheckOrderingIsDeterministic(@TempDir Path tempDir) throws Exception {
         Path repo = initGitRepo(tempDir.resolve("repo"));
-        Path ir = repo.resolve("spec/withdraw.bear.yaml");
+        Path ir = repo.resolve("bear-ir/withdraw.bear.yaml");
         String base = fixtureIrContent();
         Files.createDirectories(ir.getParent());
         Files.writeString(ir, base, StandardCharsets.UTF_8);
@@ -4328,7 +4392,7 @@ class BearCliTest {
         gitCommitAll(repo, "mixed changes");
 
         CliRunResult run = runCli(new String[] {
-            "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
+            "pr-check", "bear-ir/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
         });
         List<String> lines = normalizeLf(run.stderr).lines()
             .filter(line -> line.startsWith("pr-delta: "))
@@ -4344,7 +4408,7 @@ class BearCliTest {
         assertFailureEnvelope(
             run.stderr,
             "BOUNDARY_EXPANSION",
-            "spec/withdraw.bear.yaml",
+            "bear-ir/withdraw.bear.yaml",
             "Review boundary-expanding deltas and route through explicit boundary review."
         );
     }
@@ -4352,7 +4416,7 @@ class BearCliTest {
     @Test
     void prCheckIdempotencyAddEmitsOnlyTopLevelDelta(@TempDir Path tempDir) throws Exception {
         Path repo = initGitRepo(tempDir.resolve("repo"));
-        Path ir = repo.resolve("spec/withdraw.bear.yaml");
+        Path ir = repo.resolve("bear-ir/withdraw.bear.yaml");
         String fixture = fixtureIrContent();
         String base = fixture.replace(
             "      idempotency:\n"
@@ -4376,7 +4440,7 @@ class BearCliTest {
         gitCommitAll(repo, "add idempotency");
 
         CliRunResult run = runCli(new String[] {
-            "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
+            "pr-check", "bear-ir/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
         });
         String stderr = normalizeLf(run.stderr);
         assertEquals(5, run.exitCode);
@@ -4388,7 +4452,7 @@ class BearCliTest {
         assertFailureEnvelope(
             run.stderr,
             "BOUNDARY_EXPANSION",
-            "spec/withdraw.bear.yaml",
+            "bear-ir/withdraw.bear.yaml",
             "Review boundary-expanding deltas and route through explicit boundary review."
         );
     }
@@ -4399,7 +4463,7 @@ class BearCliTest {
         String previous = System.getProperty(key);
         try {
             System.setProperty(key, "true");
-            CliRunResult run = runCli(new String[] { "compile", "spec/fixtures/withdraw.bear.yaml", "--project", tempDir.toString() });
+            CliRunResult run = runCli(new String[] { "compile", "bear-ir/fixtures/withdraw.bear.yaml", "--project", tempDir.toString() });
             assertEquals(70, run.exitCode);
             assertTrue(run.stderr.startsWith("internal: INTERNAL_ERROR:"));
             assertFailureEnvelope(
@@ -4419,7 +4483,7 @@ class BearCliTest {
         String previous = System.getProperty(key);
         try {
             System.setProperty(key, "true");
-            CliRunResult run = runCli(new String[] { "check", "spec/fixtures/withdraw.bear.yaml", "--project", tempDir.toString() });
+            CliRunResult run = runCli(new String[] { "check", "bear-ir/fixtures/withdraw.bear.yaml", "--project", tempDir.toString() });
             assertEquals(70, run.exitCode);
             assertTrue(run.stderr.startsWith("internal: INTERNAL_ERROR:"));
             assertFailureEnvelope(
@@ -4439,7 +4503,7 @@ class BearCliTest {
         String previous = System.getProperty(key);
         try {
             System.setProperty(key, "true");
-            CliRunResult run = runCli(new String[] { "fix", "spec/fixtures/withdraw.bear.yaml", "--project", tempDir.toString() });
+            CliRunResult run = runCli(new String[] { "fix", "bear-ir/fixtures/withdraw.bear.yaml", "--project", tempDir.toString() });
             assertEquals(70, run.exitCode);
             assertTrue(run.stderr.startsWith("internal: INTERNAL_ERROR:"));
             assertFailureEnvelope(
@@ -4456,7 +4520,7 @@ class BearCliTest {
     @Test
     void prCheckInjectedInternalFailureIsEnveloped(@TempDir Path tempDir) throws Exception {
         Path project = tempDir.resolve("project");
-        Path ir = project.resolve("spec/withdraw.bear.yaml");
+        Path ir = project.resolve("bear-ir/withdraw.bear.yaml");
         writeFixtureIr(ir);
 
         String key = "bear.cli.test.failInternal.pr-check";
@@ -4464,7 +4528,7 @@ class BearCliTest {
         try {
             System.setProperty(key, "true");
             CliRunResult run = runCli(new String[] {
-                "pr-check", "spec/withdraw.bear.yaml", "--project", project.toString(), "--base", "HEAD"
+                "pr-check", "bear-ir/withdraw.bear.yaml", "--project", project.toString(), "--base", "HEAD"
             });
             assertEquals(70, run.exitCode);
             assertTrue(run.stderr.startsWith("internal: INTERNAL_ERROR:"));
@@ -4751,13 +4815,13 @@ class BearCliTest {
     }
 
     private static String fixtureIrContent() throws Exception {
-        return normalizeLf(Files.readString(TestRepoPaths.repoRoot().resolve("spec/fixtures/withdraw.bear.yaml"), StandardCharsets.UTF_8));
+        return normalizeLf(Files.readString(TestRepoPaths.repoRoot().resolve("bear-ir/fixtures/withdraw.bear.yaml"), StandardCharsets.UTF_8));
     }
 
     @Test
     void prCheckAllowedDepDeltaClassification(@TempDir Path tempDir) throws Exception {
         Path repo = initGitRepo(tempDir.resolve("repo"));
-        Path ir = repo.resolve("spec/withdraw.bear.yaml");
+        Path ir = repo.resolve("bear-ir/withdraw.bear.yaml");
         String base = fixtureIrContent();
         Files.createDirectories(ir.getParent());
         Files.writeString(ir, base, StandardCharsets.UTF_8);
@@ -4768,7 +4832,7 @@ class BearCliTest {
         gitCommitAll(repo, "add allowed dep");
 
         CliRunResult added = runCli(new String[] {
-            "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
+            "pr-check", "bear-ir/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
         });
         assertEquals(5, added.exitCode);
         assertTrue(normalizeLf(added.stderr).contains(
@@ -4780,7 +4844,7 @@ class BearCliTest {
         gitCommitAll(repo, "change allowed dep version");
 
         CliRunResult versionChanged = runCli(new String[] {
-            "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
+            "pr-check", "bear-ir/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
         });
         assertEquals(5, versionChanged.exitCode);
         assertTrue(normalizeLf(versionChanged.stderr).contains(
@@ -4791,7 +4855,7 @@ class BearCliTest {
         gitCommitAll(repo, "remove allowed dep");
 
         CliRunResult removed = runCli(new String[] {
-            "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
+            "pr-check", "bear-ir/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
         });
         assertEquals(0, removed.exitCode);
         assertTrue(normalizeLf(removed.stderr).contains(
@@ -4802,7 +4866,7 @@ class BearCliTest {
     @Test
     void prCheckSharedPolicyDeltaClassification(@TempDir Path tempDir) throws Exception {
         Path repo = initGitRepo(tempDir.resolve("repo"));
-        Path ir = repo.resolve("spec/withdraw.bear.yaml");
+        Path ir = repo.resolve("bear-ir/withdraw.bear.yaml");
         Files.createDirectories(ir.getParent());
         Files.writeString(ir, fixtureIrContent(), StandardCharsets.UTF_8);
         gitCommitAll(repo, "base ir");
@@ -4821,7 +4885,7 @@ class BearCliTest {
         gitCommitAll(repo, "add shared policy dep");
 
         CliRunResult added = runCli(new String[] {
-            "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
+            "pr-check", "bear-ir/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
         });
         assertEquals(5, added.exitCode);
         assertTrue(normalizeLf(added.stderr).contains(
@@ -4842,18 +4906,18 @@ class BearCliTest {
         gitCommitAll(repo, "change shared policy dep version");
 
         CliRunResult changed = runCli(new String[] {
-            "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
+            "pr-check", "bear-ir/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
         });
         assertEquals(5, changed.exitCode);
         assertTrue(normalizeLf(changed.stderr).contains(
             "pr-delta: BOUNDARY_EXPANDING: ALLOWED_DEPS: CHANGED: .:_shared:com.fasterxml.jackson.core:jackson-databind@2.17.2->2.18.0"
         ));
 
-        Files.delete(repo.resolve("spec/_shared.policy.yaml"));
+        Files.delete(repo.resolve("bear-policy/_shared.policy.yaml"));
         gitCommitAll(repo, "remove shared policy");
 
         CliRunResult removed = runCli(new String[] {
-            "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
+            "pr-check", "bear-ir/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD~1"
         });
         assertEquals(0, removed.exitCode);
         assertTrue(normalizeLf(removed.stderr).contains(
@@ -4864,7 +4928,7 @@ class BearCliTest {
     @Test
     void prCheckSharedPolicyInvalidReturnsPolicyInvalid(@TempDir Path tempDir) throws Exception {
         Path repo = initGitRepo(tempDir.resolve("repo"));
-        Path ir = repo.resolve("spec/withdraw.bear.yaml");
+        Path ir = repo.resolve("bear-ir/withdraw.bear.yaml");
         Files.createDirectories(ir.getParent());
         Files.writeString(ir, fixtureIrContent(), StandardCharsets.UTF_8);
         writeSharedPolicy(
@@ -4879,28 +4943,28 @@ class BearCliTest {
         gitCommitAll(repo, "add malformed shared policy");
 
         CliRunResult run = runCli(new String[] {
-            "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD"
+            "pr-check", "bear-ir/withdraw.bear.yaml", "--project", repo.toString(), "--base", "HEAD"
         });
         assertEquals(2, run.exitCode);
         assertTrue(normalizeLf(run.stderr).contains("pr-check: POLICY_INVALID: INVALID_SCOPE"));
         assertFailureEnvelope(
             run.stderr,
             "POLICY_INVALID",
-            "spec/_shared.policy.yaml",
-            "Fix `spec/_shared.policy.yaml` (version/scope/schema and pinned allowedDeps) and rerun `bear pr-check`."
+            "bear-policy/_shared.policy.yaml",
+            "Fix `bear-policy/_shared.policy.yaml` (version/scope/schema and pinned allowedDeps) and rerun `bear pr-check`."
         );
     }
 
     @Test
     void prCheckAllPrintsRepoDeltaForSharedPolicyBeforeSummary(@TempDir Path tempDir) throws Exception {
         Path repo = initGitRepo(tempDir.resolve("repo"));
-        Path ir = repo.resolve("spec/withdraw.bear.yaml");
+        Path ir = repo.resolve("bear-ir/withdraw.bear.yaml");
         writeFixtureIr(ir);
         writeBlockIndex(repo, ""
             + "version: v1\n"
             + "blocks:\n"
             + "  - name: withdraw\n"
-            + "    ir: spec/withdraw.bear.yaml\n"
+            + "    ir: bear-ir/withdraw.bear.yaml\n"
             + "    projectRoot: .\n");
         gitCommitAll(repo, "base repo");
 
@@ -4930,13 +4994,13 @@ class BearCliTest {
     @Test
     void prCheckAllRepoDeltaLinesAreLexicallySorted(@TempDir Path tempDir) throws Exception {
         Path repo = initGitRepo(tempDir.resolve("repo"));
-        Path ir = repo.resolve("spec/withdraw.bear.yaml");
+        Path ir = repo.resolve("bear-ir/withdraw.bear.yaml");
         writeFixtureIr(ir);
         writeBlockIndex(repo, ""
             + "version: v1\n"
             + "blocks:\n"
             + "  - name: withdraw\n"
-            + "    ir: spec/withdraw.bear.yaml\n"
+            + "    ir: bear-ir/withdraw.bear.yaml\n"
             + "    projectRoot: .\n");
         gitCommitAll(repo, "base repo");
 
@@ -4971,7 +5035,7 @@ class BearCliTest {
     @Test
     void checkFailsValidationOnWiringSemanticPortOverlap(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
 
@@ -4997,7 +5061,7 @@ class BearCliTest {
     @Test
     void checkFailsManifestInvalidWhenGovernedBindingFieldsMissing(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
 
@@ -5020,7 +5084,7 @@ class BearCliTest {
     @Test
     void checkFailsManifestInvalidWhenBlockRootSourceDirMissing(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
 
@@ -5043,7 +5107,7 @@ class BearCliTest {
     @Test
     void checkFailsManifestInvalidWhenGovernedSourceRootsMissing(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
 
@@ -5066,7 +5130,7 @@ class BearCliTest {
     @Test
     void checkFailsManifestInvalidWhenWiringSchemaNotV3(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
 
@@ -5089,7 +5153,7 @@ class BearCliTest {
     @Test
     void checkFailsValidationWhenSemanticChecksTargetIsUnsupported(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
 
         String key = "bear.check.test.candidateManifestMode";
@@ -5113,7 +5177,7 @@ class BearCliTest {
     @Test
     void checkClassifiesInvariantMarkerAsInvariantViolation(@TempDir Path tempDir) throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode);
         writeWorkingWithdrawImpl(tempDir);
 
@@ -5160,7 +5224,7 @@ class BearCliTest {
     }
 
     private static void writeSharedPolicy(Path repoRoot, String content) throws Exception {
-        Path policy = repoRoot.resolve("spec/_shared.policy.yaml");
+        Path policy = repoRoot.resolve("bear-policy/_shared.policy.yaml");
         Files.createDirectories(policy.getParent());
         Files.writeString(policy, content, StandardCharsets.UTF_8);
     }

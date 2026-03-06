@@ -12,9 +12,9 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 final class PolicyAllowlistParser {
-    static final String REFLECTION_ALLOWLIST_PATH = ".bear/policy/reflection-allowlist.txt";
-    static final String HYGIENE_ALLOWLIST_PATH = ".bear/policy/hygiene-allowlist.txt";
-    static final String PURE_SHARED_IMMUTABLE_TYPES_ALLOWLIST_PATH = ".bear/policy/pure-shared-immutable-types.txt";
+    static final String REFLECTION_ALLOWLIST_PATH = "bear-policy/reflection-allowlist.txt";
+    static final String HYGIENE_ALLOWLIST_PATH = "bear-policy/hygiene-allowlist.txt";
+    static final String PURE_SHARED_IMMUTABLE_TYPES_ALLOWLIST_PATH = "bear-policy/pure-shared-immutable-types.txt";
     private static final Pattern FQCN_PATTERN = Pattern.compile("^[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)+$");
 
     private PolicyAllowlistParser() {

@@ -1,4 +1,4 @@
-﻿# Quickstart
+# Quickstart
 
 This quickstart runs BEAR on the demo repo with the minimal command path.
 
@@ -63,7 +63,7 @@ Minimal valid example:
 version: v0
 blocks:
   - name: inventory-sync
-    ir: spec/inventory-sync.bear.yaml
+    ir: bear-ir/inventory-sync.bear.yaml
     projectRoot: .
 ```
 

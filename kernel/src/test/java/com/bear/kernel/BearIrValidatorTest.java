@@ -334,7 +334,7 @@ class BearIrValidatorTest {
     }
     @Test
     void acceptWithdrawFixture() throws Exception {
-        Path fixture = TestRepoPaths.repoRoot().resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = TestRepoPaths.repoRoot().resolve("bear-ir/fixtures/withdraw.bear.yaml");
         BearIrParser parser = new BearIrParser();
         BearIrValidator validator = new BearIrValidator();
         BearIr ir = parser.parse(fixture);
@@ -344,8 +344,8 @@ class BearIrValidatorTest {
     @Test
     void goldenCanonicalYamlForWithdrawFixture() throws IOException {
         Path repoRoot = TestRepoPaths.repoRoot();
-        Path fixture = repoRoot.resolve("spec/fixtures/withdraw.bear.yaml");
-        Path golden = repoRoot.resolve("spec/golden/withdraw.canonical.yaml");
+        Path fixture = repoRoot.resolve("bear-ir/fixtures/withdraw.bear.yaml");
+        Path golden = repoRoot.resolve("testdata/golden/withdraw.canonical.yaml");
 
         BearIrParser parser = new BearIrParser();
         BearIrValidator validator = new BearIrValidator();

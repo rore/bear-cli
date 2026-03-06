@@ -6,7 +6,7 @@ This guide is for day-to-day usage of `bear` in a project.
 
 BEAR is a deterministic CLI that helps you control boundary changes in backend code.
 
-It uses an **IR** (Intermediate Representation): a small YAML spec file (for example `spec/fulfillment.bear.yaml`) that declares:
+It uses an **IR** (Intermediate Representation): a small YAML spec file (for example `bear-ir/fulfillment.bear.yaml`) that declares:
 - block contract (inputs/outputs)
 - allowed external capabilities (effects/ports)
 - key invariants and idempotency settings
@@ -190,8 +190,8 @@ Behavior:
   - keep constructor `(ports..., Logic)` for tests/advanced injection
 - optional strict hygiene mode (`--strict-hygiene`) fails on unexpected seed paths (`.g`, `.gradle-user`) unless allowlisted
 - policy allowlist files (optional, exact-path deterministic parser):
-  - `.bear/policy/reflection-allowlist.txt`
-  - `.bear/policy/hygiene-allowlist.txt`
+  - `bear-policy/reflection-allowlist.txt`
+  - `bear-policy/hygiene-allowlist.txt`
 - fails with validation (`MANIFEST_INVALID`) when wiring semantics are inconsistent
   - v3 wiring manifests are required for containment and block-port checks
   - required v3 semantic/containment fields must be present (`logicRequiredPorts`, `wrapperOwnedSemanticPorts`, `wrapperOwnedSemanticChecks`, `blockRootSourceDir`, `governedSourceRoots`, `blockPortBindings`)
@@ -258,7 +258,7 @@ Use when:
 
 Behavior:
 - exits `5` when boundary expansion is detected in IR delta classification
-- shared-policy deltas (`spec/_shared.policy.yaml`) are included:
+- shared-policy deltas (`bear-policy/_shared.policy.yaml`) are included:
   - add/change => boundary-expanding
   - remove => ordinary
 - exits `7` when structural bypass is detected (`CODE=BOUNDARY_BYPASS`)
@@ -301,7 +301,7 @@ Contract:
 `PATH` is a locator, not only a filesystem path.
 
 Allowed forms:
-- repo-relative path (example: `spec/fulfillment.bear.yaml`)
+- repo-relative path (example: `bear-ir/fulfillment.bear.yaml`)
 - stable pseudo-path token (example: `cli.args`, `cli.command`, `project.tests`, `internal`, `build/generated/bear`)
 
 Disallowed:
@@ -391,7 +391,7 @@ Enforcement (`bear check`):
 - supported target: Java+Gradle with wrapper
 - containment scope per `projectRoot` is active when any is true:
   - selected block set includes an `impl.allowedDeps` block
-  - `spec/_shared.policy.yaml` exists
+  - `bear-policy/_shared.policy.yaml` exists
   - `src/main/java/blocks/_shared/**` contains `.java`
 - requires generated containment artifacts:
   - `build/generated/bear/gradle/bear-containment.gradle`
@@ -402,9 +402,9 @@ Enforcement (`bear check`):
   - `--no-daemon -I build/generated/bear/gradle/bear-containment.gradle test`
 - no manual `build.gradle` containment patching is required for `check`
 - `_shared` path-scoped policy:
-  - file: `spec/_shared.policy.yaml`
+  - file: `bear-policy/_shared.policy.yaml`
   - if policy is missing while `_shared` sources are in scope, default is JDK-only (`allowedDeps=[]`)
-  - shared allowlist mismatch is reported as containment-not-verified with remediation to update `spec/_shared.policy.yaml` or remove external `_shared` dep usage
+  - shared allowlist mismatch is reported as containment-not-verified with remediation to update `bear-policy/_shared.policy.yaml` or remove external `_shared` dep usage
 
 Non-Gradle projects:
 - `pr-check` governance still works

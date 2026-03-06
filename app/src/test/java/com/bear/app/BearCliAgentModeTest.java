@@ -143,7 +143,7 @@ class BearCliAgentModeTest {
     }
     @Test
     void checkAgentModeEmitsProjectTestLockReasonKey(@TempDir Path tempDir) throws Exception {
-        Path fixture = TestRepoPaths.repoRoot().resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = TestRepoPaths.repoRoot().resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode());
         writeWorkingWithdrawImpl(tempDir);
 
@@ -189,7 +189,7 @@ class BearCliAgentModeTest {
 
     @Test
     void prCheckAgentModeWritesJsonOnlyToStdoutOutsideGitRepo(@TempDir Path tempDir) throws Exception {
-        Path fixture = TestRepoPaths.repoRoot().resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = TestRepoPaths.repoRoot().resolve("bear-ir/fixtures/withdraw.bear.yaml");
         Path ir = tempDir.resolve("withdraw.bear.yaml");
         Files.copy(fixture, ir);
 
@@ -214,18 +214,18 @@ class BearCliAgentModeTest {
     @Test
     void prCheckAgentModeEmitsMergeBaseFailedReasonKey(@TempDir Path tempDir) throws Exception {
         Path repo = initGitRepo(tempDir.resolve("repo"));
-        Path ir = repo.resolve("spec/withdraw.bear.yaml");
+        Path ir = repo.resolve("bear-ir/withdraw.bear.yaml");
         Files.createDirectories(ir.getParent());
         Files.writeString(
             ir,
-            Files.readString(TestRepoPaths.repoRoot().resolve("spec/fixtures/withdraw.bear.yaml"), StandardCharsets.UTF_8),
+            Files.readString(TestRepoPaths.repoRoot().resolve("bear-ir/fixtures/withdraw.bear.yaml"), StandardCharsets.UTF_8),
             StandardCharsets.UTF_8
         );
         gitCommitAll(repo, "base ir");
 
         CliRunResult run = runCli(new String[] {
             "pr-check",
-            "spec/withdraw.bear.yaml",
+            "bear-ir/withdraw.bear.yaml",
             "--project",
             repo.toString(),
             "--base",
@@ -240,7 +240,7 @@ class BearCliAgentModeTest {
         String rerun = AgentCommandContextTestSupport.firstRerunCommand(run.stdout());
         AgentCommandContext reparsed = AgentCommandContextTestSupport.parseCommandContext(rerun);
         AgentCommandContext expected = AgentCommandContext.forPrCheckSingle(
-            "spec/withdraw.bear.yaml",
+            "bear-ir/withdraw.bear.yaml",
             repo,
             "origin/does-not-exist",
             null,
@@ -253,7 +253,7 @@ class BearCliAgentModeTest {
 
     @Test
     void checkAgentModeEmitsProjectTestBootstrapReasonKey(@TempDir Path tempDir) throws Exception {
-        Path fixture = TestRepoPaths.repoRoot().resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = TestRepoPaths.repoRoot().resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode());
         writeWorkingWithdrawImpl(tempDir);
 
@@ -297,7 +297,7 @@ class BearCliAgentModeTest {
 
     @Test
     void checkAgentModeEmitsContainmentMetadataMismatchReasonKey(@TempDir Path tempDir) throws Exception {
-        Path fixture = TestRepoPaths.repoRoot().resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = TestRepoPaths.repoRoot().resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode());
         writeWorkingWithdrawImpl(tempDir);
 
@@ -342,9 +342,123 @@ class BearCliAgentModeTest {
         }
     }
 
+
+    @Test
+    void checkAgentModeEmitsContainmentMetadataMismatchReasonKeyWhenGenericFailureContainsContainmentSignals(@TempDir Path tempDir) throws Exception {
+        Path fixture = TestRepoPaths.repoRoot().resolve("bear-ir/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode());
+        writeWorkingWithdrawImpl(tempDir);
+
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho ^> Task :compileBearImpl__shared\r\necho build/generated/bear/gradle/bear-containment.gradle\r\necho package blocks.account.impl does not exist\r\nexit /b 1\r\n",
+            "#!/usr/bin/env sh\necho \"> Task :compileBearImpl__shared\"\necho \"build/generated/bear/gradle/bear-containment.gradle\"\necho \"package blocks.account.impl does not exist\"\nexit 1\n"
+        );
+
+        String key = "bear.cli.test.gradleUserHomeOverride";
+        String previous = System.getProperty(key);
+        try {
+            System.setProperty(key, "NONE");
+            CliRunResult run = runCli(new String[] {
+                "check",
+                fixture.toString(),
+                "--project",
+                tempDir.toString(),
+                "--collect=all",
+                "--agent"
+            });
+
+            assertEquals(CliCodes.EXIT_TEST_FAILURE, run.exitCode());
+            assertTrue(run.stdout().contains("\"failureCode\":\"CONTAINMENT_NOT_VERIFIED\""), run.stdout());
+            assertTrue(run.stdout().contains("\"reasonKey\":\"CONTAINMENT_METADATA_MISMATCH\""), run.stdout());
+            assertTrue(run.stdout().contains("\"title\":\"Apply bounded containment repair\""), run.stdout());
+            assertEquals("", run.stderr());
+        } finally {
+            restoreSystemProperty(key, previous);
+        }
+    }
+
+    @Test
+    void checkAllAgentModeEmitsContainmentMetadataMismatchReasonKeyForCompileFailure(@TempDir Path tempDir) throws Exception {
+        Path repo = tempDir.resolve("repo");
+        Files.createDirectories(repo);
+        Path ir = repo.resolve("bear-ir/withdraw.bear.yaml");
+        writeAllowedDepFixture(ir);
+        writeBlockIndex(repo, """
+            version: v1
+            blocks:
+              - name: withdraw
+                ir: bear-ir/withdraw.bear.yaml
+                projectRoot: .
+            """);
+        assertEquals(0, runCli(new String[] { "compile", ir.toString(), "--project", repo.toString() }).exitCode());
+        writeWorkingWithdrawImpl(repo);
+        writeProjectWrapper(
+            repo,
+            "@echo off\r\necho ^> Task :compileBearImpl__shared FAILED\r\necho package blocks.account.impl does not exist\r\nexit /b 1\r\n",
+            "#!/usr/bin/env sh\necho \"> Task :compileBearImpl__shared FAILED\"\necho \"package blocks.account.impl does not exist\"\nexit 1\n"
+        );
+
+        String key = "bear.cli.test.gradleUserHomeOverride";
+        String previous = System.getProperty(key);
+        try {
+            System.setProperty(key, "NONE");
+            CliRunResult run = runCli(new String[] {
+                "check", "--all", "--project", repo.toString(), "--agent"
+            });
+
+            assertEquals(CliCodes.EXIT_TEST_FAILURE, run.exitCode());
+            assertTrue(run.stdout().contains("\"failureCode\":\"CONTAINMENT_NOT_VERIFIED\""), run.stdout());
+            assertTrue(run.stdout().contains("\"reasonKey\":\"CONTAINMENT_METADATA_MISMATCH\""), run.stdout());
+            assertTrue(run.stdout().contains("\"title\":\"Apply bounded containment repair\""), run.stdout());
+            assertTrue(run.stdout().contains("bear compile --all --project " + repo.toString().replace('\\', '/')), run.stdout());
+            assertEquals("", run.stderr());
+        } finally {
+            restoreSystemProperty(key, previous);
+        }
+    }
+
+    @Test
+    void checkAllAgentModeEmitsContainmentMetadataMismatchReasonKeyForGenericFailure(@TempDir Path tempDir) throws Exception {
+        Path repo = tempDir.resolve("repo");
+        Files.createDirectories(repo);
+        Path ir = repo.resolve("bear-ir/withdraw.bear.yaml");
+        writeAllowedDepFixture(ir);
+        writeBlockIndex(repo, """
+            version: v1
+            blocks:
+              - name: withdraw
+                ir: bear-ir/withdraw.bear.yaml
+                projectRoot: .
+            """);
+        assertEquals(0, runCli(new String[] { "compile", ir.toString(), "--project", repo.toString() }).exitCode());
+        writeWorkingWithdrawImpl(repo);
+        writeProjectWrapper(
+            repo,
+            "@echo off\r\necho ^> Task :compileBearImpl__shared\r\necho build/generated/bear/gradle/bear-containment.gradle\r\necho package blocks.account.impl does not exist\r\nexit /b 1\r\n",
+            "#!/usr/bin/env sh\necho \"> Task :compileBearImpl__shared\"\necho \"build/generated/bear/gradle/bear-containment.gradle\"\necho \"package blocks.account.impl does not exist\"\nexit 1\n"
+        );
+
+        String key = "bear.cli.test.gradleUserHomeOverride";
+        String previous = System.getProperty(key);
+        try {
+            System.setProperty(key, "NONE");
+            CliRunResult run = runCli(new String[] {
+                "check", "--all", "--project", repo.toString(), "--agent"
+            });
+
+            assertEquals(CliCodes.EXIT_TEST_FAILURE, run.exitCode());
+            assertTrue(run.stdout().contains("\"failureCode\":\"CONTAINMENT_NOT_VERIFIED\""), run.stdout());
+            assertTrue(run.stdout().contains("\"reasonKey\":\"CONTAINMENT_METADATA_MISMATCH\""), run.stdout());
+            assertTrue(run.stdout().contains("\"title\":\"Apply bounded containment repair\""), run.stdout());
+            assertEquals("", run.stderr());
+        } finally {
+            restoreSystemProperty(key, previous);
+        }
+    }
     @Test
     void checkAgentModeKeepsGenericCompileFailureWhenContainmentSignalsAreAbsent(@TempDir Path tempDir) throws Exception {
-        Path fixture = TestRepoPaths.repoRoot().resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = TestRepoPaths.repoRoot().resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode());
         writeWorkingWithdrawImpl(tempDir);
 
@@ -377,10 +491,44 @@ class BearCliAgentModeTest {
     }
 
     @Test
+    void checkAgentModeKeepsGenericCompileFailureWhenOnlyImplClasspathShapeAppears(@TempDir Path tempDir) throws Exception {
+        Path fixture = TestRepoPaths.repoRoot().resolve("bear-ir/fixtures/withdraw.bear.yaml");
+        assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode());
+        writeWorkingWithdrawImpl(tempDir);
+
+        writeProjectWrapper(
+            tempDir,
+            "@echo off\r\necho ^> Task :compileJava FAILED\r\necho package blocks.account.impl does not exist\r\nexit /b 1\r\n",
+            "#!/usr/bin/env sh\necho \"> Task :compileJava FAILED\"\necho \"package blocks.account.impl does not exist\"\nexit 1\n"
+        );
+
+        String key = "bear.cli.test.gradleUserHomeOverride";
+        String previous = System.getProperty(key);
+        try {
+            System.setProperty(key, "NONE");
+            CliRunResult run = runCli(new String[] {
+                "check",
+                fixture.toString(),
+                "--project",
+                tempDir.toString(),
+                "--collect=all",
+                "--agent"
+            });
+
+            assertEquals(CliCodes.EXIT_TEST_FAILURE, run.exitCode());
+            assertTrue(run.stdout().contains("\"failureCode\":\"TEST_FAILURE\""), run.stdout());
+            assertTrue(!run.stdout().contains("\"reasonKey\":\"CONTAINMENT_METADATA_MISMATCH\""), run.stdout());
+            assertEquals("", run.stderr());
+        } finally {
+            restoreSystemProperty(key, previous);
+        }
+    }
+
+    @Test
     void prCheckAgentModeEmitsReadHeadFailedReasonKey(@TempDir Path tempDir) {
         CliRunResult run = runCli(new String[] {
             "pr-check",
-            "spec/missing.bear.yaml",
+            "bear-ir/missing.bear.yaml",
             "--project",
             tempDir.toString(),
             "--base",
@@ -394,7 +542,7 @@ class BearCliAgentModeTest {
         String rerun = AgentCommandContextTestSupport.firstRerunCommand(run.stdout());
         AgentCommandContext reparsed = AgentCommandContextTestSupport.parseCommandContext(rerun);
         AgentCommandContext expected = AgentCommandContext.forPrCheckSingle(
-            "spec/missing.bear.yaml",
+            "bear-ir/missing.bear.yaml",
             tempDir,
             "HEAD",
             null,
@@ -409,7 +557,7 @@ class BearCliAgentModeTest {
     void documentedExactInfraReasonKeysAreReachableFromOriginSites(@TempDir Path tempDir) throws Exception {
         java.util.Set<String> observed = new java.util.HashSet<>();
 
-        Path fixture = TestRepoPaths.repoRoot().resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = TestRepoPaths.repoRoot().resolve("bear-ir/fixtures/withdraw.bear.yaml");
         assertEquals(0, runCli(new String[] { "compile", fixture.toString(), "--project", tempDir.toString() }).exitCode());
         writeWorkingWithdrawImpl(tempDir);
 
@@ -454,16 +602,16 @@ class BearCliAgentModeTest {
         }).stdout()));
 
         Path repo = initGitRepo(tempDir.resolve("repo-keys"));
-        Path ir = repo.resolve("spec/withdraw.bear.yaml");
+        Path ir = repo.resolve("bear-ir/withdraw.bear.yaml");
         Files.createDirectories(ir.getParent());
         Files.writeString(ir, Files.readString(fixture, StandardCharsets.UTF_8), StandardCharsets.UTF_8);
         gitCommitAll(repo, "base ir");
         observed.addAll(extractReasonKeys(runCli(new String[] {
-            "pr-check", "spec/withdraw.bear.yaml", "--project", repo.toString(), "--base", "origin/does-not-exist", "--agent"
+            "pr-check", "bear-ir/withdraw.bear.yaml", "--project", repo.toString(), "--base", "origin/does-not-exist", "--agent"
         }).stdout()));
 
         observed.addAll(extractReasonKeys(runCli(new String[] {
-            "pr-check", "spec/missing.bear.yaml", "--project", tempDir.toString(), "--base", "HEAD", "--agent"
+            "pr-check", "bear-ir/missing.bear.yaml", "--project", tempDir.toString(), "--base", "HEAD", "--agent"
         }).stdout()));
 
         assertTrue(observed.containsAll(AgentTemplateRegistry.exactInfraQualifiers()),
@@ -483,6 +631,23 @@ class BearCliAgentModeTest {
         assertTrue(run.stderr().contains("unsupported value for --collect"));
     }
 
+
+    private static void writeBlockIndex(Path repoRoot, String content) throws Exception {
+        Files.writeString(repoRoot.resolve("bear.blocks.yaml"), content, StandardCharsets.UTF_8);
+    }
+
+    private static void writeAllowedDepFixture(Path path) throws Exception {
+        Files.createDirectories(path.getParent());
+        Files.writeString(
+            path,
+            Files.readString(TestRepoPaths.repoRoot().resolve("bear-ir/fixtures/withdraw.bear.yaml"), StandardCharsets.UTF_8)
+                + "  impl:\n"
+                + "    allowedDeps:\n"
+                + "      - maven: com.fasterxml.jackson.core:jackson-databind\n"
+                + "        version: 2.17.2\n",
+            StandardCharsets.UTF_8
+        );
+    }
     private static void writeWorkingWithdrawImpl(Path projectRoot) throws Exception {
         Path impl = projectRoot.resolve("src/main/java/blocks/withdraw/impl/WithdrawImpl.java");
         Files.createDirectories(impl.getParent());

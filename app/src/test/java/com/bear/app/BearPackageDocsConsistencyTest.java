@@ -64,6 +64,7 @@ class BearPackageDocsConsistencyTest {
         String troubleshooting = Files.readString(repoRoot.resolve("docs/bear-package/.bear/agent/TROUBLESHOOTING.md"));
         String reporting = Files.readString(repoRoot.resolve("docs/bear-package/.bear/agent/REPORTING.md"));
         String contracts = Files.readString(repoRoot.resolve("docs/bear-package/.bear/agent/CONTRACTS.md"));
+        String readme = Files.readString(repoRoot.resolve("docs/bear-package/README.md"));
 
         assertMatchesHeading(bootstrap, "(?m)^##\\s+Command\\s+Surface\\s*$");
         assertMatchesHeading(bootstrap, "(?m)^##\\s+Machine\\s+Gate\\s+Loop\\s*$");
@@ -82,8 +83,8 @@ class BearPackageDocsConsistencyTest {
         assertContains(reporting, "`Gate results:`");
         assertContains(reporting, "`Required next action: <...>`");
         assertContains(reporting, "`Gate blocker: <...>`");
-        assertContains(reporting, "`Baseline review scope: ...` including `bear.blocks.yaml` and `spec/*.bear.yaml` (pinned v1 contract)");
-        assertContains(reporting, "`Decomposition contract consulted: yes (before IR authoring)` is required when `IR delta` indicates `spec/*.bear.yaml` authoring/modification.");
+        assertContains(reporting, "`Baseline review scope: ...` including `bear.blocks.yaml` and `bear-ir/*.bear.yaml` (pinned v1 contract)");
+        assertContains(reporting, "`Decomposition contract consulted: yes (before IR authoring)` is required when `IR delta` indicates `bear-ir/*.bear.yaml` authoring/modification.");
         assertContains(reporting, "Additional fields are allowed but ignored by core lint.");
         assertContains(reporting, "Allowed `Run outcome` values are exactly: `COMPLETE | BLOCKED | WAITING_FOR_BASELINE_REVIEW`.");
         assertContains(reporting, "`Status:` and `Run outcome:` are both mandatory and MUST agree on outcome token.");
@@ -99,9 +100,15 @@ class BearPackageDocsConsistencyTest {
         assertContains(troubleshooting, "do not move/copy impl or exception classes into `_shared` as a containment workaround.");
 
         assertContains(contracts, "In automation, `--agent` JSON on stdout is the authoritative control interface.");
+        assertContains(readme, "`docs/bear-package/bear-policy/` is the canonical packaged policy template root.");
+        assertContains(readme, "<repoRoot>/bear-policy/");
+        assertFalse(readme.contains("<repoRoot>/.bear/policy/"), "README must not place repo-authored policy under .bear/");
 
         assertContains(bootstrap, "Before implementation edits, load `.bear/agent/TROUBLESHOOTING.md` and `.bear/agent/REPORTING.md`.");
         assertContains(bootstrap, "GREENFIELD_HARD_STOP");
+        assertContains(bootstrap, "Canonical IR directory is `bear-ir/` unless repo policy says otherwise.");
+        assertFalse(bootstrap.contains("Canonical IR directory is `spec/` unless repo policy says otherwise."), "Bootstrap must not teach spec/ as canonical IR root");
+        assertFalse(bootstrap.contains("`.bear/**`"), "Bootstrap must not teach .bear/** as an editable repo-owned surface");
         assertContains(bootstrap, "INDEX_REQUIRED_PREFLIGHT");
         assertContains(bootstrap, "POST_FAILURE_DISCIPLINE");
         assertContains(bootstrap, "COMPLETE_DISCIPLINE");
@@ -119,6 +126,14 @@ class BearPackageDocsConsistencyTest {
         assertFalse(bootstrap.contains("[--collect=all] [--agent]"), "Bootstrap done-gate examples must require --agent in agent protocol docs");
     }
 
+
+    @Test
+    void packagedPolicyTemplatesLiveOutsideDotBear() {
+        Path repoRoot = TestRepoPaths.repoRoot();
+        assertFalse(Files.exists(repoRoot.resolve("docs/bear-package/.bear/policy")), "Package policy templates must not live under .bear/policy");
+        assertTrue(Files.isRegularFile(repoRoot.resolve("docs/bear-package/bear-policy/reflection-allowlist.txt")));
+        assertTrue(Files.isRegularFile(repoRoot.resolve("docs/bear-package/bear-policy/hygiene-allowlist.txt")));
+    }
     @Test
     void troubleshootingTemplateKeyTablesStayInSyncWithRegistry() throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();

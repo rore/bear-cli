@@ -18,9 +18,9 @@ Symptom: `policy: VALIDATION_ERROR` and exit `2`.
 Likely cause: malformed policy contract file.
 
 Files covered:
-- `.bear/policy/reflection-allowlist.txt`
-- `.bear/policy/hygiene-allowlist.txt`
-- `spec/_shared.policy.yaml`
+- `bear-policy/reflection-allowlist.txt`
+- `bear-policy/hygiene-allowlist.txt`
+- `bear-policy/_shared.policy.yaml`
 
 Fix:
 
@@ -150,7 +150,7 @@ Fix:
 2. `bear check` runs project tests with the generated containment init script and verifies markers only after tests pass.
 
 For `_shared` deps violations:
-1. Add the dependency with pinned version in `spec/_shared.policy.yaml`, or
+1. Add the dependency with pinned version in `bear-policy/_shared.policy.yaml`, or
 2. remove external dependency usage from `src/main/java/blocks/_shared/**`,
 3. rerun `bear check`.
 
@@ -276,7 +276,7 @@ Likely cause: opt-in strict hygiene found unexpected seed paths (for example `.g
 Fix:
 
 1. Remove the unexpected path, or
-2. add exact path to `.bear/policy/hygiene-allowlist.txt`,
+2. add exact path to `bear-policy/hygiene-allowlist.txt`,
 3. rerun `bear check ... --strict-hygiene`.
 
 ## `TEST_FAILURE`, `TEST_TIMEOUT`, or `INVARIANT_VIOLATION`

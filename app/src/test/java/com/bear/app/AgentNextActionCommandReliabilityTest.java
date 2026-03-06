@@ -16,7 +16,7 @@ class AgentNextActionCommandReliabilityTest {
         Path blocksPath = repoRoot.resolve("bear.blocks.yaml");
 
         AgentCommandContext checkSingle = AgentCommandContext.forCheckSingle(
-            Path.of("spec/account-service.bear.yaml"),
+            Path.of("bear-ir/account-service.bear.yaml"),
             repoRoot,
             null,
             true,
@@ -24,7 +24,7 @@ class AgentNextActionCommandReliabilityTest {
             true
         );
         AgentCommandContext prCheckSingle = AgentCommandContext.forPrCheckSingle(
-            "spec/account-service.bear.yaml",
+            "bear-ir/account-service.bear.yaml",
             repoRoot,
             "origin/main",
             null,

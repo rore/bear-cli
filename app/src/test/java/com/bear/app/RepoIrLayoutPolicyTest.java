@@ -17,13 +17,13 @@ class RepoIrLayoutPolicyTest {
     private static final Pattern INDEX_IR_LINE = Pattern.compile("(?m)^\\s*ir:\\s*['\"]?([^'\"\\s]+)['\"]?\\s*$");
 
     @Test
-    void trackedBearYamlFilesMustBeUnderSpecForThisRepositoryPolicy() throws Exception {
+    void trackedBearYamlFilesMustBeUnderBearIrForThisRepositoryPolicy() throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
         List<String> trackedBearYaml = gitTrackedBearYaml(repoRoot);
         for (String relPath : trackedBearYaml) {
             assertTrue(
-                relPath.startsWith("spec/"),
-                "Repository policy requires tracked *.bear.yaml under spec/: " + relPath
+                relPath.startsWith("bear-ir/"),
+                "Repository policy requires tracked *.bear.yaml under bear-ir/: " + relPath
             );
         }
     }

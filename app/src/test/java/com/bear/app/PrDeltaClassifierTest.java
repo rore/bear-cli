@@ -442,7 +442,7 @@ class PrDeltaClassifierTest {
     }
 
     private static String fixtureIr() throws Exception {
-        return Files.readString(TestRepoPaths.repoRoot().resolve("spec/fixtures/withdraw.bear.yaml"), StandardCharsets.UTF_8)
+        return Files.readString(TestRepoPaths.repoRoot().resolve("bear-ir/fixtures/withdraw.bear.yaml"), StandardCharsets.UTF_8)
             .replace("\r\n", "\n");
     }
 }

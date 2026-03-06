@@ -26,7 +26,7 @@ class BlockIdentityResolverTest {
     @Test
     void singleCommandFallsBackWhenNoIndex(@TempDir Path tempDir) throws Exception {
         Path projectRoot = tempDir.resolve("service");
-        Path irFile = tempDir.resolve("spec/create-wallet.bear.yaml");
+        Path irFile = tempDir.resolve("bear-ir/create-wallet.bear.yaml");
         Files.createDirectories(projectRoot);
 
         BlockIdentityResolution resolved = BlockIdentityResolver.resolveSingleCommandIdentity(
@@ -43,7 +43,7 @@ class BlockIdentityResolverTest {
     void singleCommandResolvesIndexMatch(@TempDir Path tempDir) throws Exception {
         Path repoRoot = tempDir.resolve("repo");
         Path projectRoot = repoRoot.resolve("services/api");
-        Path irFile = repoRoot.resolve("spec/create-wallet.bear.yaml");
+        Path irFile = repoRoot.resolve("bear-ir/create-wallet.bear.yaml");
         Files.createDirectories(projectRoot);
         Files.createDirectories(irFile.getParent());
         Files.writeString(irFile, "version: v1\n", StandardCharsets.UTF_8);
@@ -51,7 +51,7 @@ class BlockIdentityResolverTest {
             + "version: v1\n"
             + "blocks:\n"
             + "  - name: create-wallet\n"
-            + "    ir: spec/create-wallet.bear.yaml\n"
+            + "    ir: bear-ir/create-wallet.bear.yaml\n"
             + "    projectRoot: services/api\n");
 
         BlockIdentityResolution resolved = BlockIdentityResolver.resolveSingleCommandIdentity(
@@ -70,7 +70,7 @@ class BlockIdentityResolverTest {
     void singleCommandFallsBackWhenIndexHasNoTupleMatch(@TempDir Path tempDir) throws Exception {
         Path repoRoot = tempDir.resolve("repo");
         Path projectRoot = repoRoot.resolve("services/api");
-        Path irFile = repoRoot.resolve("spec/create-wallet.bear.yaml");
+        Path irFile = repoRoot.resolve("bear-ir/create-wallet.bear.yaml");
         Files.createDirectories(projectRoot);
         Files.createDirectories(irFile.getParent());
         Files.writeString(irFile, "version: v1\n", StandardCharsets.UTF_8);
@@ -78,7 +78,7 @@ class BlockIdentityResolverTest {
             + "version: v1\n"
             + "blocks:\n"
             + "  - name: create-wallet\n"
-            + "    ir: spec/create-wallet.bear.yaml\n"
+            + "    ir: bear-ir/create-wallet.bear.yaml\n"
             + "    projectRoot: services/other\n");
 
         BlockIdentityResolution resolved = BlockIdentityResolver.resolveSingleCommandIdentity(
@@ -95,7 +95,7 @@ class BlockIdentityResolverTest {
     void singleCommandFailsOnAmbiguousTupleMatches(@TempDir Path tempDir) throws Exception {
         Path repoRoot = tempDir.resolve("repo");
         Path projectRoot = repoRoot.resolve("services/api");
-        Path irFile = repoRoot.resolve("spec/create-wallet.bear.yaml");
+        Path irFile = repoRoot.resolve("bear-ir/create-wallet.bear.yaml");
         Files.createDirectories(projectRoot);
         Files.createDirectories(irFile.getParent());
         Files.writeString(irFile, "version: v1\n", StandardCharsets.UTF_8);
@@ -103,10 +103,10 @@ class BlockIdentityResolverTest {
             + "version: v1\n"
             + "blocks:\n"
             + "  - name: create-wallet\n"
-            + "    ir: spec/create-wallet.bear.yaml\n"
+            + "    ir: bear-ir/create-wallet.bear.yaml\n"
             + "    projectRoot: services/api\n"
             + "  - name: wallet-create\n"
-            + "    ir: spec/create-wallet.bear.yaml\n"
+            + "    ir: bear-ir/create-wallet.bear.yaml\n"
             + "    projectRoot: services/api\n");
 
         BlockIdentityResolutionException error = assertThrows(
@@ -121,7 +121,7 @@ class BlockIdentityResolverTest {
     void singleCommandFailsOnCanonicalMismatch(@TempDir Path tempDir) throws Exception {
         Path repoRoot = tempDir.resolve("repo");
         Path projectRoot = repoRoot.resolve("services/api");
-        Path irFile = repoRoot.resolve("spec/create-wallet.bear.yaml");
+        Path irFile = repoRoot.resolve("bear-ir/create-wallet.bear.yaml");
         Files.createDirectories(projectRoot);
         Files.createDirectories(irFile.getParent());
         Files.writeString(irFile, "version: v1\n", StandardCharsets.UTF_8);
@@ -129,7 +129,7 @@ class BlockIdentityResolverTest {
             + "version: v1\n"
             + "blocks:\n"
             + "  - name: wallet-create\n"
-            + "    ir: spec/create-wallet.bear.yaml\n"
+            + "    ir: bear-ir/create-wallet.bear.yaml\n"
             + "    projectRoot: services/api\n");
 
         BlockIdentityResolutionException error = assertThrows(
@@ -144,12 +144,12 @@ class BlockIdentityResolverTest {
     void indexIdentityKeepsStableBlockKeyAcrossDisplayNameVariants() throws Exception {
         BlockIdentityResolution one = BlockIdentityResolver.resolveIndexIdentity(
             "create-wallet",
-            "bear.blocks.yaml:name=create-wallet,ir=spec/create-wallet.bear.yaml,projectRoot=.",
+            "bear.blocks.yaml:name=create-wallet,ir=bear-ir/create-wallet.bear.yaml,projectRoot=.",
             "CreateWallet"
         );
         BlockIdentityResolution two = BlockIdentityResolver.resolveIndexIdentity(
             "create-wallet",
-            "bear.blocks.yaml:name=create-wallet,ir=spec/create-wallet.bear.yaml,projectRoot=.",
+            "bear.blocks.yaml:name=create-wallet,ir=bear-ir/create-wallet.bear.yaml,projectRoot=.",
             "create_wallet"
         );
         assertEquals("create-wallet", one.blockKey());

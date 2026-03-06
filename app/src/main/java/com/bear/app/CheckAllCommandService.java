@@ -182,7 +182,7 @@ final class CheckAllCommandService {
                         "check: HYGIENE_UNEXPECTED_PATHS: " + unexpectedPaths.get(0),
                         CliCodes.HYGIENE_UNEXPECTED_PATHS,
                         unexpectedPaths.get(0),
-                        "Remove unexpected tool directories or allowlist them in `.bear/policy/hygiene-allowlist.txt`, then rerun `bear check --all`."
+                        "Remove unexpected tool directories or allowlist them in `bear-policy/hygiene-allowlist.txt`, then rerun `bear check --all`."
                     );
                 }
             }
@@ -327,7 +327,7 @@ final class CheckAllCommandService {
                                 CliCodes.HYGIENE_UNEXPECTED_PATHS,
                                 unexpectedPaths.get(0),
                                 "check: HYGIENE_UNEXPECTED_PATHS: " + unexpectedPaths.get(0),
-                                "Remove unexpected tool directories or allowlist them in `.bear/policy/hygiene-allowlist.txt`, then rerun `bear check --all`."
+                                "Remove unexpected tool directories or allowlist them in `bear-policy/hygiene-allowlist.txt`, then rerun `bear check --all`."
                             ));
                         }
                         continue;
@@ -544,9 +544,9 @@ final class CheckAllCommandService {
                             CliCodes.EXIT_IO,
                             "CONTAINMENT",
                             CliCodes.CONTAINMENT_NOT_VERIFIED,
-                            "spec/_shared.policy.yaml",
+                            "bear-policy/_shared.policy.yaml",
                             detail,
-                            "Add dependency to `spec/_shared.policy.yaml` with exact pinned version, or remove external dependency usage from `src/main/java/blocks/_shared/**`, then rerun `bear check --all`."
+                            "Add dependency to `bear-policy/_shared.policy.yaml` with exact pinned version, or remove external dependency usage from `src/main/java/blocks/_shared/**`, then rerun `bear check --all`."
                         ));
                     }
                 } else if (testResult.status() == ProjectTestStatus.INVARIANT_VIOLATION) {
@@ -571,40 +571,82 @@ final class CheckAllCommandService {
                 } else if (testResult.status() == ProjectTestStatus.COMPILE_FAILURE) {
                     rootTestFailed++;
                     String markerLine = ProjectTestRunner.firstCompileFailureLine(testResult.output());
-                    String detail = "root-level compile preflight failed for projectRoot " + entry.getKey();
-                    if (markerLine != null && !markerLine.isBlank()) {
-                        detail += "; line=" + markerLine;
-                    }
-                    detail += phaseTaskSuffix(testResult);
-                    for (int idx : entry.getValue()) {
-                        blockResults.set(idx, BearCli.rootFailure(
-                            blockResults.get(idx),
-                            CliCodes.EXIT_TEST_FAILURE,
-                            "TEST_FAILURE",
-                            CliCodes.COMPILE_FAILURE,
-                            "project.tests",
-                            detail,
-                            "Fix compile errors and rerun `bear check --all`."
-                        ));
+                    if (ContainmentFailureClassifier.hasContainmentSignal(testResult, markerLine)) {
+                        String detail = "check: CONTAINMENT_REQUIRED: CONTAINMENT_METADATA_MISMATCH: root-level compile preflight failed for projectRoot " + entry.getKey();
+                        if (markerLine != null && !markerLine.isBlank()) {
+                            detail += "; line=" + markerLine;
+                        }
+                        detail += phaseTaskSuffix(testResult);
+                        for (int idx : entry.getValue()) {
+                            blockResults.set(idx, BearCli.rootFailure(
+                                blockResults.get(idx),
+                                CliCodes.EXIT_TEST_FAILURE,
+                                "CONTAINMENT",
+                                CliCodes.CONTAINMENT_NOT_VERIFIED,
+                                "project.tests",
+                                detail,
+                                "Run `bear compile --all --project <path>` once, rerun the same `bear check --all`, and if the same containment/classpath signature persists stop and escalate.",
+                                CliCodes.CONTAINMENT_METADATA_MISMATCH
+                            ));
+                        }
+                    } else {
+                        String detail = "root-level compile preflight failed for projectRoot " + entry.getKey();
+                        if (markerLine != null && !markerLine.isBlank()) {
+                            detail += "; line=" + markerLine;
+                        }
+                        detail += phaseTaskSuffix(testResult);
+                        for (int idx : entry.getValue()) {
+                            blockResults.set(idx, BearCli.rootFailure(
+                                blockResults.get(idx),
+                                CliCodes.EXIT_TEST_FAILURE,
+                                "TEST_FAILURE",
+                                CliCodes.COMPILE_FAILURE,
+                                "project.tests",
+                                detail,
+                                "Fix compile errors and rerun `bear check --all`."
+                            ));
+                        }
                     }
                 } else if (testResult.status() == ProjectTestStatus.FAILED) {
                     rootTestFailed++;
-                    String detail = ProjectTestRunner.projectTestDetail(
-                        "root-level project tests failed for projectRoot " + entry.getKey(),
-                        ProjectTestRunner.firstRelevantProjectTestFailureLine(testResult.output()),
-                        CliText.shortTailSummary(testResult.output(), 3)
-                    );
-                    for (int idx : entry.getValue()) {
-                        blockResults.set(idx, BearCli.rootFailure(
-                            blockResults.get(idx),
-                            CliCodes.EXIT_TEST_FAILURE,
-                            "TEST_FAILURE",
-                            CliCodes.TEST_FAILURE,
-                            "project.tests",
-                            detail,
-                            "Fix project tests and rerun `bear check --all`."
-                        ));
+                    String markerLine = ProjectTestRunner.firstRelevantProjectTestFailureLine(testResult.output());
+                    if (ContainmentFailureClassifier.hasContainmentSignal(testResult, markerLine)) {
+                        String detail = "check: CONTAINMENT_REQUIRED: CONTAINMENT_METADATA_MISMATCH: root-level project tests failed for projectRoot " + entry.getKey();
+                        if (markerLine != null && !markerLine.isBlank()) {
+                            detail += "; line=" + markerLine;
+                        }
+                        detail += phaseTaskSuffix(testResult);
+                        for (int idx : entry.getValue()) {
+                            blockResults.set(idx, BearCli.rootFailure(
+                                blockResults.get(idx),
+                                CliCodes.EXIT_TEST_FAILURE,
+                                "CONTAINMENT",
+                                CliCodes.CONTAINMENT_NOT_VERIFIED,
+                                "project.tests",
+                                detail,
+                                "Run `bear compile --all --project <path>` once, rerun the same `bear check --all`, and if the same containment/classpath signature persists stop and escalate.",
+                                CliCodes.CONTAINMENT_METADATA_MISMATCH
+                            ));
+                        }
+                    } else {
+                        String detail = ProjectTestRunner.projectTestDetail(
+                            "root-level project tests failed for projectRoot " + entry.getKey(),
+                            markerLine,
+                            CliText.shortTailSummary(testResult.output(), 3)
+                        );
+                        for (int idx : entry.getValue()) {
+                            blockResults.set(idx, BearCli.rootFailure(
+                                blockResults.get(idx),
+                                CliCodes.EXIT_TEST_FAILURE,
+                                "TEST_FAILURE",
+                                CliCodes.TEST_FAILURE,
+                                "project.tests",
+                                detail,
+                                "Fix project tests and rerun `bear check --all`."
+                            ));
+                        }
                     }
+                } else if (testResult.status() == ProjectTestStatus.TIMEOUT) {
                 } else if (testResult.status() == ProjectTestStatus.TIMEOUT) {
                     rootTestFailed++;
                     String detail = ProjectTestRunner.projectTestDetail(

@@ -13,15 +13,15 @@ Bootstrap guardrails:
 ## If You Remember Nothing Else
 
 1. Determine mode from disk first:
-- greenfield: `0` files in `spec/*.bear.yaml`
+- greenfield: `0` files in `bear-ir/*.bear.yaml`
 - single block: `1` IR file
 - multi-block: `>=2` IR files, `bear.blocks.yaml` required
 - if `bear.blocks.yaml` exists, treat as multi-block regardless of IR file count
-2. Canonical IR directory is `spec/` unless repo policy says otherwise.
+2. Canonical IR directory is `bear-ir/` unless repo policy says otherwise.
 3. IR-first always; in greenfield run `bear validate` and `bear compile` before implementation edits.
 4. Never edit generated artifacts under `build/generated/bear/**`.
 5. Do not self-edit infra harness files unless explicitly instructed:
-- `build.gradle`, `settings.gradle`, `gradlew`, `gradlew.bat`, `.bear/**`, `bin/bear*`
+- `build.gradle`, `settings.gradle`, `gradlew`, `gradlew.bat`, `.bear/agent/**`, `.bear/tools/**`, `bin/bear*`
 6. For machine loops, run gates with `--agent` (usually with `--collect=all`).
 7. In `--agent` mode, stdout JSON is the control interface; stderr is diagnostics/evidence.
 8. After a gate failure in `--agent` mode, follow `nextAction.commands` only.
@@ -41,7 +41,7 @@ Minimum required sections (to avoid context overload):
 
 Mandatory stop conditions:
 1. `GREENFIELD_HARD_STOP`:
-- if `spec/*.bear.yaml` is empty, do not edit implementation.
+- if `bear-ir/*.bear.yaml` is empty, do not edit implementation.
 - first create IR, then run `bear validate <ir-file>` and `bear compile <ir-file> --project <repoRoot>` (or `compile --all` after index preflight).
 2. `AGENT_PACKAGE_PARITY_PRECONDITION`:
 - before implementation edits, `.bear/agent/TROUBLESHOOTING.md` and `.bear/agent/REPORTING.md` must both exist and be readable.
@@ -79,7 +79,7 @@ Forbidden:
 
 ## Machine Gate Loop
 
-1. Evaluate decomposition contract before authoring/changing `spec/*.bear.yaml`; then update IR/implementation from spec intent.
+1. Evaluate decomposition contract before authoring/changing `bear-ir/*.bear.yaml`; then update IR/implementation from spec intent.
 2. Run pre-gate sequence as needed:
 - `bear validate <ir-file>`
 - `bear compile <ir-file> --project <repoRoot>` or `bear compile --all --project <repoRoot>`

@@ -660,10 +660,24 @@ public final class BearCli {
         String detail,
         String remediation
     ) {
+        return rootFailure(base, exitCode, category, blockCode, blockPath, detail, remediation, null);
+    }
+
+    static BlockExecutionResult rootFailure(
+        BlockExecutionResult base,
+        int exitCode,
+        String category,
+        String blockCode,
+        String blockPath,
+        String detail,
+        String remediation,
+        String reasonKey
+    ) {
         AgentDiagnostics.AgentCategory agentCategory = isGovernanceCode(blockCode)
             ? AgentDiagnostics.AgentCategory.GOVERNANCE
             : AgentDiagnostics.AgentCategory.INFRA;
         String normalizedBlockCode = blockCode == null ? CliCodes.REPO_MULTI_BLOCK_FAILED : blockCode;
+        String normalizedReasonKey = reasonKey == null || reasonKey.isBlank() ? normalizedBlockCode : reasonKey;
         String normalizedPath = normalizeLocator(blockPath);
         Map<String, String> evidence = RepeatableRuleRegistry.requiresIdentityKey(normalizedBlockCode)
             ? Map.of("identityKey", nullToEmpty(normalizedPath) + "|" + nullToEmpty(normalizedBlockCode) + "|" + nullToEmpty(detail))
@@ -672,12 +686,12 @@ public final class BearCli {
             agentCategory,
             normalizedBlockCode,
             agentCategory == AgentDiagnostics.AgentCategory.GOVERNANCE ? normalizedBlockCode : null,
-            agentCategory == AgentDiagnostics.AgentCategory.INFRA ? normalizedBlockCode : null,
+            agentCategory == AgentDiagnostics.AgentCategory.INFRA ? normalizedReasonKey : null,
             AgentDiagnostics.AgentSeverity.ERROR,
             base.name(),
             normalizedPath,
             null,
-            normalizedBlockCode,
+            agentCategory == AgentDiagnostics.AgentCategory.GOVERNANCE ? normalizedBlockCode : normalizedReasonKey,
             detail == null ? "" : detail,
             evidence
         );
@@ -692,7 +706,7 @@ public final class BearCli {
             normalizeLocator(blockPath),
             squash(detail),
             remediation,
-            null,
+            agentCategory == AgentDiagnostics.AgentCategory.INFRA ? normalizedReasonKey : null,
             base.classification(),
             base.deltaLines(),
             base.governanceLines(),

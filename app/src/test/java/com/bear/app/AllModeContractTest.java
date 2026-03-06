@@ -35,7 +35,7 @@ class AllModeContractTest {
             lines,
             List.of(
                 "check-all: START project=.",
-                "check-all: BLOCK_START name=withdraw ir=spec/withdraw.bear.yaml",
+                "check-all: BLOCK_START name=withdraw ir=bear-ir/withdraw.bear.yaml",
                 "check-all: ROOT_TEST_START project=service",
                 "check-all: ROOT_TEST_DONE project=service exit=0",
                 "check-all: DONE project=. exit=0"
@@ -72,7 +72,7 @@ class AllModeContractTest {
     @Test
     void fixAllDoesNotModifyIrFiles(@TempDir Path tempDir) throws Exception {
         Fixture fixture = createSingleBlockFixture(tempDir, false);
-        Path ir = fixture.repoRoot().resolve("spec/withdraw.bear.yaml");
+        Path ir = fixture.repoRoot().resolve("bear-ir/withdraw.bear.yaml");
         String before = sha256(Files.readAllBytes(ir));
 
         CliRunResult run = runCli(new String[] { "fix", "--all", "--project", fixture.repoRoot().toString() });
@@ -110,17 +110,17 @@ class AllModeContractTest {
                 "version: v1\n" +
                 "blocks:\n" +
                 "  - name: account\n" +
-                "    ir: spec/account.bear.yaml\n" +
+                "    ir: bear-ir/account.bear.yaml\n" +
                 "    projectRoot: .\n",
             StandardCharsets.UTF_8
         );
-        Files.writeString(repoRoot.resolve("spec/account.bear.yaml"), accountWithUnknownTarget(), StandardCharsets.UTF_8);
+        Files.writeString(repoRoot.resolve("bear-ir/account.bear.yaml"), accountWithUnknownTarget(), StandardCharsets.UTF_8);
 
         CliRunResult run = runCli(new String[] { "check", "--all", "--project", repoRoot.toString() });
         assertEquals(2, run.exitCode());
         String stderr = normalizeLf(run.stderr());
         assertTrue(stderr.contains("CODE=IR_VALIDATION"));
-        assertTrue(stderr.contains("PATH=spec/account.bear.yaml"));
+        assertTrue(stderr.contains("PATH=bear-ir/account.bear.yaml"));
     }
 
     @Test
@@ -133,21 +133,21 @@ class AllModeContractTest {
                 "version: v1\n" +
                 "blocks:\n" +
                 "  - name: account\n" +
-                "    ir: spec/account.bear.yaml\n" +
+                "    ir: bear-ir/account.bear.yaml\n" +
                 "    projectRoot: .\n" +
                 "  - name: transaction-log\n" +
-                "    ir: spec/transaction-log.bear.yaml\n" +
+                "    ir: bear-ir/transaction-log.bear.yaml\n" +
                 "    projectRoot: .\n",
             StandardCharsets.UTF_8
         );
-        Files.writeString(repoRoot.resolve("spec/account.bear.yaml"), accountWithUnknownTargetOp(), StandardCharsets.UTF_8);
-        Files.writeString(repoRoot.resolve("spec/transaction-log.bear.yaml"), txWithSingleOp(), StandardCharsets.UTF_8);
+        Files.writeString(repoRoot.resolve("bear-ir/account.bear.yaml"), accountWithUnknownTargetOp(), StandardCharsets.UTF_8);
+        Files.writeString(repoRoot.resolve("bear-ir/transaction-log.bear.yaml"), txWithSingleOp(), StandardCharsets.UTF_8);
 
         CliRunResult run = runCli(new String[] { "check", "--all", "--project", repoRoot.toString() });
         assertEquals(2, run.exitCode());
         String stderr = normalizeLf(run.stderr());
         assertTrue(stderr.contains("CODE=IR_VALIDATION"));
-        assertTrue(stderr.contains("PATH=spec/account.bear.yaml#block.effects.allow[0].targetOps[0]"));
+        assertTrue(stderr.contains("PATH=bear-ir/account.bear.yaml#block.effects.allow[0].targetOps[0]"));
     }
 
     @Test
@@ -160,15 +160,15 @@ class AllModeContractTest {
                 "version: v1\n" +
                 "blocks:\n" +
                 "  - name: account\n" +
-                "    ir: spec/account.bear.yaml\n" +
+                "    ir: bear-ir/account.bear.yaml\n" +
                 "    projectRoot: .\n" +
                 "  - name: transaction-log\n" +
-                "    ir: spec/transaction-log.bear.yaml\n" +
+                "    ir: bear-ir/transaction-log.bear.yaml\n" +
                 "    projectRoot: .\n",
             StandardCharsets.UTF_8
         );
-        Files.writeString(repoRoot.resolve("spec/account.bear.yaml"), accountCycle(), StandardCharsets.UTF_8);
-        Files.writeString(repoRoot.resolve("spec/transaction-log.bear.yaml"), txCycle(), StandardCharsets.UTF_8);
+        Files.writeString(repoRoot.resolve("bear-ir/account.bear.yaml"), accountCycle(), StandardCharsets.UTF_8);
+        Files.writeString(repoRoot.resolve("bear-ir/transaction-log.bear.yaml"), txCycle(), StandardCharsets.UTF_8);
 
         CliRunResult run = runCli(new String[] { "check", "--all", "--project", repoRoot.toString() });
         assertEquals(2, run.exitCode());
@@ -180,7 +180,7 @@ class AllModeContractTest {
         Path specDir = repoRoot.resolve("spec");
         Files.createDirectories(specDir);
         Path ir = specDir.resolve("withdraw.bear.yaml");
-        Path fixture = TestRepoPaths.repoRoot().resolve("spec/fixtures/withdraw.bear.yaml");
+        Path fixture = TestRepoPaths.repoRoot().resolve("bear-ir/fixtures/withdraw.bear.yaml");
         Files.writeString(ir, Files.readString(fixture, StandardCharsets.UTF_8), StandardCharsets.UTF_8);
 
         Files.writeString(
@@ -189,7 +189,7 @@ class AllModeContractTest {
                 + "version: v1\n"
                 + "blocks:\n"
                 + "  - name: withdraw\n"
-                + "    ir: spec/withdraw.bear.yaml\n"
+                + "    ir: bear-ir/withdraw.bear.yaml\n"
                 + "    projectRoot: service\n",
             StandardCharsets.UTF_8
         );

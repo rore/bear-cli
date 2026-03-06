@@ -254,7 +254,7 @@ class AgentDiagnosticsTest {
     @Test
     void rerunCommandRoundTripsViaCliParserForCheckSingle() {
         AgentCommandContext expected = AgentCommandContext.forCheckSingle(
-            Path.of("spec/withdraw.bear.yaml"),
+            Path.of("bear-ir/withdraw.bear.yaml"),
             Path.of("."),
             Path.of("bear.blocks.yaml"),
             true,
@@ -277,7 +277,7 @@ class AgentDiagnosticsTest {
     @Test
     void rerunCommandRoundTripsViaCliParserForPrCheckSingle() {
         AgentCommandContext expected = AgentCommandContext.forPrCheckSingle(
-            "spec/withdraw.bear.yaml",
+            "bear-ir/withdraw.bear.yaml",
             Path.of("."),
             "origin/main",
             Path.of("bear.blocks.yaml"),

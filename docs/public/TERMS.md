@@ -1,4 +1,4 @@
-﻿# Terms
+# Terms
 
 This page defines the minimum vocabulary needed to read BEAR output and docs.
 
@@ -6,7 +6,7 @@ This page defines the minimum vocabulary needed to read BEAR output and docs.
 
 - `block`: one governed backend unit.
 - `operation`: one entrypoint inside a block.
-- `IR`: YAML boundary declaration for a block (`spec/<block>.bear.yaml`).
+- `IR`: YAML boundary declaration for a block (`bear-ir/<block>.bear.yaml`).
 
 ## Boundary
 

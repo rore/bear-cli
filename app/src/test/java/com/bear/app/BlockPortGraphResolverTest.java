@@ -21,16 +21,16 @@ class BlockPortGraphResolverTest {
             "version: v1\n"
                 + "blocks:\n"
                 + "  - name: account\n"
-                + "    ir: spec/account.bear.yaml\n"
+                + "    ir: bear-ir/account.bear.yaml\n"
                 + "    projectRoot: .\n"
                 + "  - name: transaction-log\n"
-                + "    ir: spec/transaction-log.bear.yaml\n"
+                + "    ir: bear-ir/transaction-log.bear.yaml\n"
                 + "    projectRoot: .\n",
             StandardCharsets.UTF_8
         );
 
-        Files.writeString(repoRoot.resolve("spec/account.bear.yaml"), accountIr(), StandardCharsets.UTF_8);
-        Files.writeString(repoRoot.resolve("spec/transaction-log.bear.yaml"), txIr(), StandardCharsets.UTF_8);
+        Files.writeString(repoRoot.resolve("bear-ir/account.bear.yaml"), accountIr(), StandardCharsets.UTF_8);
+        Files.writeString(repoRoot.resolve("bear-ir/transaction-log.bear.yaml"), txIr(), StandardCharsets.UTF_8);
 
         BlockPortGraph graph = BlockPortGraphResolver.resolveAndValidate(
             repoRoot,
@@ -56,16 +56,16 @@ class BlockPortGraphResolverTest {
             "version: v1\n"
                 + "blocks:\n"
                 + "  - name: account\n"
-                + "    ir: spec/account.bear.yaml\n"
+                + "    ir: bear-ir/account.bear.yaml\n"
                 + "    projectRoot: .\n"
                 + "  - name: transaction-log\n"
-                + "    ir: spec/transaction-log.bear.yaml\n"
+                + "    ir: bear-ir/transaction-log.bear.yaml\n"
                 + "    projectRoot: .\n",
             StandardCharsets.UTF_8
         );
 
-        Files.writeString(repoRoot.resolve("spec/account.bear.yaml"), accountIrWithCycle(), StandardCharsets.UTF_8);
-        Files.writeString(repoRoot.resolve("spec/transaction-log.bear.yaml"), txIrWithCycle(), StandardCharsets.UTF_8);
+        Files.writeString(repoRoot.resolve("bear-ir/account.bear.yaml"), accountIrWithCycle(), StandardCharsets.UTF_8);
+        Files.writeString(repoRoot.resolve("bear-ir/transaction-log.bear.yaml"), txIrWithCycle(), StandardCharsets.UTF_8);
 
         BlockIndexValidationException ex = org.junit.jupiter.api.Assertions.assertThrows(
             BlockIndexValidationException.class,

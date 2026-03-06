@@ -233,8 +233,8 @@ $runtimeOperations = @(
 $agentOperation = @{ source = $packagedAgentRoot; destination = $dstAgentRoot }
 
 $policyMappings = @(
-    @{ source = (Join-Path $repoRoot "docs\bear-package\.bear\policy\reflection-allowlist.txt"); destination = (Join-Path $demoRoot ".bear\policy\reflection-allowlist.txt") },
-    @{ source = (Join-Path $repoRoot "docs\bear-package\.bear\policy\hygiene-allowlist.txt"); destination = (Join-Path $demoRoot ".bear\policy\hygiene-allowlist.txt") }
+    @{ source = (Join-Path $repoRoot "docs\bear-package\bear-policy\reflection-allowlist.txt"); destination = (Join-Path $demoRoot "bear-policy\reflection-allowlist.txt") },
+    @{ source = (Join-Path $repoRoot "docs\bear-package\bear-policy\hygiene-allowlist.txt"); destination = (Join-Path $demoRoot "bear-policy\hygiene-allowlist.txt") }
 )
 
 Write-Output "Sync plan:"
@@ -361,4 +361,4 @@ if ($treeMismatch.Count -gt 0) {
 
 Write-Output "Sync complete."
 Write-Output "CLI JAR hashes match source runtime output."
-Write-Output "Agent package file hashes match docs/bear-package/.bear source."
+Write-Output "Agent package file hashes match docs/bear-package/.bear source. Policy template hashes match docs/bear-package/bear-policy source."

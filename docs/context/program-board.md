@@ -112,7 +112,7 @@ Queue notes:
      - root-level one-invocation behavior in `check --all`.
 
 4. `_shared` allowedDeps policy (path-scoped, containment-enforced, no IR schema changes)
-   - added strict kernel-owned parser for `spec/_shared.policy.yaml` (`version: v1`, `scope: shared`, deterministic normalized deps).
+   - added strict kernel-owned parser for `bear-policy/_shared.policy.yaml` (`version: v1`, `scope: shared`, deterministic normalized deps).
    - `_shared` containment scope is active per `projectRoot` when policy exists or `_shared` Java sources exist (in addition to selected `impl.allowedDeps` blocks).
    - missing `_shared` policy in-scope defaults to JDK-only allowlist.
    - generated containment index/markers include `_shared` only when in scope.
@@ -164,7 +164,7 @@ Queue notes:
      - scoped import policy by lane
      - `_shared` layout split (`pure` vs `state`)
    - new optional immutable-type allowlist contract:
-     - `.bear/policy/pure-shared-immutable-types.txt` (FQCN-only, sorted, unique, comments/blank lines allowed)
+     - `bear-policy/pure-shared-immutable-types.txt` (FQCN-only, sorted, unique, comments/blank lines allowed)
    - docs package and consistency tests updated to keep enforcement deterministic and BEAR-generic.
 
 10. `Guardrails v2.2.3: IO lock discipline + blocker evidence + scoped conflict precision`:

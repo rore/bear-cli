@@ -89,8 +89,8 @@ Block-port discipline:
 ## Policy Contract (`check`)
 
 Policy files are optional:
-1. `.bear/policy/reflection-allowlist.txt`
-2. `.bear/policy/hygiene-allowlist.txt`
+1. `bear-policy/reflection-allowlist.txt`
+2. `bear-policy/hygiene-allowlist.txt`
 
 Allowlist file format (if present) MUST be:
 1. UTF-8, one repo-relative path per line.
@@ -153,10 +153,10 @@ Scoped import invariants:
 
 `_shared/pure` static-final constants:
 1. Allowed by default: primitives, boxed primitives, `java.lang.String`, enum constants.
-2. Additional immutable types require FQCN allowlist entry in `.bear/policy/pure-shared-immutable-types.txt`.
+2. Additional immutable types require FQCN allowlist entry in `bear-policy/pure-shared-immutable-types.txt`.
 3. `static final` with `new ...` initializer in `_shared/pure` is forbidden unless declared/constructed type is allowlisted immutable.
 
-Immutable allowlist format (`.bear/policy/pure-shared-immutable-types.txt`):
+Immutable allowlist format (`bear-policy/pure-shared-immutable-types.txt`):
 1. UTF-8 text file.
 2. FQCN entries only (no simple names).
 3. Sorted lexicographically.

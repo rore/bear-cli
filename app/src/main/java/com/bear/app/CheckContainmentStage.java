@@ -23,7 +23,7 @@ final class CheckContainmentStage {
     private static final String CONTAINMENT_ENTRYPOINT_PATH = "build/generated/bear/gradle/bear-containment.gradle";
     private static final String CONTAINMENT_SKIP_REASON = "no_selected_blocks_with_impl_allowedDeps";
     private static final String CONTAINMENT_MARKER_DIR = "build/bear/containment";
-    private static final String SHARED_POLICY_PATH = "spec/_shared.policy.yaml";
+    private static final String SHARED_POLICY_PATH = "bear-policy/_shared.policy.yaml";
     private static final String SHARED_SOURCE_ROOT = "src/main/java/blocks/_shared";
 
     private CheckContainmentStage() {
@@ -51,7 +51,7 @@ final class CheckContainmentStage {
                     "VALIDATION",
                     CliCodes.POLICY_INVALID,
                     SHARED_POLICY_PATH,
-                    "Fix `spec/_shared.policy.yaml` (version/scope/schema and pinned allowedDeps) and rerun `bear check`.",
+                    "Fix `bear-policy/_shared.policy.yaml` (version/scope/schema and pinned allowedDeps) and rerun `bear check`.",
                     line
                 );
             }
@@ -68,7 +68,7 @@ final class CheckContainmentStage {
                 "CONTAINMENT",
                 CliCodes.CONTAINMENT_UNSUPPORTED_TARGET,
                 "project.root",
-                "Containment enforcement in P2 requires Java+Gradle with wrapper at project root; remove `impl.allowedDeps`/`spec/_shared.policy.yaml` scope usage or use supported target, then rerun `bear check`.",
+                "Containment enforcement in P2 requires Java+Gradle with wrapper at project root; remove `impl.allowedDeps`/`bear-policy/_shared.policy.yaml` scope usage or use supported target, then rerun `bear check`.",
                 line
             );
         }

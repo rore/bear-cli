@@ -9,7 +9,7 @@ Purpose:
 version: v1
 blocks:
   - name: execution-core
-    ir: spec/execution-core.bear.yaml
+    ir: bear-ir/execution-core.bear.yaml
     projectRoot: .
 ```
 
