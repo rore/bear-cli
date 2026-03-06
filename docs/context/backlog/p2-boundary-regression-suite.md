@@ -2,7 +2,7 @@
 
 ## Status
 
-Queued
+Completed
 
 ## Milestone Target
 

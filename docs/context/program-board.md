@@ -60,7 +60,6 @@ Preview standing note:
 
 1. P2 CI boundary governance + PR diff ergonomics + telemetry unification. Spec: `docs/context/backlog/p2-ci-owned-bear-gates.md`
 2. P2 minimal taste-invariants rule pack. Spec: `docs/context/backlog/p2-minimal-taste-invariants-rule-pack.md`
-3. P2 boundary regression suite. Spec: `docs/context/backlog/p2-boundary-regression-suite.md`
 
 ## Later Queue (Ordered, Not Yet Active)
 
@@ -77,7 +76,14 @@ Queue notes:
 
 ## Recently Completed (P2)
 
-1. `Generated structural tests + minimal parity follow-up`
+1. `Boundary regression suite`
+   - expanded `PrDeltaClassifierTest` coverage for surface, idempotency, operation-usage, contract, invariant, and allowed-deps delta classification paths
+   - added `AllModeOptionParserTest` regressions for `pr-check --all` missing or blank `--base`, missing option values, unsupported `--collect`, and unexpected args
+   - added `AllModeRendererTest` ordering coverage for governance signals, repo delta rendering, and summary placement
+   - added `BearCliTest` regressions for deterministic boundary-bypass finding ordering and lexically sorted repo-delta rendering in `pr-check --all`
+   - integrated back from the detached worktree into `main` as test-only hardening with no runtime contract expansion
+
+2. `Generated structural tests + minimal parity follow-up`
    - JVM compile now emits generated structural evidence tests:
      - `<BlockName>StructuralDirectionTest`
      - `<BlockName>StructuralReachTest`
@@ -90,7 +96,7 @@ Queue notes:
    - unsupported-target containment parity lock added between single `check` and `check --all` for missing-wrapper scope-enabled path.
    - docs and package guidance updated for structural evidence semantics and strict-mode toggle.
 
-2. `check` containment auto-wiring + post-test marker verification (Slice 1)
+3. `check` containment auto-wiring + post-test marker verification (Slice 1)
    - `ProjectTestRunner` now supports deterministic optional init-script injection (`-I build/generated/bear/gradle/bear-containment.gradle`).
    - `check`/`check --all` apply init-script injection only when containment scope is active per root.
    - containment preflight remains scope-gated and runs before tests only for containment-enabled roots.
@@ -104,7 +110,7 @@ Queue notes:
      - containment-disabled no-preflight/no-injection behavior
      - root-level one-invocation behavior in `check --all`.
 
-3. `_shared` allowedDeps policy (path-scoped, containment-enforced, no IR schema changes)
+4. `_shared` allowedDeps policy (path-scoped, containment-enforced, no IR schema changes)
    - added strict kernel-owned parser for `spec/_shared.policy.yaml` (`version: v1`, `scope: shared`, deterministic normalized deps).
    - `_shared` containment scope is active per `projectRoot` when policy exists or `_shared` Java sources exist (in addition to selected `impl.allowedDeps` blocks).
    - missing `_shared` policy in-scope defaults to JDK-only allowlist.
@@ -115,7 +121,7 @@ Queue notes:
    - `pr-check --all` renders shared-policy deltas once in repo-level `REPO DELTA:` section before `SUMMARY`.
    - shared containment compile violations are mapped to containment lane (`exit 74`, `CODE=CONTAINMENT_NOT_VERIFIED`) with shared-policy-specific remediation.
 
-4. `Wiring drift diagnostics` (deterministic canonical wiring paths + bounded detail)
+5. `Wiring drift diagnostics` (deterministic canonical wiring paths + bounded detail)
    - wiring drift now reports canonical repo-relative paths:
      - `build/generated/bear/wiring/<blockKey>.wiring.json`
    - drift output no longer emits duplicate wiring path variants.
@@ -123,12 +129,12 @@ Queue notes:
    - wiring drift detail ordering is frozen (`MISSING_BASELINE > REMOVED > CHANGED > ADDED`) and capped to 20 entries with deterministic overflow suffix.
    - exit taxonomy/envelopes/CLI surface unchanged.
 
-5. `General agent done-gate hardening` (`check --all` + `pr-check --all --base <ref>`)
+6. `General agent done-gate hardening` (`check --all` + `pr-check --all --base <ref>`)
    - package agent workflow now requires dual-gate completion evidence before reporting done.
    - public command/context docs aligned to require both local gates as completion evidence.
    - CI remains authoritative remote `pr-check`; local `pr-check` required for fast governance feedback.
 
-6. `Multi-block port implementer guard` (`MULTI_BLOCK_PORT_IMPL_FORBIDDEN`)
+7. `Multi-block port implementer guard` (`MULTI_BLOCK_PORT_IMPL_FORBIDDEN`)
    - added structural bypass rule for classes implementing generated `*Port` interfaces across multiple generated block packages.
    - marker exception contract finalized:
      - exact marker line `// BEAR:ALLOW_MULTI_BLOCK_PORT_IMPL`
@@ -138,7 +144,7 @@ Queue notes:
    - dedupe lock: when `PORT_IMPL_OUTSIDE_GOVERNED_ROOT` exists for a file, multi-block findings for that file are suppressed.
    - enforced via `check`/`check --all`/`pr-check` in bypass lane (`exit=7`, `CODE=BOUNDARY_BYPASS`).
 
-7. `Declared allowed deps containment strict marker semantics` (selection-gated)
+8. `Declared allowed deps containment strict marker semantics` (selection-gated)
    - baseline selection-gated containment semantics shipped first; later extended by `_shared` policy/source scope in item `1` above.
    - skip mode is non-failing for containment artifacts/markers and emits deterministic info only when required index exists+parses+non-empty.
    - aggregate marker strictness:
@@ -150,7 +156,7 @@ Queue notes:
    - generated containment artifacts -> drift lane (`exit 3`, compile remediation)
    - handshake marker issues -> containment-not-verified lane (`exit 74`, marker refresh remediation)
 
-8. `Guardrails v2.2.1: pure/shared state lane enforcement`:
+9. `Guardrails v2.2.1: pure/shared state lane enforcement`:
    - `check`/`check --all` now enforce lane package/purity rules for:
      - `_shared/pure` purity + static-final constant constraints
      - `impl` purity and `_shared.state` dependency ban
@@ -160,7 +166,7 @@ Queue notes:
      - `.bear/policy/pure-shared-immutable-types.txt` (FQCN-only, sorted, unique, comments/blank lines allowed)
    - docs package and consistency tests updated to keep enforcement deterministic and BEAR-generic.
 
-9. `Guardrails v2.2.3: IO lock discipline + blocker evidence + scoped conflict precision`:
+10. `Guardrails v2.2.3: IO lock discipline + blocker evidence + scoped conflict precision`:
    - packaged agent docs now pin IO lock triage to deterministic steps:
      - `gradlew(.bat) --stop`
      - rerun the same failing command unchanged
@@ -175,7 +181,7 @@ Queue notes:
    - scoped import-policy wording now explicitly states lane/path scope and app-layer non-global applicability unless separately constrained.
    - docs consistency tests now enforce these IO lock anchors and blocker-evidence tokens.
 
-10. `Guardrails v2.2.4 (lock candidate): pr-check envelope anomaly + narrow state misuse checks`:
+11. `Guardrails v2.2.4 (lock candidate): pr-check envelope anomaly + narrow state misuse checks`:
    - runtime `pr-check` envelope enforcement now fails deterministically when marker/exit disagree:
      - if output contains `BOUNDARY_EXPANSION_DETECTED` but exit != `5`, classify as internal anomaly (`PR_CHECK_EXIT_ENVELOPE_ANOMALY`, `exit 70`, `INTERNAL_ERROR`).
    - scanner rule additions:
@@ -189,21 +195,21 @@ Queue notes:
      - troubleshooting/reporting anomaly routing clarified,
      - new `RepoArtifactPolicyTest` enforces no tracked `build[0-9]+/` paths and no stale build path tokens in tracked text sources.
 
-11. `Guardrails v2.2.5-lite (revised): lane-scope hardening + minimal anchor checks`:
+12. `Guardrails v2.2.5-lite (revised): lane-scope hardening + minimal anchor checks`:
    - scanner rule applicability is now explicitly path-allowlisted via `ruleAppliesToPath(ruleId, relPath)`.
    - `_shared/state` is explicitly excluded from purity/import bans (`SHARED_PURITY_VIOLATION`, `SCOPED_IMPORT_POLICY_BYPASS`).
    - scanner tests now include white-box rule-scope checks and a non-evaluation regression for `_shared/state`.
    - packaged docs add deterministic `POLICY_SCOPE_MISMATCH` escalation anchors.
    - docs consistency checks were reduced to minimal section-anchor coverage plus package file or legacy checks.
 
-12. `Guardrails v2.2.6: baseline waiting semantics + decomposition determinism`:
+13. `Guardrails v2.2.6: baseline waiting semantics + decomposition determinism`:
    - packaged docs now define deterministic greenfield baseline waiting semantics (`WAITING_FOR_BASELINE_REVIEW`) with explicit blocker/outcome pairing rules.
    - bootstrap now includes explicit decomposition default + canonical split-trigger names to prevent endpoint-count dogma drift.
    - reporting schema now requires deterministic decomposition fields and baseline review scope for waiting outcomes.
    - docs consistency tests now anchor-check the new baseline or decomposition headings.
    - reach import/FQCN semantic symmetry is explicitly marked as deferred and non-enforced in this release.
 
-13. `Guardrails v2.2.6.3: deterministic decomposition rubric + reporting precision + noop widening`:
+14. `Guardrails v2.2.6.3: deterministic decomposition rubric + reporting precision + noop widening`:
    - BOOTSTRAP decomposition policy now uses canonical rubric tokens and derivation rules for grouped or split decisions.
    - CONTRACTS decomposition text no longer implies per-operation block mandates; anti-pattern remains router-specific.
    - REPORTING now enforces strict `DEVELOPER_SUMMARY`, deterministic status line format, grouped decomposition fields, and required `Surface evidence` forms.
@@ -225,7 +231,7 @@ Detailed locked spec text was moved to:
   - `docs/context/backlog/p2-declared-allowed-deps-containment.md` (`Completed`)
   - `docs/context/backlog/p2-ci-owned-bear-gates.md` (`Queued`)
   - `docs/context/backlog/p2-minimal-taste-invariants-rule-pack.md` (`Queued`)
-  - `docs/context/backlog/p2-boundary-regression-suite.md` (`Queued`)
+  - `docs/context/backlog/p2-boundary-regression-suite.md` (`Completed`)
 - `P3`
   - `docs/context/backlog/p3-maven-allowed-deps-containment.md` (`Queued`)
   - `docs/context/backlog/p3-capability-templates.md` (`Queued`)

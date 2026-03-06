@@ -10,7 +10,7 @@ Long-form historical notes are archived in `docs/context/archive/archive-state-h
 
 ## Current Focus
 
-Planning docs are now ordered so committed roadmap items map to backlog specs, shipped work is separated from the active queue, and deferred initiatives remain parked under `future.md`; next product work remains combined CI boundary governance, PR diff ergonomics, and telemetry unification.
+Planning docs are now ordered so committed roadmap items map to backlog specs, shipped work is separated from the active queue, and deferred initiatives remain parked under `future.md`; boundary regression suite is completed and the next product work remains combined CI boundary governance, PR diff ergonomics, and telemetry unification.
 
 ## Next Concrete Task
 
@@ -29,5 +29,6 @@ Planning docs are now ordered so committed roadmap items map to backlog specs, s
 - Added backlog specs for minimal taste-invariants, boundary regression suite, capability templates, broader boundary-escape coverage, multi-block composition hardening, optional deterministic policy hooks, and compile package customization.
 - Stabilized local Gradle execution by moving wrapper cache to repo-local `.bear-gradle-user-home` and build outputs to ignored repo-local `.bear-build/<runId>`; added `.bear-gradle-user-home/` to `.gitignore`.
 - Integrated the boundary regression worktree slice back into `main` by merging the four test-file changes only (`AllModeOptionParserTest`, `AllModeRendererTest`, `BearCliTest`, `PrDeltaClassifierTest`) and intentionally leaving the detached worktree's stale `state.md` out of the merge.
+- Completed and integrated the boundary regression suite, then updated roadmap, program board, and backlog status so the active queue now starts with CI governance and minimal taste-invariants.
 - Verification: `./gradlew.bat --no-daemon :app:test --tests com.bear.app.ContextDocsConsistencyTest`
 - Verification: `./gradlew.bat --no-daemon :app:test --tests com.bear.app.PrDeltaClassifierTest --tests com.bear.app.AllModeOptionParserTest --tests com.bear.app.AllModeRendererTest --tests com.bear.app.BearCliTest`

@@ -66,7 +66,6 @@ Preview definition of done:
 Priority 2:
 1. CI boundary governance + PR diff ergonomics + telemetry unification. Spec: `docs/context/backlog/p2-ci-owned-bear-gates.md`
 2. Minimal taste-invariants rule pack. Spec: `docs/context/backlog/p2-minimal-taste-invariants-rule-pack.md`
-3. Boundary regression suite. Spec: `docs/context/backlog/p2-boundary-regression-suite.md`
 
 Priority 3:
 1. Maven allowed-deps containment parity (optional future expansion). Spec: `docs/context/backlog/p3-maven-allowed-deps-containment.md`
@@ -79,6 +78,7 @@ Shipped in active post-Preview work already:
 1. `bear fix` for generated artifacts only.
 2. Generated structural tests (default evidence-only; opt-in strict mode remains available via JVM property).
 3. Declared allowed-deps containment for Gradle or JVM projects.
+4. Boundary regression suite.
 
 Parked and non-committed items:
 1. Future initiatives and idea families belong in `docs/context/future.md`, not in the active roadmap queue.
