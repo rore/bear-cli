@@ -1,6 +1,7 @@
 param(
     [string]$DemoRepoPath = "..\bear-account-demo",
     [string]$BaseRef = "HEAD",
+    [switch]$IncludeGreenfieldReset,
     [switch]$SkipClean,
     [switch]$SkipSync,
     [switch]$RunGates,
@@ -46,6 +47,7 @@ if (-not $SkipClean) {
     Invoke-Step "Clean demo workspace" {
         & powershell -ExecutionPolicy Bypass -File (Join-Path $repoRoot "scripts\clean-demo-branch.ps1") `
             -DemoRepoPath $DemoRepoPath `
+            -IncludeGreenfieldReset:$IncludeGreenfieldReset `
             -IncludeGradleCache:$IncludeGradleCache `
             -Yes:$Yes
         if ($LASTEXITCODE -ne 0) {

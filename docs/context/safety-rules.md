@@ -66,7 +66,13 @@ When asked to "clean the demo" or "clean demo branch", use this exact contract:
 
 1. Run:
    - `powershell -ExecutionPolicy Bypass -File .\scripts\clean-demo-branch.ps1`
-2. Artifact scope that must be removed:
+2. Default mode is branch reset only:
+   - remove build/runtime/generated artifacts
+   - restore tracked changes
+   - remove untracked and ignored files (except `.bear-gradle-user-home/` unless explicitly requested)
+   - preserve committed BEAR-authored paths already present on the branch
+3. Use `-IncludeGreenfieldReset` only when rerunning a spec-only greenfield branch and you intentionally want to clear BEAR-authored implementation/IR paths before restoring branch HEAD.
+4. Additional artifact scope removed only in greenfield reset mode:
    - `build/`
    - legacy numbered build directories (for example `build2`, `build3`, `build4`)
    - `bin/main`
@@ -74,13 +80,10 @@ When asked to "clean the demo" or "clean demo branch", use this exact contract:
    - `bear.blocks.yaml`
    - `spec/`
    - `src/main/java/blocks/`
-3. Reset demo repo working tree to branch HEAD:
-   - restore tracked changes
-   - remove untracked and ignored files (except `.bear-gradle-user-home/` unless explicitly requested)
-4. Keep `.bear-gradle-user-home/` by default.
-5. Only remove `.bear-gradle-user-home/` if explicitly requested.
-6. Routine demo cleanup is operational; do not update `docs/context/state.md` for cleanup-only work.
-7. After cleanup, always report:
+5. Keep `.bear-gradle-user-home/` by default.
+6. Only remove `.bear-gradle-user-home/` if explicitly requested.
+7. Routine demo cleanup is operational; do not update `docs/context/state.md` for cleanup-only work.
+8. After cleanup, always report:
    - `git status --short`
    - explicit exists/missing checks for the cleanup target paths.
 
@@ -88,6 +91,12 @@ Dry run:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\clean-demo-branch.ps1 -WhatIf
+```
+
+Greenfield reset dry run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\clean-demo-branch.ps1 -IncludeGreenfieldReset -WhatIf
 ```
 
 ## Safe Demo Sync

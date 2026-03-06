@@ -54,6 +54,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\clean-demo-branch.ps1 -Yes
 powershell -ExecutionPolicy Bypass -File .\scripts\sync-bear-demo.ps1 -Yes
 ```
 
+If the simulation branch is a spec-only greenfield starting point, add `-IncludeGreenfieldReset` to the clean step.
+If the simulation branch already contains committed BEAR-authored IR/implementation from a prior scenario baseline, do not add `-IncludeGreenfieldReset`.
+
 Notes:
 - `run-demo-simulated.ps1` is prep/smoke automation only.
 - It does **not** run an isolated agent reasoning session.
@@ -279,9 +282,3 @@ After agent finishes, evaluator may re-run:
 ```
 
 to confirm reproducibility of reported outcomes.
-
-
-
-
-
-

@@ -1,5 +1,6 @@
 param(
     [string]$DemoRepoPath = "..\bear-account-demo",
+    [switch]$IncludeGreenfieldReset,
     [switch]$IncludeGradleCache,
     [switch]$WhatIf,
     [switch]$Yes
@@ -28,11 +29,15 @@ function Confirm-Cleanup([switch]$Yes, [switch]$WhatIf) {
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $bearCliRoot = [System.IO.Path]::GetFullPath((Join-Path $scriptDir ".."))
 Assert-Directory -path $bearCliRoot -message "Could not resolve bear-cli root."
-Assert-Directory -path (Join-Path $bearCliRoot ".git") -message "bear-cli root is not a git repository."
+if (-not (Test-Path -LiteralPath (Join-Path $bearCliRoot ".git"))) {
+    throw "bear-cli root is not a git repository."
+}
 
 $demoRoot = [System.IO.Path]::GetFullPath((Join-Path $bearCliRoot $DemoRepoPath))
 Assert-Directory -path $demoRoot -message "Demo repository not found: $demoRoot"
-Assert-Directory -path (Join-Path $demoRoot ".git") -message "Demo repository missing .git: $demoRoot"
+if (-not (Test-Path -LiteralPath (Join-Path $demoRoot ".git"))) {
+    throw "Demo repository missing .git: $demoRoot"
+}
 
 $safeCleanScript = Join-Path $bearCliRoot "scripts\safe-clean-bear-generated.ps1"
 if (-not (Test-Path -LiteralPath $safeCleanScript)) {
@@ -43,13 +48,18 @@ Write-Output "Demo cleanup target repo: $demoRoot"
 Write-Output "Step 1/3: remove generated/demo-run artifacts"
 Write-Output "Step 2/3: reset tracked changes + remove untracked and ignored files"
 Write-Output "Step 3/3: report git status + mandatory path checks"
+if ($IncludeGreenfieldReset) {
+    Write-Output "Mode: greenfield reset (also removes BEAR-authored IR/implementation paths before git restore)"
+} else {
+    Write-Output "Mode: branch reset only (preserves committed BEAR-authored IR/implementation paths)"
+}
 
 Confirm-Cleanup -Yes:$Yes -WhatIf:$WhatIf
 
 Push-Location $demoRoot
 try {
     if ($WhatIf) {
-        & $safeCleanScript -IncludeGreenfieldReset -IncludeGradleCache:$IncludeGradleCache -WhatIf
+        & $safeCleanScript -IncludeGreenfieldReset:$IncludeGreenfieldReset -IncludeGradleCache:$IncludeGradleCache -WhatIf
         Write-Output "WhatIf mode: showing git reset/clean actions."
         Write-Output "Would run: git restore --worktree --staged ."
         if ($IncludeGradleCache) {
@@ -60,7 +70,7 @@ try {
             & git clean -ndx -e .bear-gradle-user-home/
         }
     } else {
-        & $safeCleanScript -IncludeGreenfieldReset -IncludeGradleCache:$IncludeGradleCache -Yes
+        & $safeCleanScript -IncludeGreenfieldReset:$IncludeGreenfieldReset -IncludeGradleCache:$IncludeGradleCache -Yes
         & git restore --worktree --staged .
         if ($IncludeGradleCache) {
             & git clean -fdx

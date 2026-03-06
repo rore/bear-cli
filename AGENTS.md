@@ -27,6 +27,8 @@ Safety guardrails:
 - Never run recursive deletes outside the repository root.
 - For temp cleanup, prefer `scripts/safe-clean-temp.ps1` over ad-hoc `Remove-Item`.
 - For demo branch cleanup, prefer `scripts/clean-demo-branch.ps1` over ad-hoc cleanup + git commands.
+  - Default mode resets the branch to committed HEAD while preserving committed BEAR-authored paths already on that branch.
+  - Add `-IncludeGreenfieldReset` only for spec-only greenfield branches where `bear.blocks.yaml`, `spec/`, and `src/main/java/blocks/` should be cleared before restore.
 
 ## Repo Skills
 
