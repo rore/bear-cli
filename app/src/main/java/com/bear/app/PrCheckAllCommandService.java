@@ -135,6 +135,8 @@ final class PrCheckAllCommandService {
             );
         }
         List<BlockExecutionResult> blockResults = new ArrayList<>();
+        List<PrGovernanceTelemetry.BlockSnapshot> blockSnapshots = new ArrayList<>();
+        boolean telemetryAvailable = true;
         for (BlockIndexEntry block : selected) {
             if (!block.enabled()) {
                 blockResults.add(BearCli.skipBlock(block, "DISABLED"));
@@ -143,6 +145,7 @@ final class PrCheckAllCommandService {
             PrCheckCommandService.SharedPolicyDeltaComputation sharedComputation = sharedByRoot.get(block.projectRoot());
             if (sharedComputation != null && sharedComputation.failureResult() != null) {
                 blockResults.add(BearCli.toPrBlockResult(block, sharedComputation.failureResult()));
+                telemetryAvailable = false;
                 continue;
             }
             String mappingError = BearCli.validateIndexIrNameMatch(
@@ -151,6 +154,7 @@ final class PrCheckAllCommandService {
                 BearCli.indexLocator(block)
             );
             if (mappingError != null) {
+                telemetryAvailable = false;
                 blockResults.add(new BlockExecutionResult(
                     block.name(),
                     block.ir(),
@@ -179,9 +183,23 @@ final class PrCheckAllCommandService {
             );
             prResult = BearCli.enforcePrCheckExitEnvelope(prResult, block.ir());
             blockResults.add(BearCli.toPrBlockResult(block, prResult));
+            if (prResult.governanceSnapshot() == null) {
+                telemetryAvailable = false;
+            } else {
+                blockSnapshots.add(new PrGovernanceTelemetry.BlockSnapshot(
+                    block.name(),
+                    block.ir(),
+                    prResult.governanceSnapshot().hasDeltas(),
+                    prResult.governanceSnapshot().hasBoundaryExpansion(),
+                    prResult.governanceSnapshot().classifications(),
+                    prResult.governanceSnapshot().deltas(),
+                    prResult.governanceSnapshot().governanceSignals()
+                ));
+            }
         }
 
         List<String> repoDeltaLines = new ArrayList<>();
+        List<PrDelta> repoDeltas = new ArrayList<>();
         int aggregatedExitCode = CliCodes.EXIT_OK;
         int aggregatedRank = AllModeAggregation.severityRankPr(aggregatedExitCode);
         for (PrCheckCommandService.SharedPolicyDeltaComputation computation : sharedByRoot.values()) {
@@ -194,6 +212,7 @@ final class PrCheckAllCommandService {
                 continue;
             }
             for (PrDelta delta : computation.deltas()) {
+                repoDeltas.add(delta);
                 repoDeltaLines.add(
                     "pr-delta: " + delta.clazz().label + ": " + delta.category().label + ": " + delta.change().label + ": " + delta.key()
                 );
@@ -250,11 +269,14 @@ final class PrCheckAllCommandService {
                     ));
                 }
             }
-            AgentDiagnostics.AgentPayload payload = AgentDiagnostics.payload(
+            PrGovernanceTelemetry.Snapshot governanceSnapshot = telemetryAvailable
+                ? PrGovernanceTelemetry.all(summary.exitCode(), repoDeltas, List.of(), blockSnapshots)
+                : null;
+            AgentDiagnostics.AgentPayload payload = AgentDiagnostics.payloadForPrCheckAll(
                 AgentCommandContext.forPrCheckAll(options),
                 summary.exitCode(),
                 problems,
-                true
+                governanceSnapshot
             );
             out.println(AgentDiagnostics.toJson(payload));
             return summary.exitCode();

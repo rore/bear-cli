@@ -81,7 +81,7 @@ final class AgentDiagnostics {
     }
 
     static AgentPayload payloadForPrCheck(PrCheckResult result, AgentCommandContext commandContext) {
-        return payload(commandContext, result.exitCode(), result.problems(), true);
+        return payload(commandContext, result.exitCode(), result.problems(), true, prCheckExtensions(result.governanceSnapshot()));
     }
 
     static AgentPayload payloadForCheck(CheckResult result, String mode, boolean collectAll) {
@@ -98,8 +98,18 @@ final class AgentDiagnostics {
             AgentCommandContext.minimal("pr-check", mode, collectAll ? "all" : "first", true),
             result.exitCode(),
             result.problems(),
-            true
+            true,
+            prCheckExtensions(result.governanceSnapshot())
         );
+    }
+
+    static AgentPayload payloadForPrCheckAll(
+        AgentCommandContext commandContext,
+        int exitCode,
+        List<AgentProblem> problems,
+        PrGovernanceTelemetry.Snapshot governanceSnapshot
+    ) {
+        return payload(commandContext, exitCode, problems, true, prCheckExtensions(governanceSnapshot));
     }
 
     static AgentPayload payload(
@@ -109,7 +119,7 @@ final class AgentDiagnostics {
         int exitCode,
         List<AgentProblem> problems
     ) {
-        return payload(command, mode, collectMode, exitCode, problems, false);
+        return payload(command, mode, collectMode, exitCode, problems, false, Map.of());
     }
 
     static AgentPayload payload(
@@ -120,8 +130,20 @@ final class AgentDiagnostics {
         List<AgentProblem> problems,
         boolean agentMode
     ) {
+        return payload(command, mode, collectMode, exitCode, problems, agentMode, Map.of());
+    }
+
+    static AgentPayload payload(
+        String command,
+        String mode,
+        String collectMode,
+        int exitCode,
+        List<AgentProblem> problems,
+        boolean agentMode,
+        Map<String, Object> extensions
+    ) {
         AgentCommandContext context = AgentCommandContext.minimal(command, mode, collectMode, agentMode);
-        return payload(context, exitCode, problems, agentMode);
+        return payload(context, exitCode, problems, agentMode, extensions);
     }
 
     static AgentPayload payload(
@@ -129,6 +151,16 @@ final class AgentDiagnostics {
         int exitCode,
         List<AgentProblem> problems,
         boolean agentMode
+    ) {
+        return payload(commandContext, exitCode, problems, agentMode, Map.of());
+    }
+
+    static AgentPayload payload(
+        AgentCommandContext commandContext,
+        int exitCode,
+        List<AgentProblem> problems,
+        boolean agentMode,
+        Map<String, Object> extensions
     ) {
         List<AgentProblem> source = problems == null ? List.of() : List.copyOf(problems);
         List<AgentProblem> normalized = new ArrayList<>(source.size());
@@ -198,7 +230,7 @@ final class AgentDiagnostics {
             List.copyOf(retained),
             toPublicClusters(fullClusters),
             nextAction,
-            Map.of()
+            normalizeExtensions(extensions)
         );
     }
 
@@ -233,6 +265,70 @@ final class AgentDiagnostics {
         );
     }
 
+    private static Map<String, Object> prCheckExtensions(PrGovernanceTelemetry.Snapshot governanceSnapshot) {
+        if (governanceSnapshot == null) {
+            return Map.of();
+        }
+        return Map.of(PrGovernanceTelemetry.EXTENSION_KEY, PrGovernanceTelemetry.extensionFields(governanceSnapshot));
+    }
+
+    private static Map<String, Object> normalizeExtensions(Map<String, Object> extensions) {
+        if (extensions == null || extensions.isEmpty()) {
+            return Map.of();
+        }
+        TreeMap<String, Object> sorted = new TreeMap<>();
+        sorted.putAll(extensions);
+        return Map.copyOf(sorted);
+    }
+
+    private static void writeJsonMap(JsonWriter writer, Map<String, ?> values) {
+        writer.beginObject();
+        TreeMap<String, Object> sorted = new TreeMap<>();
+        if (values != null) {
+            for (Map.Entry<String, ?> entry : values.entrySet()) {
+                sorted.put(entry.getKey(), entry.getValue());
+            }
+        }
+        for (Map.Entry<String, Object> entry : sorted.entrySet()) {
+            writer.fieldName(entry.getKey());
+            writeJsonValue(writer, entry.getValue());
+        }
+        writer.endObject();
+    }
+
+    private static void writeJsonValue(JsonWriter writer, Object value) {
+        if (value == null) {
+            writer.nullValue();
+            return;
+        }
+        if (value instanceof String stringValue) {
+            writer.value(stringValue);
+            return;
+        }
+        if (value instanceof Boolean booleanValue) {
+            writer.value(booleanValue);
+            return;
+        }
+        if (value instanceof Number numberValue) {
+            writer.rawValue(numberValue.toString());
+            return;
+        }
+        if (value instanceof Map<?, ?> mapValue) {
+            @SuppressWarnings("unchecked")
+            Map<String, ?> cast = (Map<String, ?>) mapValue;
+            writeJsonMap(writer, cast);
+            return;
+        }
+        if (value instanceof List<?> listValue) {
+            writer.beginArray();
+            for (Object item : listValue) {
+                writeJsonValue(writer, item);
+            }
+            writer.endArray();
+            return;
+        }
+        throw new IllegalArgumentException("Unsupported extension value: " + value.getClass().getName());
+    }
     static String toJson(AgentPayload payload) {
         StringBuilder out = new StringBuilder(4096);
         JsonWriter writer = new JsonWriter(out);
@@ -339,8 +435,7 @@ final class AgentDiagnostics {
             writer.endObject();
         }
         writer.fieldName("extensions");
-        writer.beginObject();
-        writer.endObject();
+        writeJsonMap(writer, payload.extensions());
         writer.endObject();
         return out.toString();
     }
@@ -738,7 +833,7 @@ final class AgentDiagnostics {
         List<AgentProblem> problems,
         List<AgentCluster> clusters,
         AgentNextAction nextAction,
-        Map<String, String> extensions
+        Map<String, Object> extensions
     ) {
     }
 
@@ -848,6 +943,30 @@ final class AgentDiagnostics {
         void arrayValue(String value) {
             beforeValue();
             string(value);
+        }
+
+        void value(String value) {
+            beforeValue();
+            string(value);
+            awaitingFieldValue = false;
+        }
+
+        void value(boolean value) {
+            beforeValue();
+            out.append(value);
+            awaitingFieldValue = false;
+        }
+
+        void rawValue(String value) {
+            beforeValue();
+            out.append(value);
+            awaitingFieldValue = false;
+        }
+
+        void nullValue() {
+            beforeValue();
+            out.append("null");
+            awaitingFieldValue = false;
         }
 
         private void beforeField() {

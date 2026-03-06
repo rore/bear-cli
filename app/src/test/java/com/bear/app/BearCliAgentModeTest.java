@@ -84,6 +84,8 @@ class BearCliAgentModeTest {
         assertTrue(run.stdout().contains("\"failureCode\":\"INDEX_REQUIRED_MISSING\""), run.stdout());
         assertTrue(run.stdout().contains("\"reasonKey\":\"INDEX_REQUIRED_MISSING\""), run.stdout());
         assertTrue(run.stdout().contains("\"title\":\"Satisfy index preflight before --all gates\""), run.stdout());
+        assertTrue(run.stdout().contains("\"extensions\":{}"), run.stdout());
+        assertTrue(!run.stdout().contains("\"prGovernance\""), run.stdout());
 
         String rerun = AgentCommandContextTestSupport.firstRerunCommand(run.stdout());
         AgentCommandContext reparsed = AgentCommandContextTestSupport.parseCommandContext(rerun);
@@ -120,6 +122,8 @@ class BearCliAgentModeTest {
         assertTrue(run.stdout().contains("\"failureCode\":\"INDEX_REQUIRED_MISSING\""), run.stdout());
         assertTrue(run.stdout().contains("\"reasonKey\":\"INDEX_REQUIRED_MISSING\""), run.stdout());
         assertTrue(run.stdout().contains("\"title\":\"Satisfy index preflight before --all gates\""), run.stdout());
+        assertTrue(run.stdout().contains("\"extensions\":{}"), run.stdout());
+        assertTrue(!run.stdout().contains("\"prGovernance\""), run.stdout());
 
         String rerun = AgentCommandContextTestSupport.firstRerunCommand(run.stdout());
         AgentCommandContext reparsed = AgentCommandContextTestSupport.parseCommandContext(rerun);
@@ -202,6 +206,8 @@ class BearCliAgentModeTest {
         assertEquals(CliCodes.EXIT_IO, run.exitCode());
         assertTrue(run.stdout().startsWith("{\"schemaVersion\":\"bear.nextAction.v1\""));
         assertTrue(run.stdout().contains("\"reasonKey\":\"NOT_A_GIT_REPO\""));
+        assertTrue(run.stdout().contains("\"extensions\":{}"), run.stdout());
+        assertTrue(!run.stdout().contains("\"prGovernance\""), run.stdout());
         assertEquals("", run.stderr());
     }
 
@@ -584,4 +590,5 @@ class BearCliAgentModeTest {
     private record CliRunResult(int exitCode, String stdout, String stderr) {
     }
 }
+
 

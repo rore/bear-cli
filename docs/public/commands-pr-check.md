@@ -1,4 +1,4 @@
-﻿# bear pr-check
+# bear pr-check
 
 ## Purpose
 
@@ -137,5 +137,13 @@ For aggregated `--all` non-zero failures, footer code is `REPO_MULTI_BLOCK_FAILE
 
 - `--agent` writes JSON to stdout only (no prose output mixed into stdout).
 - JSON includes deterministic `problems`, `clusters`, and one `nextAction` item selected by severity/rank rules.
+- top-level `extensions` is always present.
+- for non-`pr-check` commands, and for `pr-check` paths where governance telemetry is unavailable, `extensions` remains `{}`.
+- when governance telemetry is available, `pr-check` and `pr-check --all` add `extensions.prGovernance`.
+- `extensions.prGovernance` carries `schemaVersion=bear.pr-governance.v1`, deterministic `classifications[]`, `deltas[]`, `governanceSignals[]`, and aggregate flags.
+- single mode uses `scope=single`; all-mode uses `scope=all` and adds `blocks[]`.
+- top-level all-mode aggregate fields (`hasDeltas`, `hasBoundaryExpansion`, `classifications[]`) summarize repo-level plus per-block evidence, while top-level `deltas[]` stays repo-level only.
+- `deltaId` is canonical: `<class>|<category>|<change>|<key>`.
+- `governanceSignals[].details` uses deterministic lexicographic key order; current v1 signal type is `MULTI_BLOCK_PORT_IMPL_ALLOWED`.
 - stream contract: BEAR itself emits no normal prose lines to stderr on normal command completion paths.
 

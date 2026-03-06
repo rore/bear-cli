@@ -398,7 +398,8 @@ final class PrCheckCommandService {
                     List.of(),
                     false,
                     false,
-                    List.copyOf(problems)
+                    List.copyOf(problems),
+                    PrGovernanceTelemetry.single(CliCodes.EXIT_BOUNDARY_BYPASS, List.of(), List.of())
                 );
             }
 
@@ -406,7 +407,7 @@ final class PrCheckCommandService {
             for (BoundaryBypassFinding finding : containmentFindings) {
                 bypassPaths.add(finding.path());
             }
-            List<String> governanceLines = new ArrayList<>();
+            List<PrGovernanceTelemetry.Signal> structuredGovernanceSignals = new ArrayList<>();
             List<MultiBlockPortImplAllowedSignal> allowedSignals = PortImplContainmentScanner.scanMultiBlockPortImplAllowedSignals(
                 projectRoot,
                 List.of(headWiring)
@@ -415,14 +416,7 @@ final class PrCheckCommandService {
                 if (bypassPaths.contains(signal.path())) {
                     continue;
                 }
-                String line = "pr-check: GOVERNANCE: MULTI_BLOCK_PORT_IMPL_ALLOWED: "
-                    + signal.path()
-                    + ": "
-                    + signal.implClassFqcn()
-                    + " -> "
-                    + signal.generatedPackageCsv();
-                governanceLines.add(line);
-                stdoutLines.add(line);
+                structuredGovernanceSignals.add(PrGovernanceTelemetry.multiBlockPortImplAllowed(signal));
             }
 
             List<PrDelta> deltas = new ArrayList<>(PrDeltaClassifier.computePrDeltas(base, head));
@@ -438,14 +432,23 @@ final class PrCheckCommandService {
                 .thenComparing(delta -> delta.category().order)
                 .thenComparing(delta -> delta.change().order)
                 .thenComparing(PrDelta::key));
-            List<String> deltaLines = new ArrayList<>();
-            for (PrDelta delta : deltas) {
-                String line = "pr-delta: " + delta.clazz().label + ": " + delta.category().label + ": " + delta.change().label + ": " + delta.key();
-                deltaLines.add(line);
+
+            boolean hasBoundary = deltas.stream().anyMatch(delta -> delta.clazz() == PrClass.BOUNDARY_EXPANDING);
+            int governanceExitCode = hasBoundary ? CliCodes.EXIT_BOUNDARY_EXPANSION : CliCodes.EXIT_OK;
+            PrGovernanceTelemetry.Snapshot governanceSnapshot = PrGovernanceTelemetry.single(
+                governanceExitCode,
+                deltas,
+                structuredGovernanceSignals
+            );
+            List<String> governanceLines = renderGovernanceLines(governanceSnapshot.governanceSignals());
+            for (String line : governanceLines) {
+                stdoutLines.add(line);
+            }
+            List<String> deltaLines = renderDeltaLines(governanceSnapshot.deltas());
+            for (String line : deltaLines) {
                 stderrLines.add(line);
             }
 
-            boolean hasBoundary = deltas.stream().anyMatch(delta -> delta.clazz() == PrClass.BOUNDARY_EXPANDING);
             if (hasBoundary) {
                 stderrLines.add("pr-check: FAIL: BOUNDARY_EXPANSION_DETECTED");
                 ArrayList<AgentDiagnostics.AgentProblem> boundaryProblems = new ArrayList<>();
@@ -487,7 +490,8 @@ final class PrCheckCommandService {
                     deltaLines,
                     true,
                     !deltaLines.isEmpty(),
-                    List.copyOf(boundaryProblems)
+                    List.copyOf(boundaryProblems),
+                    governanceSnapshot
                 );
             }
 
@@ -504,7 +508,9 @@ final class PrCheckCommandService {
                 deltaLines,
                 false,
                 !deltaLines.isEmpty(),
-                List.copyOf(governanceLines)
+                List.copyOf(governanceLines),
+                List.of(),
+                governanceSnapshot
             );
         } catch (ManifestParseException e) {
             String line = "pr-check: MANIFEST_INVALID: " + e.reasonCode();
@@ -662,6 +668,36 @@ final class PrCheckCommandService {
         boolean hasDeltas,
         List<AgentDiagnostics.AgentProblem> problems
     ) {
+        return prFailure(
+            exitCode,
+            stderrLines,
+            category,
+            failureCode,
+            failurePath,
+            failureRemediation,
+            detail,
+            deltaLines,
+            hasBoundary,
+            hasDeltas,
+            problems,
+            null
+        );
+    }
+
+    private static PrCheckResult prFailure(
+        int exitCode,
+        List<String> stderrLines,
+        String category,
+        String failureCode,
+        String failurePath,
+        String failureRemediation,
+        String detail,
+        List<String> deltaLines,
+        boolean hasBoundary,
+        boolean hasDeltas,
+        List<AgentDiagnostics.AgentProblem> problems,
+        PrGovernanceTelemetry.Snapshot governanceSnapshot
+    ) {
         return new PrCheckResult(
             exitCode,
             List.of(),
@@ -675,8 +711,38 @@ final class PrCheckCommandService {
             hasBoundary,
             hasDeltas,
             List.of(),
-            List.copyOf(problems)
+            List.copyOf(problems),
+            governanceSnapshot
         );
+    }
+
+    private static List<String> renderDeltaLines(List<PrGovernanceTelemetry.Delta> deltas) {
+        ArrayList<String> lines = new ArrayList<>();
+        for (PrGovernanceTelemetry.Delta delta : deltas) {
+            lines.add("pr-delta: " + delta.clazz() + ": " + delta.category() + ": " + delta.change() + ": " + delta.key());
+        }
+        return List.copyOf(lines);
+    }
+
+    private static List<String> renderGovernanceLines(List<PrGovernanceTelemetry.Signal> signals) {
+        ArrayList<String> lines = new ArrayList<>();
+        for (PrGovernanceTelemetry.Signal signal : signals) {
+            if (!"MULTI_BLOCK_PORT_IMPL_ALLOWED".equals(signal.type())) {
+                continue;
+            }
+            @SuppressWarnings("unchecked")
+            List<String> generatedPackages = (List<String>) signal.details().getOrDefault("generatedPackages", List.of());
+            String implClassFqcn = String.valueOf(signal.details().getOrDefault("implClassFqcn", ""));
+            lines.add(
+                "pr-check: GOVERNANCE: MULTI_BLOCK_PORT_IMPL_ALLOWED: "
+                    + signal.path()
+                    + ": "
+                    + implClassFqcn
+                    + " -> "
+                    + String.join(",", generatedPackages)
+            );
+        }
+        return List.copyOf(lines);
     }
 
     private static AgentDiagnostics.AgentProblem defaultProblem(

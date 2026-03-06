@@ -385,7 +385,9 @@ public final class BearCli {
             result.deltaLines(),
             result.hasBoundary(),
             result.hasDeltas(),
-            result.governanceLines()
+            result.governanceLines(),
+            result.problems(),
+            null
         );
     }
 

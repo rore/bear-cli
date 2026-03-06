@@ -47,7 +47,8 @@ record PrCheckResult(
     boolean hasBoundary,
     boolean hasDeltas,
     List<String> governanceLines,
-    List<AgentDiagnostics.AgentProblem> problems
+    List<AgentDiagnostics.AgentProblem> problems,
+    PrGovernanceTelemetry.Snapshot governanceSnapshot
 ) {
     PrCheckResult(
         int exitCode,
@@ -75,7 +76,8 @@ record PrCheckResult(
             hasBoundary,
             hasDeltas,
             List.of(),
-            List.of()
+            List.of(),
+            null
         );
     }
 
@@ -106,7 +108,41 @@ record PrCheckResult(
             hasBoundary,
             hasDeltas,
             governanceLines,
-            List.of()
+            List.of(),
+            null
+        );
+    }
+
+    PrCheckResult(
+        int exitCode,
+        List<String> stdoutLines,
+        List<String> stderrLines,
+        String category,
+        String failureCode,
+        String failurePath,
+        String failureRemediation,
+        String detail,
+        List<String> deltaLines,
+        boolean hasBoundary,
+        boolean hasDeltas,
+        List<String> governanceLines,
+        List<AgentDiagnostics.AgentProblem> problems
+    ) {
+        this(
+            exitCode,
+            stdoutLines,
+            stderrLines,
+            category,
+            failureCode,
+            failurePath,
+            failureRemediation,
+            detail,
+            deltaLines,
+            hasBoundary,
+            hasDeltas,
+            governanceLines,
+            problems,
+            null
         );
     }
 }
@@ -267,6 +303,7 @@ record RepoAggregationResult(
             List.of()
         );
     }
+
 }
 
 record CheckBlockedState(boolean blocked, String reason, String detail) {
@@ -500,6 +537,7 @@ record WiringManifest(
             List.of()
         );
     }
+
 }
 
 record BlockPortBinding(
