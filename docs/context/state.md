@@ -10,7 +10,7 @@ Long-form historical notes are archived in `docs/context/archive/archive-state-h
 
 ## Current Focus
 
-Stabilized local Gradle execution by moving wrapper cache and build outputs off temp-backed paths and into ignored repo-local directories; next product work remains combined CI boundary governance, PR diff ergonomics, and telemetry unification.
+Planning docs are now ordered so committed roadmap items map to backlog specs, shipped work is separated from the active queue, and deferred initiatives remain parked under `future.md`; next product work remains combined CI boundary governance, PR diff ergonomics, and telemetry unification.
 
 ## Next Concrete Task
 
@@ -20,11 +20,12 @@ Stabilized local Gradle execution by moving wrapper cache and build outputs off 
 
 ## Session Notes
 
-- REPORTING rewrite shipped: minimal core fields are required; legacy fields are optional/non-authoritative, and noise-control guidance is now explicit.
+- REPORTING rewrite shipped: minimal core fields are required; legacy fields are optional and non-authoritative, and noise-control guidance is now explicit.
 - RunReportLint and related tests were tightened around gate results, blocker evidence, canonical done-gates, and deterministic reporting structure.
 - Added BEAR run-grading rubric and pinned fast-by-default verification guidance in the always-load context docs.
 - Audited roadmap queue against implementation and tests: generated structural tests and Gradle allowed-deps containment are already shipped; the next real feature slice is combined CI boundary governance, PR diff ergonomics, and telemetry unification.
 - Parked `Target-Adaptable CLI + Initial Node/TypeScript Target` in `docs/context/future.md` as a future initiative rather than an active roadmap item, and stored the full deferred spec in `docs/context/backlog/future-target-adaptable-cli-node.md`.
-- Updated roadmap.md, program-board.md, and the P2 allowed-deps backlog doc to remove already-shipped items from the active queue and mark Gradle allowed-deps containment completed.
-- Stabilized local Gradle execution by moving wrapper cache to repo-local .bear-gradle-user-home and build outputs to ignored repo-local .bear-build/<runId>; added .bear-gradle-user-home/ to .gitignore.
-- Verification: ./gradlew.bat --no-daemon :app:test --tests com.bear.app.ContextDocsConsistencyTest
+- Normalized roadmap planning ownership: active roadmap items now map to dedicated backlog specs, shipped work is listed separately, and spec-backed future initiatives are linked from `future.md`.
+- Added backlog specs for minimal taste-invariants, boundary regression suite, capability templates, broader boundary-escape coverage, multi-block composition hardening, optional deterministic policy hooks, and compile package customization.
+- Stabilized local Gradle execution by moving wrapper cache to repo-local `.bear-gradle-user-home` and build outputs to ignored repo-local `.bear-build/<runId>`; added `.bear-gradle-user-home/` to `.gitignore`.
+- Verification: `./gradlew.bat --no-daemon :app:test --tests com.bear.app.ContextDocsConsistencyTest`

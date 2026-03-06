@@ -2,6 +2,8 @@
 
 This file defines milestone feature contracts and done criteria.
 Live execution status and queue ordering are tracked in `docs/context/program-board.md`.
+Concrete feature specs live under `docs/context/backlog/`.
+Deferred initiatives and idea buckets live in `docs/context/future.md`.
 
 ## Planning Doc Roles
 
@@ -9,7 +11,11 @@ Live execution status and queue ordering are tracked in `docs/context/program-bo
 - milestone contracts and done criteria (definition)
 2. `docs/context/program-board.md`:
 - active milestone status and ordered execution queue (operations)
-3. `docs/context/state.md`:
+3. `docs/context/backlog/*.md`:
+- one feature spec per queued or deferred feature-sized item
+4. `docs/context/future.md`:
+- parked initiatives and idea buckets that are not committed roadmap work
+5. `docs/context/state.md`:
 - current-window handoff (session)
 
 ## Milestone Pipeline
@@ -50,28 +56,33 @@ Preview contract (must ship):
 5. Self-hosting baseline without bespoke ritual.
 
 Preview definition of done:
-1. Agents can implement/refactor inside declared boundaries.
-2. Boundary expansion is deterministic and review-visible in PR/CI.
+1. Agents can implement or refactor inside declared boundaries.
+2. Boundary expansion is deterministic and review-visible in PR or CI.
 3. Covered boundary bypass attempts fail with deterministic remediation.
 4. Workflow remains low-friction and deterministic.
 
-## Post-Preview Priorities
+## Active Post-Preview Feature Roadmap
 
 Priority 2:
-1. CI boundary governance + PR diff ergonomics + telemetry unification.
-2. Minimal taste-invariants rule pack.
-3. Boundary regression suite.
+1. CI boundary governance + PR diff ergonomics + telemetry unification. Spec: `docs/context/backlog/p2-ci-owned-bear-gates.md`
+2. Minimal taste-invariants rule pack. Spec: `docs/context/backlog/p2-minimal-taste-invariants-rule-pack.md`
+3. Boundary regression suite. Spec: `docs/context/backlog/p2-boundary-regression-suite.md`
 
 Priority 3:
-1. Maven allowed-deps containment parity (optional future expansion).
-2. Capability templates.
-3. Broader boundary-escape coverage.
-4. Multi-block and multi-module composition hardening.
-5. Optional deterministic policy hooks.
+1. Maven allowed-deps containment parity (optional future expansion). Spec: `docs/context/backlog/p3-maven-allowed-deps-containment.md`
+2. Capability templates. Spec: `docs/context/backlog/p3-capability-templates.md`
+3. Broader boundary-escape coverage. Spec: `docs/context/backlog/p3-broader-boundary-escape-coverage.md`
+4. Multi-block and multi-module composition hardening. Spec: `docs/context/backlog/p3-multi-block-multi-module-composition-hardening.md`
+5. Optional deterministic policy hooks. Spec: `docs/context/backlog/p3-optional-deterministic-policy-hooks.md`
 
 Shipped in active post-Preview work already:
 1. `bear fix` for generated artifacts only.
 2. Generated structural tests (default evidence-only; opt-in strict mode remains available via JVM property).
+3. Declared allowed-deps containment for Gradle or JVM projects.
+
+Parked and non-committed items:
+1. Future initiatives and idea families belong in `docs/context/future.md`, not in the active roadmap queue.
+2. Documentation-only historical cleanup belongs in `docs/context/backlog/p1-preview-closure-gaps.md` and remains non-blocking.
 
 ## Out of Scope (Current Roadmap)
 

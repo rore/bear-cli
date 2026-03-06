@@ -20,6 +20,7 @@ Context entrypoint:
 - This file tracks milestone feature status and queue order.
 - This file is not the canonical milestone feature-definition document.
 - For "what features are in Preview?", use `docs/context/roadmap.md` -> `Preview Release` -> `Preview contract (must ship)`.
+- Every queued roadmap item should point to one backlog spec file.
 
 ## Preview Feature Status (Roadmap Contract)
 
@@ -57,12 +58,22 @@ Preview standing note:
 
 ## Ready Queue (Ordered, Execution Work Items)
 
-1. P2 CI boundary governance + PR diff ergonomics + telemetry unification: canonical CI-owned gates with explicit enforce/observe policy modes
-2. P3 optional expansion: Maven allowed-deps containment parity
+1. P2 CI boundary governance + PR diff ergonomics + telemetry unification. Spec: `docs/context/backlog/p2-ci-owned-bear-gates.md`
+2. P2 minimal taste-invariants rule pack. Spec: `docs/context/backlog/p2-minimal-taste-invariants-rule-pack.md`
+3. P2 boundary regression suite. Spec: `docs/context/backlog/p2-boundary-regression-suite.md`
 
-Queue note:
+## Later Queue (Ordered, Not Yet Active)
+
+1. P3 optional expansion: Maven allowed-deps containment parity. Spec: `docs/context/backlog/p3-maven-allowed-deps-containment.md`
+2. P3 capability templates. Spec: `docs/context/backlog/p3-capability-templates.md`
+3. P3 broader boundary-escape coverage. Spec: `docs/context/backlog/p3-broader-boundary-escape-coverage.md`
+4. P3 multi-block and multi-module composition hardening. Spec: `docs/context/backlog/p3-multi-block-multi-module-composition-hardening.md`
+5. P3 optional deterministic policy hooks. Spec: `docs/context/backlog/p3-optional-deterministic-policy-hooks.md`
+
+Queue notes:
 - Generated structural tests are already shipped and documented; no separate rollout feature remains queued while evidence-only default stays acceptable.
 - Gradle allowed-deps containment is already shipped; remaining parity work is Maven-only.
+- Documentation-only preview cleanup remains parked and non-blocking.
 
 ## Recently Completed (P2)
 
@@ -172,7 +183,7 @@ Queue note:
      - `STATE_STORE_NOOP_UPDATE` for silent missing-state returns in `_shared/state` update methods.
    - check/check-all remediation mapping now covers both new scanner rule IDs.
    - IR validation now blocks hidden-state under-spec:
-     - empty `effects.allow` permitted only for echo-safe pure blocks (no idempotency/invariants; output `name:type` tuples mirror inputs with order-independent canonical matching).
+     - empty `effects.allow` permitted only for echo-safe pure blocks (no idempotency or invariants; output `name:type` tuples mirror inputs with order-independent canonical matching).
    - docs/tests updates shipped:
      - no-artifact-mining stated as contract rule (docs/test enforced, not claimed as runtime scanner proof),
      - troubleshooting/reporting anomaly routing clarified,
@@ -183,17 +194,17 @@ Queue note:
    - `_shared/state` is explicitly excluded from purity/import bans (`SHARED_PURITY_VIOLATION`, `SCOPED_IMPORT_POLICY_BYPASS`).
    - scanner tests now include white-box rule-scope checks and a non-evaluation regression for `_shared/state`.
    - packaged docs add deterministic `POLICY_SCOPE_MISMATCH` escalation anchors.
-   - docs consistency checks were reduced to minimal section-anchor coverage plus package file/legacy checks.
+   - docs consistency checks were reduced to minimal section-anchor coverage plus package file or legacy checks.
 
 12. `Guardrails v2.2.6: baseline waiting semantics + decomposition determinism`:
    - packaged docs now define deterministic greenfield baseline waiting semantics (`WAITING_FOR_BASELINE_REVIEW`) with explicit blocker/outcome pairing rules.
    - bootstrap now includes explicit decomposition default + canonical split-trigger names to prevent endpoint-count dogma drift.
    - reporting schema now requires deterministic decomposition fields and baseline review scope for waiting outcomes.
-   - docs consistency tests now anchor-check the new baseline/decomposition headings.
+   - docs consistency tests now anchor-check the new baseline or decomposition headings.
    - reach import/FQCN semantic symmetry is explicitly marked as deferred and non-enforced in this release.
 
 13. `Guardrails v2.2.6.3: deterministic decomposition rubric + reporting precision + noop widening`:
-   - BOOTSTRAP decomposition policy now uses canonical rubric tokens and derivation rules for grouped/split decisions.
+   - BOOTSTRAP decomposition policy now uses canonical rubric tokens and derivation rules for grouped or split decisions.
    - CONTRACTS decomposition text no longer implies per-operation block mandates; anti-pattern remains router-specific.
    - REPORTING now enforces strict `DEVELOPER_SUMMARY`, deterministic status line format, grouped decomposition fields, and required `Surface evidence` forms.
    - TROUBLESHOOTING now includes `REACH_REMEDIATION_NON_SOLUTIONS` to disallow import-to-FQCN bypass remediation.
@@ -205,23 +216,28 @@ Queue note:
 Detailed locked spec text was moved to:
 - `docs/context/spec-locks/p2-completed-spec-locks.md`
 
-## Backlog Buckets (P1/P2/P3)
+## Backlog Buckets
 
 - `P1`
-  - `docs/context/backlog/p1-preview-closure-gaps.md` (parked; non-blocking for product development)
+  - `docs/context/backlog/p1-preview-closure-gaps.md` (`Parked`)
 - `P2`
   - `docs/context/backlog/p2-bear-fix-generated-only.md` (`Completed`)
   - `docs/context/backlog/p2-declared-allowed-deps-containment.md` (`Completed`)
   - `docs/context/backlog/p2-ci-owned-bear-gates.md` (`Queued`)
+  - `docs/context/backlog/p2-minimal-taste-invariants-rule-pack.md` (`Queued`)
+  - `docs/context/backlog/p2-boundary-regression-suite.md` (`Queued`)
 - `P3`
   - `docs/context/backlog/p3-maven-allowed-deps-containment.md` (`Queued`)
+  - `docs/context/backlog/p3-capability-templates.md` (`Queued`)
+  - `docs/context/backlog/p3-broader-boundary-escape-coverage.md` (`Queued`)
+  - `docs/context/backlog/p3-multi-block-multi-module-composition-hardening.md` (`Queued`)
+  - `docs/context/backlog/p3-optional-deterministic-policy-hooks.md` (`Queued`)
+- `Future`
+  - `docs/context/backlog/future-target-adaptable-cli-node.md` (`Parked`)
+  - `docs/context/backlog/future-compile-package-customization.md` (`Parked`)
 
 ## Open Risks / Decisions
 
 - Risk: historical references still pointing to `docs/context/roadmap-v0.md` can reintroduce drift if not cleaned.
 - Direction lock: BEAR semantic scope follows enforceability + determinism (wrapper-owned where possible), not domain-specific rule coverage.
-- Decision lock: do not enforce endpoint-per-block decomposition; preserve structural governance focus over style/location policing.
-
-
-
-
+- Decision lock: do not enforce endpoint-per-block decomposition; preserve structural governance focus over style or location policing.

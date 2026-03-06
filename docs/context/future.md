@@ -1,8 +1,38 @@
 # BEAR Future Ideas (Parking Lot)
 
-Anything listed here is explicitly NOT part of v0.
-
+Anything listed here is explicitly not part of the active roadmap queue.
 These ideas are intentionally deferred to protect scope.
+Spec-backed future initiatives should live in `docs/context/backlog/` and be linked from here.
+
+---
+
+## Deferred Initiatives With Spec Files
+
+### Target-Adaptable CLI + Initial Node/TypeScript Target
+
+Future initiative only; not part of the active P2/P3 queue.
+
+Full spec: `docs/context/backlog/future-target-adaptable-cli-node.md`
+
+Planned direction:
+- refactor CLI core behind one target dispatch seam while preserving byte-stable JVM behavior
+- keep IR unchanged; target selection is detector or pin based (`.bear/target.id`), not IR-driven
+- move JVM behavior behind `JvmTarget` without behavior change first
+- add a strict Node or TypeScript plus pnpm profile as an initial scan-only target
+- Node first slice should support deterministic generate, drift, `pr-check` governance, and governed-root import containment before any Node test-runner work
+- later follow-ups may add covered undeclared-reach checks, repo-level dependency governance, and pnpm verification runner support
+
+Guardrails:
+- no IR schema changes
+- no exit-code expansion
+- no broad docs neutralization sweep
+- CLI core remains target-agnostic outside a single dispatch boundary
+
+### Compile Package Customization
+
+Future initiative only; not part of the active P2/P3 queue.
+
+Full spec: `docs/context/backlog/future-compile-package-customization.md`
 
 ---
 
@@ -62,9 +92,9 @@ v0 supports only:
 - Integration with static analysis tools
 - Capability contract metadata:
   - allowed event types
-  - allowed destinations/topics
+  - allowed destinations or topics
   - operation mode constraints (read/write/etc.)
-  - schema/version constraints
+  - schema or version constraints
 
 v0 supports only:
 - simple allowlist of effects
@@ -75,7 +105,7 @@ v0 supports only:
 
 Principle:
 - side-effect gating, not library gating
-- pure/internal libraries stay allowed
+- pure or internal libraries stay allowed
 - external reach and escape hatches are governed
 
 Candidate cross-language categories:
@@ -84,17 +114,17 @@ Candidate cross-language categories:
 - messaging
 - filesystem
 - process
-- time/random (policy-dependent)
-- reflection/escape-hatch
+- time or random (policy-dependent)
+- reflection or escape-hatch
 
 JVM candidate enforcement artifacts:
-- forbidden package/class symbol lists per category
+- forbidden package or class symbol lists per category
 - module boundary rules (block modules vs integration modules)
 - CI checks that fail on undeclared side-effect surface usage
 
 Success target:
 - agents can use pure libraries freely
-- new external side effects require declared boundary/IR changes
+- new external side effects require declared boundary or IR changes
 - policy remains small and stable
 
 ---
@@ -106,13 +136,13 @@ This track addresses the gap between:
 - capability usage semantics ("how this is used")
 
 Candidate constraint types (optional, narrow, boundary-focused):
-- max/expected call counts per capability op
-- outcome-coupled constraints (must/must-not call on success/failure)
+- max or expected call counts per capability op
+- outcome-coupled constraints (must or must-not call on success or failure)
 - exactly-once style interaction expectations where meaningful
 - interaction ordering constraints for specific boundary events
 
 Enforcement direction:
-- deterministic validation/normalization in IR layer
+- deterministic validation or normalization in IR layer
 - generated policy assertion tests in target scaffolding
 - CI-visible signals for interaction-pattern changes
 
@@ -124,17 +154,17 @@ Non-goal:
 ## Operation-Set Governance Precision (Future Expansion Candidate)
 
 Current baseline:
-- IR v1 includes first-class `block.operations` with per-operation contract/usages and block-level boundary authority.
-- operation usage is constrained by block effects/idempotency capability/allowed invariant set.
+- IR v1 includes first-class `block.operations` with per-operation contract or usages and block-level boundary authority.
+- operation usage is constrained by block effects, idempotency capability, and allowed invariant set.
 
 Candidate direction:
-- improve precision of operation-level governance signals (for example richer usage-shape diagnostics).
-- strengthen cross-operation boundary diagnostics without introducing router-style contracts.
+- improve precision of operation-level governance signals (for example richer usage-shape diagnostics)
+- strengthen cross-operation boundary diagnostics without introducing router-style contracts
 
 Design guardrails:
 - remain deterministic and machine-checkable
 - preserve block-level boundary authority as the canonical governance envelope
-- avoid untyped opcode/action router patterns
+- avoid untyped opcode or action router patterns
 
 Status:
 - tracked as future expansion only; not committed to active milestone scope
@@ -151,26 +181,6 @@ Status:
 
 v0 supports:
 - JVM (Java) only
-
-### Target-Adaptable CLI + Initial Node/TypeScript Target
-
-Future initiative only; not part of the active P2/P3 queue.
-
-Full spec: `docs/context/backlog/future-target-adaptable-cli-node.md`
-
-Planned direction:
-- refactor CLI core behind one target dispatch seam while preserving byte-stable JVM behavior
-- keep IR unchanged; target selection is detector/pin based (`.bear/target.id`), not IR-driven
-- move JVM behavior behind `JvmTarget` without behavior change first
-- add a strict Node/TypeScript + pnpm profile as an initial scan-only target
-- Node first slice should support deterministic generate/drift/pr-check governance and governed-root import containment before any Node test-runner work
-- later follow-ups may add covered undeclared-reach checks, repo-level dependency governance, and pnpm verification runner support
-
-Guardrails:
-- no IR schema changes
-- no exit-code expansion
-- no broad docs neutralization sweep
-- CLI core remains target-agnostic outside a single dispatch boundary
 
 ---
 
@@ -210,17 +220,6 @@ Not before v1+.
 - Gradle plugin
 
 v0 can run as plain CLI only.
-
----
-
-## Compile Package Customization
-
-- Add `--base-package <pkg>` to `bear compile`
-- Generate under `<base-package>.generated.<blockname-sanitized>` instead of fixed `com.bear.generated...`
-- Keep deterministic package/name sanitization rules
-- Preserve two-tree ownership model (generated tree + user-owned impl)
-
-Deferred from v0 first slice to keep Phase 2 scope focused.
 
 ---
 
