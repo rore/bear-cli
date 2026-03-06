@@ -6,7 +6,7 @@ set "APP_HOME=%~dp0"
 rem Prefer a repo-local Gradle user home to avoid permission issues and stray global caches.
 rem Users can override by setting GRADLE_USER_HOME explicitly.
 if not defined GRADLE_USER_HOME (
-  set "GRADLE_USER_HOME=%TEMP%\bear-cli-gradle-home"
+  set "GRADLE_USER_HOME=%APP_HOME%.bear-gradle-user-home"
 )
 
 if defined JAVA_HOME (

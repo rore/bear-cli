@@ -1,5 +1,6 @@
 .gradle/
 .gradle-user-home/
+.bear-gradle-user-home/
 .bear-build/
 .bear-test-results/
 build/

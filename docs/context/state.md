@@ -10,7 +10,7 @@ Long-form historical notes are archived in `docs/context/archive/archive-state-h
 
 ## Current Focus
 
-Roadmap/program-board alignment is complete; the next product work is CI boundary governance + telemetry unification, with Maven containment parity remaining optional future expansion.
+Stabilized local Gradle execution by moving wrapper cache and build outputs off temp-backed paths and into ignored repo-local directories; next product work remains CI governance + telemetry unification.
 
 ## Next Concrete Task
 
@@ -40,6 +40,9 @@ Roadmap/program-board alignment is complete; the next product work is CI boundar
 - Added mechanical dependency baseline test `AgentNextActionCommandReliabilityTest` and updated docs and report regression suites.
 - Audited roadmap queue against implementation/tests/docs: generated structural tests and Gradle allowed-deps containment are already shipped; current remaining queued feature work is CI governance/telemetry unification, with Maven containment parity still optional future expansion.
 - Updated roadmap.md, program-board.md, and the P2 allowed-deps backlog doc to remove already-shipped items from the active queue and mark Gradle allowed-deps containment completed.
+- Changed gradlew and gradlew.bat to default GRADLE_USER_HOME to repo-local .bear-gradle-user-home when the environment does not override it, replacing the temp-backed bear-cli-gradle-home path.
+- Changed Gradle buildDir root from %TEMP%/bear-cli-build/<runId> to repo-local ignored .bear-build/<runId> and added .bear-gradle-user-home/ to .gitignore.
+- Verification succeeded after the stable-path change: ./gradlew.bat --no-daemon :app:test --tests com.bear.app.ContextDocsConsistencyTest.
 - Verification attempt for ContextDocsConsistencyTest was blocked three times by the same Gradle cache IO error after prescribed retry flow: AccessDeniedException on C:\Users\I347041\AppData\Local\Temp\bear-cli-gradle-home\caches\modules-2\files-2.1\org.yaml\snakeyaml\2.2\...\snakeyaml-2.2.jar.
 - Verification:
   - `./gradlew.bat --no-daemon :app:test --tests com.bear.app.RunReportLintTest --tests com.bear.app.AgentLoopReliabilityRegressionTest --tests com.bear.app.BearPackageDocsConsistencyTest --tests com.bear.app.AgentNextActionCommandReliabilityTest --tests com.bear.app.CanonicalDoneGateMatcherTest`

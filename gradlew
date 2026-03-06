@@ -4,8 +4,7 @@ set -eu
 APP_HOME=$(cd "$(dirname "$0")" && pwd)
 
 if [ -z "${GRADLE_USER_HOME:-}" ]; then
-  TMP_ROOT="${TMPDIR:-/tmp}"
-  GRADLE_USER_HOME="$TMP_ROOT/bear-cli-gradle-home"
+  GRADLE_USER_HOME="$APP_HOME/.bear-gradle-user-home"
   export GRADLE_USER_HOME
 fi
 

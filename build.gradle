@@ -3,16 +3,16 @@ plugins {
 }
 
 ext.bearBuildRunId = System.currentTimeMillis().toString()
-ext.bearBuildRootDir = new File(System.getProperty("java.io.tmpdir"), "bear-cli-build/${ext.bearBuildRunId}")
+ext.bearBuildRootDir = new File(rootDir, ".bear-build/${ext.bearBuildRunId}")
 
-// Keep root-project outputs out of the repo to avoid Windows file locking issues.
+// Keep root-project outputs under an ignored repo-local root to avoid temp-path locking issues.
 buildDir = new File(ext.bearBuildRootDir, "root")
 
 subprojects {
     apply plugin: 'java'
 
-    // Work around Windows file locking issues by writing Gradle outputs under temp.
-    // This keeps IDE indexing and AV scanners away from frequently-created build folders.
+    // Work around Windows file locking issues by writing Gradle outputs under an ignored repo-local root.
+    // This keeps outputs stable across runs while avoiding tracked build folders in the repo.
     buildDir = new File(rootProject.ext.bearBuildRootDir, project.name)
 
     group = 'com.bear'
