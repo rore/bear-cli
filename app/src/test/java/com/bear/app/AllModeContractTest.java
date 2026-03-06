@@ -103,7 +103,7 @@ class AllModeContractTest {
     @Test
     void checkAllUnknownTargetBlockUsesPinnedValidationPath(@TempDir Path tempDir) throws Exception {
         Path repoRoot = tempDir.resolve("repo");
-        Files.createDirectories(repoRoot.resolve("spec"));
+        Files.createDirectories(repoRoot.resolve("bear-ir"));
         Files.writeString(
             repoRoot.resolve("bear.blocks.yaml"),
             "" +
@@ -126,7 +126,7 @@ class AllModeContractTest {
     @Test
     void checkAllUnknownTargetOpUsesPinnedValidationPath(@TempDir Path tempDir) throws Exception {
         Path repoRoot = tempDir.resolve("repo");
-        Files.createDirectories(repoRoot.resolve("spec"));
+        Files.createDirectories(repoRoot.resolve("bear-ir"));
         Files.writeString(
             repoRoot.resolve("bear.blocks.yaml"),
             "" +
@@ -153,7 +153,7 @@ class AllModeContractTest {
     @Test
     void checkAllCycleUsesPinnedValidationPath(@TempDir Path tempDir) throws Exception {
         Path repoRoot = tempDir.resolve("repo");
-        Files.createDirectories(repoRoot.resolve("spec"));
+        Files.createDirectories(repoRoot.resolve("bear-ir"));
         Files.writeString(
             repoRoot.resolve("bear.blocks.yaml"),
             "" +
@@ -177,9 +177,9 @@ class AllModeContractTest {
         assertTrue(stderr.contains("PATH=bear.blocks.yaml"));
     }
     private static Fixture createSingleBlockFixture(Path repoRoot, boolean slowWrapper) throws Exception {
-        Path specDir = repoRoot.resolve("spec");
-        Files.createDirectories(specDir);
-        Path ir = specDir.resolve("withdraw.bear.yaml");
+        Path irDir = repoRoot.resolve("bear-ir");
+        Files.createDirectories(irDir);
+        Path ir = irDir.resolve("withdraw.bear.yaml");
         Path fixture = TestRepoPaths.repoRoot().resolve("bear-ir/fixtures/withdraw.bear.yaml");
         Files.writeString(ir, Files.readString(fixture, StandardCharsets.UTF_8), StandardCharsets.UTF_8);
 

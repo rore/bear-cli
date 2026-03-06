@@ -15,7 +15,7 @@ class BlockPortGraphResolverTest {
     @Test
     void inboundTargetWrapperSetIsDeterministic(@TempDir Path tempDir) throws Exception {
         Path repoRoot = tempDir.resolve("repo");
-        Files.createDirectories(repoRoot.resolve("spec"));
+        Files.createDirectories(repoRoot.resolve("bear-ir"));
         Files.writeString(
             repoRoot.resolve("bear.blocks.yaml"),
             "version: v1\n"
@@ -50,7 +50,7 @@ class BlockPortGraphResolverTest {
     @Test
     void cycleDetectionUsesCanonicalLeastRotation(@TempDir Path tempDir) throws Exception {
         Path repoRoot = tempDir.resolve("repo");
-        Files.createDirectories(repoRoot.resolve("spec"));
+        Files.createDirectories(repoRoot.resolve("bear-ir"));
         Files.writeString(
             repoRoot.resolve("bear.blocks.yaml"),
             "version: v1\n"

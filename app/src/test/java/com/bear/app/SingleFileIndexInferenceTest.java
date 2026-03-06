@@ -89,11 +89,11 @@ class SingleFileIndexInferenceTest {
     }
 
     private static BlockPortFixture writeBlockPortFixture(Path repoRoot, boolean includeIndex) throws Exception {
-        Path specDir = repoRoot.resolve("spec");
-        Files.createDirectories(specDir);
+        Path irDir = repoRoot.resolve("bear-ir");
+        Files.createDirectories(irDir);
 
-        Path accountIr = specDir.resolve("account.bear.yaml");
-        Path transactionLogIr = specDir.resolve("transaction-log.bear.yaml");
+        Path accountIr = irDir.resolve("account.bear.yaml");
+        Path transactionLogIr = irDir.resolve("transaction-log.bear.yaml");
 
         Files.writeString(accountIr, accountIrContent(), StandardCharsets.UTF_8);
         Files.writeString(transactionLogIr, transactionLogIrContent(), StandardCharsets.UTF_8);

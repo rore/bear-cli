@@ -20,6 +20,8 @@ Local `main` now includes the completed downstream CI integration kit plus the r
 
 ## Session Notes
 
+- Fixed post-push CI breakage: made the CI wrapper tests use the correct PowerShell executable on non-Windows, finished the remaining app-test fixture migration from spec/ to ear-ir/, and pinned .sh files to LF via .gitattributes so the bash launcher executes deterministically in cross-platform tests.
+- Verification: ./gradlew.bat --no-daemon :app:test :kernel:test.
 - Merged the completed CI boundary-governance feature into local `main`: packaged `.bear/ci` wrappers, deterministic base resolution, enforce or observe decisioning, exact-match allow-file handling, reproducible CI report output, allow-entry candidate generation, markdown summary generation, and public CI integration docs plus a GitHub Actions sample.
 - Merged the repo-owned layout split and containment hardening into local `main`: canonical IR now lives under `bear-ir/`, repo-authored policy under `bear-policy/`, and containment fallthroughs in agent-mode `check` now classify deterministically as `CONTAINMENT_NOT_VERIFIED` with `CONTAINMENT_METADATA_MISMATCH` when appropriate.
 - Verification: `./gradlew.bat --no-daemon :app:test --tests com.bear.app.BearCiIntegrationScriptsTest --tests com.bear.app.BearPackageDocsConsistencyTest --tests com.bear.app.ContextDocsConsistencyTest`.
