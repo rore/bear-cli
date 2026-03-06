@@ -59,17 +59,18 @@ Preview standing note:
 ## Ready Queue (Ordered, Execution Work Items)
 
 1. P2 CI boundary governance + PR diff ergonomics + telemetry unification. Spec: `docs/context/backlog/p2-ci-owned-bear-gates.md`
-2. P2 minimal taste-invariants rule pack. Spec: `docs/context/backlog/p2-minimal-taste-invariants-rule-pack.md`
-
-## Later Queue (Ordered, Not Yet Active)
-
-1. P3 optional expansion: Maven allowed-deps containment parity. Spec: `docs/context/backlog/p3-maven-allowed-deps-containment.md`
 2. P3 capability templates. Spec: `docs/context/backlog/p3-capability-templates.md`
 3. P3 broader boundary-escape coverage. Spec: `docs/context/backlog/p3-broader-boundary-escape-coverage.md`
 4. P3 multi-block and multi-module composition hardening. Spec: `docs/context/backlog/p3-multi-block-multi-module-composition-hardening.md`
-5. P3 optional deterministic policy hooks. Spec: `docs/context/backlog/p3-optional-deterministic-policy-hooks.md`
+
+## Later Queue (Ordered, Still Important But Lower Value Priority)
+
+1. P2 minimal taste-invariants rule pack. Spec: `docs/context/backlog/p2-minimal-taste-invariants-rule-pack.md`
+2. P3 optional expansion: Maven allowed-deps containment parity. Spec: `docs/context/backlog/p3-maven-allowed-deps-containment.md`
+3. P3 optional deterministic policy hooks. Spec: `docs/context/backlog/p3-optional-deterministic-policy-hooks.md`
 
 Queue notes:
+- Execution priority is currently capability/value-first, so some later-milestone feature work is intentionally ahead of lower-value hardening or compatibility slices.
 - Generated structural tests are already shipped and documented; no separate rollout feature remains queued while evidence-only default stays acceptable.
 - Gradle allowed-deps containment is already shipped; remaining parity work is Maven-only.
 - Documentation-only preview cleanup remains parked and non-blocking.

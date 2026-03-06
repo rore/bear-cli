@@ -63,16 +63,19 @@ Preview definition of done:
 
 ## Active Post-Preview Feature Roadmap
 
-Priority 2:
-1. CI boundary governance + PR diff ergonomics + telemetry unification. Spec: `docs/context/backlog/p2-ci-owned-bear-gates.md`
-2. Minimal taste-invariants rule pack. Spec: `docs/context/backlog/p2-minimal-taste-invariants-rule-pack.md`
+Execution priority (capability/value first):
+1. `P2` CI boundary governance + PR diff ergonomics + telemetry unification. Spec: `docs/context/backlog/p2-ci-owned-bear-gates.md`
+2. `P3` Capability templates. Spec: `docs/context/backlog/p3-capability-templates.md`
+3. `P3` Broader boundary-escape coverage. Spec: `docs/context/backlog/p3-broader-boundary-escape-coverage.md`
+4. `P3` Multi-block and multi-module composition hardening. Spec: `docs/context/backlog/p3-multi-block-multi-module-composition-hardening.md`
+5. `P2` Minimal taste-invariants rule pack. Spec: `docs/context/backlog/p2-minimal-taste-invariants-rule-pack.md`
+6. `P3` Maven allowed-deps containment parity (optional future expansion). Spec: `docs/context/backlog/p3-maven-allowed-deps-containment.md`
+7. `P3` Optional deterministic policy hooks. Spec: `docs/context/backlog/p3-optional-deterministic-policy-hooks.md`
 
-Priority 3:
-1. Maven allowed-deps containment parity (optional future expansion). Spec: `docs/context/backlog/p3-maven-allowed-deps-containment.md`
-2. Capability templates. Spec: `docs/context/backlog/p3-capability-templates.md`
-3. Broader boundary-escape coverage. Spec: `docs/context/backlog/p3-broader-boundary-escape-coverage.md`
-4. Multi-block and multi-module composition hardening. Spec: `docs/context/backlog/p3-multi-block-multi-module-composition-hardening.md`
-5. Optional deterministic policy hooks. Spec: `docs/context/backlog/p3-optional-deterministic-policy-hooks.md`
+Priority notes:
+1. Ordering is based on product value and BEAR capability demonstration, not only hardening or compatibility work.
+2. Stability, regression, and compatibility slices remain important, but they do not lead the queue unless they unblock the capability-first items.
+3. Milestone targets still live in each backlog spec; the order above is the execution priority.
 
 Shipped in active post-Preview work already:
 1. `bear fix` for generated artifacts only.
