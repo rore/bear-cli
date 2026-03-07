@@ -117,6 +117,83 @@ function Parse-FailureFooter($text, $exitCode) {
     }
 }
 
+function Parse-AgentFailure($agentJson, $exitCode) {
+    if ($exitCode -eq 0) {
+        return [ordered]@{
+            valid = $true
+            code = $null
+            path = $null
+            remediation = $null
+        }
+    }
+    if ($null -eq $agentJson) {
+        return New-InvalidFooter
+    }
+    $nextAction = Get-PropertyValue $agentJson 'nextAction'
+    $primaryClusterId = [string](Get-PropertyValue $nextAction 'primaryClusterId')
+    $clusters = New-OrderedArray (Get-PropertyValue $agentJson 'clusters')
+    $primaryCluster = $null
+    foreach ($cluster in $clusters) {
+        if ([string](Get-PropertyValue $cluster 'clusterId') -eq $primaryClusterId) {
+            $primaryCluster = $cluster
+            break
+        }
+    }
+    if ($null -eq $primaryCluster -and $clusters.Count -gt 0) {
+        $primaryCluster = $clusters[0]
+    }
+    $problems = New-OrderedArray (Get-PropertyValue $agentJson 'problems')
+    $primaryProblem = if ($problems.Count -gt 0) { $problems[0] } else { $null }
+
+    $codeCandidates = @(
+        [string](Get-PropertyValue $primaryCluster 'reasonKey'),
+        [string](Get-PropertyValue $primaryCluster 'ruleId'),
+        [string](Get-PropertyValue $primaryCluster 'failureCode'),
+        [string](Get-PropertyValue $primaryProblem 'reasonKey'),
+        [string](Get-PropertyValue $primaryProblem 'ruleId'),
+        [string](Get-PropertyValue $primaryProblem 'failureCode'),
+        [string](Get-PropertyValue $primaryProblem 'messageKey')
+    )
+    $code = $null
+    foreach ($candidate in $codeCandidates) {
+        if (-not [string]::IsNullOrWhiteSpace($candidate)) {
+            $code = $candidate
+            break
+        }
+    }
+    if ([string]::IsNullOrWhiteSpace($code)) {
+        return New-InvalidFooter
+    }
+
+    $clusterFiles = New-OrderedArray (Get-PropertyValue $primaryCluster 'files')
+    $pathCandidates = @(
+        $(if ($clusterFiles.Count -gt 0) { [string]$clusterFiles[0] } else { $null }),
+        [string](Get-PropertyValue $primaryProblem 'file')
+    )
+    $path = $null
+    foreach ($candidate in $pathCandidates) {
+        if (-not [string]::IsNullOrWhiteSpace($candidate)) {
+            $path = $candidate
+            break
+        }
+    }
+    if ([string]::IsNullOrWhiteSpace($path)) {
+        $path = 'agent.json'
+    }
+
+    $steps = New-OrderedArray (Get-PropertyValue $nextAction 'steps')
+    $remediation = if ($steps.Count -gt 0 -and -not [string]::IsNullOrWhiteSpace([string]$steps[0])) {
+        [string]$steps[0]
+    } else {
+        'Inspect BEAR agent diagnostics and apply the listed next action.'
+    }
+    return [ordered]@{
+        valid = $true
+        code = $code
+        path = $path
+        remediation = $remediation
+    }
+}
 function Try-ParseAgentJson($text) {
     if ([string]::IsNullOrWhiteSpace($text)) {
         return [ordered]@{
@@ -558,6 +635,9 @@ function Invoke-BearCommand($label, $commandText, $commandPath, $commandArgs) {
     $stderrHash = if (Test-Path $stderrPath) { (Get-FileHash -Algorithm SHA256 $stderrPath).Hash.ToLowerInvariant() } else { $null }
     $agent = Try-ParseAgentJson $stdoutText
     $footer = Parse-FailureFooter $stderrText $exitCode
+    if (-not $footer.valid -and $agent.valid) {
+        $footer = Parse-AgentFailure $agent.json $exitCode
+    }
     return [ordered]@{
         label = $label
         command = $commandText
@@ -622,14 +702,16 @@ try {
     $allowEntryCandidate = Get-AllowEntryCandidate $mode $prResult $prTelemetry $baseResolution.value
 
     $decision = 'pass'
-    if ($checkResult.exitCode -in @(2, 5, 64, 70, 74)) {
+    if ($checkClasses -contains 'CI_INTERNAL_ERROR') {
+        $decision = 'fail'
+    } elseif ($checkResult.exitCode -in @(2, 5, 64, 70, 74)) {
         $decision = 'fail'
     } elseif (-not $baseResolution.resolved) {
         $decision = 'fail'
     } elseif ($null -eq $prResult) {
         $decision = 'fail'
     } elseif ($mode -eq 'observe') {
-        if ($prResult.exitCode -in @(2, 64, 70, 74)) {
+        if (($prClasses -contains 'CI_INTERNAL_ERROR') -or $prResult.exitCode -in @(2, 64, 70, 74)) {
             $decision = 'fail'
         }
     } elseif ($checkResult.exitCode -ne 0) {
@@ -641,7 +723,6 @@ try {
     } else {
         $decision = 'fail'
     }
-
     $checkReport = [ordered]@{
         status = 'ran'
         exitCode = $checkResult.exitCode

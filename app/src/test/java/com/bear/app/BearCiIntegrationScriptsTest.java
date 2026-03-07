@@ -54,6 +54,57 @@ class BearCiIntegrationScriptsTest {
         assertTrue(report.contains("\"prCheck\":{\"status\":\"ran\""), report);
     }
 
+
+    @Test
+    void powerShellWrapperUsesAgentJsonWhenFailureFooterIsMissing(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = createFixtureRepo(tempDir.resolve("repo"));
+        writeCheckFixture(
+            repoRoot,
+            CliCodes.EXIT_DRIFT,
+            AgentDiagnostics.toJson(AgentDiagnostics.payload(
+                AgentCommandContext.minimal("check", "all", "all", true),
+                CliCodes.EXIT_DRIFT,
+                List.of(problem(AgentDiagnostics.AgentCategory.INFRA, CliCodes.DRIFT_MISSING_BASELINE, null, CliCodes.DRIFT_MISSING_BASELINE, "build/generated/bear")),
+                true
+            )),
+            ""
+        );
+        writePrFixture(
+            repoRoot,
+            CliCodes.EXIT_BOUNDARY_BYPASS,
+            AgentDiagnostics.toJson(AgentDiagnostics.payload(
+                AgentCommandContext.minimal("pr-check", "all", "all", true),
+                CliCodes.EXIT_BOUNDARY_BYPASS,
+                List.of(problem(AgentDiagnostics.AgentCategory.GOVERNANCE, CliCodes.BOUNDARY_BYPASS, "BLOCK_PORT_IMPL_INVALID", null, "build/generated/bear/src/main/java")),
+                true
+            )),
+            ""
+        );
+
+        ScriptRunResult run = runPowerShellWrapper(repoRoot, Map.of(), "--mode", "observe", "--base-sha", "base-sha-agent-json");
+
+        assertEquals(0, run.exitCode(), run.stdout());
+        assertTrue(run.stdout().contains("CHECK exit=3 code=DRIFT_MISSING_BASELINE classes=CI_GOVERNANCE_DRIFT"), run.stdout());
+        assertTrue(run.stdout().contains("PR-CHECK exit=7 code=BLOCK_PORT_IMPL_INVALID classes=CI_POLICY_BYPASS_ATTEMPT"), run.stdout());
+        String report = readReport(repoRoot);
+        assertTrue(report.contains("\"decision\":\"pass\""), report);
+        assertFalse(report.contains("WRAPPER_FOOTER_INVALID"), report);
+    }
+
+    @Test
+    void powerShellWrapperObserveFailsWhenFooterAndAgentJsonAreBothUnusable(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = createFixtureRepo(tempDir.resolve("repo"));
+        writeCheckFixture(repoRoot, CliCodes.EXIT_DRIFT, "not-json", "");
+        writePrFixture(repoRoot, CliCodes.EXIT_OK, prJson(CliCodes.EXIT_OK, PrGovernanceTelemetry.all(CliCodes.EXIT_OK, List.of(), List.of(), List.of())), "");
+
+        ScriptRunResult run = runPowerShellWrapper(repoRoot, Map.of(), "--mode", "observe", "--base-sha", "base-sha-invalid-footer");
+
+        assertEquals(1, run.exitCode(), run.stdout());
+        assertTrue(run.stdout().contains("CHECK exit=3 code=WRAPPER_FOOTER_INVALID classes=CI_INTERNAL_ERROR"), run.stdout());
+        String report = readReport(repoRoot);
+        assertTrue(report.contains("\"decision\":\"fail\""), report);
+    }
+
     @Test
     void powerShellWrapperEnforceAllowsExactBoundaryExpansionMatch(@TempDir Path tempDir) throws Exception {
         Path repoRoot = createFixtureRepo(tempDir.resolve("repo"));
@@ -296,6 +347,30 @@ class BearCiIntegrationScriptsTest {
         Path shim = testBin.resolve("pwsh");
         Files.writeString(shim, script, StandardCharsets.UTF_8);
         shim.toFile().setExecutable(true, false);
+    }
+    private static AgentDiagnostics.AgentProblem problem(
+        AgentDiagnostics.AgentCategory category,
+        String failureCode,
+        String ruleId,
+        String reasonKey,
+        String file
+    ) {
+        java.util.Map<String, String> evidence = RepeatableRuleRegistry.requiresIdentityKey(ruleId)
+            ? java.util.Map.of("identityKey", (file == null ? "" : file) + "|" + ruleId)
+            : java.util.Map.of();
+        return AgentDiagnostics.problem(
+            category,
+            failureCode,
+            ruleId,
+            reasonKey,
+            AgentDiagnostics.AgentSeverity.ERROR,
+            "alpha",
+            file,
+            null,
+            ruleId != null ? ruleId : reasonKey,
+            failureCode,
+            evidence
+        );
     }
     private static String checkJson(int exitCode) {
         return AgentDiagnostics.toJson(AgentDiagnostics.payload(
