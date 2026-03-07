@@ -37,6 +37,11 @@ subprojects {
 
     test {
         useJUnitPlatform()
+        testLogging {
+            events 'failed'
+            showStandardStreams = true
+            exceptionFormat = 'full'
+        }
     }
 
     // Windows can hold open files under test results; use a fresh binary results dir per build run.
