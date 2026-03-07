@@ -47,6 +47,14 @@ function Resolve-PackagedAgentRoot([string]$repoRoot) {
     return (Resolve-Path $agentRoot).Path
 }
 
+function Resolve-PackagedCiRoot([string]$repoRoot) {
+    $ciRoot = Join-Path $repoRoot "docs\bear-package\.bear\ci"
+    if (-not (Test-Path (Join-Path $ciRoot "bear-gates.ps1"))) {
+        throw "Missing packaged CI bundle at $ciRoot. Expected docs/bear-package/.bear/ci/*."
+    }
+    return (Resolve-Path $ciRoot).Path
+}
+
 function Find-InstalledCli([string]$repoRoot, [string]$explicitPath) {
     if ($explicitPath) {
         $resolved = Resolve-Absolute $explicitPath
@@ -183,9 +191,8 @@ $demoRoot = Resolve-Absolute $DemoRepoPath
 if (-not (Test-Path (Join-Path $demoRoot ".git"))) {
     throw "Demo repo root must contain .git: $demoRoot"
 }
-
 $packagedAgentRoot = Resolve-PackagedAgentRoot $repoRoot
-
+$packagedCiRoot = Resolve-PackagedCiRoot $repoRoot
 if (-not $SkipBuild -and -not $CliInstallPath) {
     $gradleWrapper = Join-Path $repoRoot "gradlew.bat"
     if (-not (Test-Path $gradleWrapper)) {
@@ -223,18 +230,17 @@ if ($CliInstallPath) {
 $dstCliRoot = Join-Path $demoRoot ".bear\tools\bear-cli"
 $dstCliBin = Join-Path $dstCliRoot "bin"
 $dstCliLib = Join-Path $dstCliRoot "lib"
-$dstAgentRoot = Join-Path $demoRoot ".bear\agent"
-
+$dstAgentRoot = Join-Path $demoRoot '.bear\agent'
+$dstCiRoot = Join-Path $demoRoot '.bear\ci'
 $runtimeOperations = @(
     @{ type = "replaceDir"; source = (Join-Path $installRoot "bin"); destination = $dstCliBin },
     @{ type = "replaceDir"; source = (Join-Path $installRoot "lib"); destination = $dstCliLib }
 )
-
 $agentOperation = @{ source = $packagedAgentRoot; destination = $dstAgentRoot }
-
+$ciOperation = @{ source = $packagedCiRoot; destination = $dstCiRoot }
 $policyMappings = @(
-    @{ source = (Join-Path $repoRoot "docs\bear-package\bear-policy\reflection-allowlist.txt"); destination = (Join-Path $demoRoot "bear-policy\reflection-allowlist.txt") },
-    @{ source = (Join-Path $repoRoot "docs\bear-package\bear-policy\hygiene-allowlist.txt"); destination = (Join-Path $demoRoot "bear-policy\hygiene-allowlist.txt") }
+    @{ source = (Join-Path $repoRoot "docs\bear-package\bear-policy\reflection-allowlist.txt"); destination = (Join-Path $demoRoot ".bear\policy\reflection-allowlist.txt") },
+    @{ source = (Join-Path $repoRoot "docs\bear-package\bear-policy\hygiene-allowlist.txt"); destination = (Join-Path $demoRoot ".bear\policy\hygiene-allowlist.txt") }
 )
 
 Write-Output "Sync plan:"
@@ -246,6 +252,8 @@ foreach ($op in $runtimeOperations) {
 }
 Write-Output " - Replace agent directory:"
 Write-Output ("   - {0}" -f (Assert-Inside $demoRoot $agentOperation.destination))
+Write-Output " - Replace CI directory:"
+Write-Output ("   - {0}" -f (Assert-Inside $demoRoot $ciOperation.destination))
 Write-Output " - Copy policy files:"
 foreach ($map in $policyMappings) {
     Write-Output ("   - {0}" -f (Assert-Inside $demoRoot $map.destination))
@@ -288,6 +296,18 @@ if (Test-Path $dst) {
 }
 Copy-Item -LiteralPath $src -Destination $dst -Recurse -Force
 Write-Output ("Synced agent dir: {0}" -f $dst)
+
+$src = Resolve-Absolute $ciOperation.source
+$dst = Assert-Inside $demoRoot $ciOperation.destination
+$parent = Split-Path -Parent $dst
+if (-not (Test-Path $parent)) {
+    New-Item -ItemType Directory -Path $parent -Force | Out-Null
+}
+if (Test-Path $dst) {
+    Remove-Item -LiteralPath $dst -Recurse -Force
+}
+Copy-Item -LiteralPath $src -Destination $dst -Recurse -Force
+Write-Output ("Synced CI dir: {0}" -f $dst)
 
 foreach ($map in $policyMappings) {
     $src = Resolve-Absolute $map.source
@@ -359,6 +379,30 @@ if ($treeMismatch.Count -gt 0) {
     throw ("Post-sync hash mismatch detected for agent tree: " + ($treeMismatch -join ", "))
 }
 
+$srcCiHashes = Get-TreeHashes $packagedCiRoot
+$dstCiHashes = Get-TreeHashes $dstCiRoot
+$ciTreeMismatch = @()
+
+foreach ($key in $srcCiHashes.Keys) {
+    if (-not $dstCiHashes.ContainsKey($key)) {
+        $ciTreeMismatch += ("missing-dst:" + $key)
+        continue
+    }
+    if ($srcCiHashes[$key] -ne $dstCiHashes[$key]) {
+        $ciTreeMismatch += ("hash-mismatch:" + $key)
+    }
+}
+
+foreach ($key in $dstCiHashes.Keys) {
+    if (-not $srcCiHashes.ContainsKey($key)) {
+        $ciTreeMismatch += ("unexpected-dst:" + $key)
+    }
+}
+
+if ($ciTreeMismatch.Count -gt 0) {
+    throw ("Post-sync hash mismatch detected for CI tree: " + ($ciTreeMismatch -join ", "))
+}
+
 Write-Output "Sync complete."
 Write-Output "CLI JAR hashes match source runtime output."
-Write-Output "Agent package file hashes match docs/bear-package/.bear source. Policy template hashes match docs/bear-package/bear-policy source."
+Write-Output "Agent and CI package file hashes match docs/bear-package/.bear source. Policy template hashes match docs/bear-package/bear-policy source."
