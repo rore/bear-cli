@@ -534,10 +534,23 @@ function Invoke-BearCommand($label, $commandText, $commandPath, $commandArgs) {
         & cmd.exe /d /c ($cmdLine + ' 1> ' + (Format-CmdArgument $stdoutPath) + ' 2> ' + (Format-CmdArgument $stderrPath)) | Out-Null
         $exitCode = $LASTEXITCODE
     } else {
-        $quotedArgs = @($commandArgs | ForEach-Object { Format-ShArgument $_ }) -join ' '
-        $shLine = (Format-ShArgument $commandPath) + $(if ($quotedArgs.Length -gt 0) { ' ' + $quotedArgs } else { '' })
-        & /bin/sh -c ($shLine + ' 1> ' + (Format-ShArgument $stdoutPath) + ' 2> ' + (Format-ShArgument $stderrPath)) | Out-Null
-        $exitCode = $LASTEXITCODE
+        $processInfo = New-Object System.Diagnostics.ProcessStartInfo
+        $processInfo.FileName = $commandPath
+        $processInfo.WorkingDirectory = (Get-Location).Path
+        $processInfo.UseShellExecute = $false
+        $processInfo.RedirectStandardOutput = $true
+        $processInfo.RedirectStandardError = $true
+        foreach ($arg in $commandArgs) {
+            [void]$processInfo.ArgumentList.Add([string]$arg)
+        }
+        $process = [System.Diagnostics.Process]::Start($processInfo)
+        $stdoutText = $process.StandardOutput.ReadToEnd()
+        $stderrText = $process.StandardError.ReadToEnd()
+        $process.WaitForExit()
+        $exitCode = $process.ExitCode
+        $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+        [System.IO.File]::WriteAllText($stdoutPath, $stdoutText, $utf8NoBom)
+        [System.IO.File]::WriteAllText($stderrPath, $stderrText, $utf8NoBom)
     }
     $stdoutText = if (Test-Path $stdoutPath) { Get-Content $stdoutPath -Raw } else { '' }
     $stderrText = if (Test-Path $stderrPath) { Get-Content $stderrPath -Raw } else { '' }
@@ -557,7 +570,6 @@ function Invoke-BearCommand($label, $commandText, $commandPath, $commandArgs) {
         footer = $footer
     }
 }
-
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $scriptDir '..\..'))
 $bearCommand = Join-Path $repoRoot ($(if ($env:OS -eq 'Windows_NT') { '.bear/tools/bear-cli/bin/bear.bat' } else { '.bear/tools/bear-cli/bin/bear' }))
