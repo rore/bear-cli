@@ -92,9 +92,9 @@ blocks:
 Fallback single-file path:
 
 ```powershell
-.\.bear\tools\bear-cli\bin\bear.bat compile spec\<block>.bear.yaml --project .
-.\.bear\tools\bear-cli\bin\bear.bat check spec\<block>.bear.yaml --project .
-.\.bear\tools\bear-cli\bin\bear.bat pr-check spec\<block>.bear.yaml --project . --base HEAD
+.\.bear\tools\bear-cli\bin\bear.bat compile bear-ir\<block>.bear.yaml --project .
+.\.bear\tools\bear-cli\bin\bear.bat check bear-ir\<block>.bear.yaml --project .
+.\.bear\tools\bear-cli\bin\bear.bat pr-check bear-ir\<block>.bear.yaml --project . --base HEAD
 ```
 
 If something fails, go to [troubleshooting.md](troubleshooting.md).
@@ -107,4 +107,3 @@ If something fails, go to [troubleshooting.md](troubleshooting.md).
 - [ENFORCEMENT.md](ENFORCEMENT.md)
 - [CONTRACTS.md](CONTRACTS.md)
 - [CI_INTEGRATION.md](CI_INTEGRATION.md)
-

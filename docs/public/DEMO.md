@@ -1,5 +1,15 @@
 # Demo
 
+BEAR is a deterministic governance CLI and CI gate for agentic backend development.
+
+In plain terms:
+- an agent updates code and BEAR IR
+- `bear compile` generates deterministic boundary glue
+- `bear check` verifies repo consistency and covered bypasses
+- `bear pr-check` tells you whether a pull request widened governed boundary authority
+
+This page explains what the live demo repo is meant to prove once those mechanics are running in GitHub.
+
 BEAR ships with a companion demo repo:
 
 - Demo repo: [bear-account-demo](https://github.com/rore/bear-account-demo)
