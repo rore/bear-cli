@@ -87,11 +87,11 @@ Queue notes:
      - `README.md`
    - locked deterministic wrapper behavior:
      - `check --all` first, then `pr-check --all` by the pinned skip matrix
-     - `enforce` vs `observe` decision modes
-     - wrapper process exit `0` for `pass`/`allowed-expansion`, `1` for `fail`
+     - `observe` now splits clean pass, governance review (`review-required`), and blocking failure while `enforce` remains the hard-gate mode
+     - wrapper process exit `0` for `pass`/`review-required`/`allowed-expansion`, `1` for `fail`
      - exact-match base-SHA plus `deltaId` allow-file approval only for `pr-check exit 5`
      - fail-closed when boundary-expansion telemetry is missing or unparsable
-   - added reproducible `build/bear/ci/bear-ci-report.json` output (`schemaVersion=bear.ci.governance.v1`), exact `prCheck.allowEntryCandidate`, and deterministic `build/bear/ci/bear-ci-summary.md` output for GitHub review surfaces
+   - added reproducible `build/bear/ci/bear-ci-report.json` output (`schemaVersion=bear.ci.governance.v1`), exact `prCheck.allowEntryCandidate`, deterministic `build/bear/ci/bear-ci-summary.md` output for GitHub review surfaces, and wrapper-level `review-required` decisioning for observe-mode boundary review
    - added downstream/public docs for CI integration and package contents, including the `pwsh` launcher requirement for `bear-gates.sh`, while keeping `bear-cli`'s own workflow unchanged
    - added wrapper integration tests for base resolution, allow-file decisions, not-run serialization, byte-stable reports and summaries, combined all-mode boundary aggregation, and bash forwarding without turning the bash wrapper into a second decision engine
 2. `Boundary regression suite`

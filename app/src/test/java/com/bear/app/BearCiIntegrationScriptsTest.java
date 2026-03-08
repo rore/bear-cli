@@ -8,9 +8,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Locale;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,15 +45,39 @@ class BearCiIntegrationScriptsTest {
 
         ScriptRunResult run = runPowerShellWrapper(repoRoot, Map.of(), "--mode", "observe", "--base-sha", "base-sha-200");
 
-        assertEquals(0, run.exitCode());
+        assertEquals(1, run.exitCode());
         assertTrue(run.stdout().contains("CHECK exit=3 code=DRIFT_DETECTED classes=CI_GOVERNANCE_DRIFT"), run.stdout());
         String report = readReport(repoRoot);
-        assertTrue(report.contains("\"decision\":\"pass\""), report);
+        assertTrue(report.contains("\"decision\":\"fail\""), report);
         assertTrue(report.contains("\"check\":{\"status\":\"ran\",\"exitCode\":3,\"code\":\"DRIFT_DETECTED\""), report);
         assertTrue(report.contains("\"classes\":[\"CI_GOVERNANCE_DRIFT\"]"), report);
         assertTrue(report.contains("\"prCheck\":{\"status\":\"ran\""), report);
     }
 
+    @Test
+    void powerShellWrapperObserveMarksBoundaryExpansionAsReviewRequired(@TempDir Path tempDir) throws Exception {
+        Path repoRoot = createFixtureRepo(tempDir.resolve("repo"));
+        writeCheckFixture(repoRoot, CliCodes.EXIT_OK, checkJson(CliCodes.EXIT_OK), "");
+        PrGovernanceTelemetry.Snapshot snapshot = PrGovernanceTelemetry.all(
+            CliCodes.EXIT_BOUNDARY_EXPANSION,
+            List.of(new PrDelta(PrClass.BOUNDARY_EXPANDING, PrCategory.CONTRACT, PrChange.ADDED, "accounts#create")),
+            List.of(),
+            List.of()
+        );
+        writePrFixture(repoRoot, CliCodes.EXIT_BOUNDARY_EXPANSION, prJson(CliCodes.EXIT_BOUNDARY_EXPANSION, snapshot), footer(CliCodes.BOUNDARY_EXPANSION, "bear.blocks.yaml", "Review boundary-expanding deltas and route through explicit boundary review."));
+
+        ScriptRunResult run = runPowerShellWrapper(repoRoot, Map.of(), "--mode", "observe", "--base-sha", "base-sha-review");
+
+        assertEquals(0, run.exitCode(), run.stdout());
+        assertTrue(run.stdout().contains("MODE=observe DECISION=review-required BASE=base-sha-review"), run.stdout());
+        String report = readReport(repoRoot);
+        assertTrue(report.contains("\"decision\":\"review-required\""), report);
+        assertTrue(report.contains("\"prCheck\":{\"status\":\"ran\",\"reason\":null,\"exitCode\":5"), report);
+        String summary = readSummary(repoRoot);
+        assertTrue(summary.contains("- Decision: review-required"), summary);
+        assertTrue(summary.contains("- Review Required: boundary expansion detected."), summary);
+        assertFalse(summary.contains("## Allow Entry Candidate"), summary);
+    }
 
     @Test
     void powerShellWrapperUsesAgentJsonWhenFailureFooterIsMissing(@TempDir Path tempDir) throws Exception {
@@ -83,11 +107,11 @@ class BearCiIntegrationScriptsTest {
 
         ScriptRunResult run = runPowerShellWrapper(repoRoot, Map.of(), "--mode", "observe", "--base-sha", "base-sha-agent-json");
 
-        assertEquals(0, run.exitCode(), run.stdout());
+        assertEquals(1, run.exitCode(), run.stdout());
         assertTrue(run.stdout().contains("CHECK exit=3 code=DRIFT_MISSING_BASELINE classes=CI_GOVERNANCE_DRIFT"), run.stdout());
         assertTrue(run.stdout().contains("PR-CHECK exit=7 code=BLOCK_PORT_IMPL_INVALID classes=CI_POLICY_BYPASS_ATTEMPT"), run.stdout());
         String report = readReport(repoRoot);
-        assertTrue(report.contains("\"decision\":\"pass\""), report);
+        assertTrue(report.contains("\"decision\":\"fail\""), report);
         assertFalse(report.contains("WRAPPER_FOOTER_INVALID"), report);
     }
 
@@ -210,6 +234,7 @@ class BearCiIntegrationScriptsTest {
         assertEquals(0, run.exitCode(), run.stderr());
         assertTrue(run.stderr().isBlank(), run.stderr());
     }
+
     @Test
     void powerShellWrapperBuildsAllowEntryCandidateFromAllModeBlockBoundaryDeltas(@TempDir Path tempDir) throws Exception {
         Path repoRoot = createFixtureRepo(tempDir.resolve("repo"));
@@ -348,6 +373,7 @@ class BearCiIntegrationScriptsTest {
         Files.writeString(shim, script, StandardCharsets.UTF_8);
         shim.toFile().setExecutable(true, false);
     }
+
     private static AgentDiagnostics.AgentProblem problem(
         AgentDiagnostics.AgentCategory category,
         String failureCode,
@@ -372,6 +398,7 @@ class BearCiIntegrationScriptsTest {
             evidence
         );
     }
+
     private static String checkJson(int exitCode) {
         return AgentDiagnostics.toJson(AgentDiagnostics.payload(
             AgentCommandContext.minimal("check", "all", "all", true),
@@ -402,29 +429,11 @@ class BearCiIntegrationScriptsTest {
         return Files.readString(repoRoot.resolve("build/bear/ci/bear-ci-summary.md"), StandardCharsets.UTF_8);
     }
 
-    private static void dumpRun(String label, Path repoRoot, ScriptRunResult run) throws Exception {
-        System.err.println("=== " + label + " ===");
-        System.err.println("exit=" + run.exitCode());
-        System.err.println("--- stdout ---");
-        System.err.println(run.stdout());
-        System.err.println("--- stderr ---");
-        System.err.println(run.stderr());
-        Path reportPath = repoRoot.resolve("build/bear/ci/bear-ci-report.json");
-        if (Files.exists(reportPath)) {
-            System.err.println("--- report ---");
-            System.err.println(Files.readString(reportPath, StandardCharsets.UTF_8));
-        }
-        Path summaryPath = repoRoot.resolve("build/bear/ci/bear-ci-summary.md");
-        if (Files.exists(summaryPath)) {
-            System.err.println("--- summary ---");
-            System.err.println(Files.readString(summaryPath, StandardCharsets.UTF_8));
-        }
-    }
-
     private static void copyPackageFile(String source, Path destination) throws Exception {
         Files.createDirectories(destination.getParent());
         Files.copy(TestRepoPaths.repoRoot().resolve(source), destination);
     }
+
     private static ScriptRunResult runPowerShellWrapper(Path repoRoot, Map<String, String> env, String... args) throws Exception {
         assumePowerShellAvailable();
         ArrayList<String> command = new ArrayList<>();
@@ -510,6 +519,7 @@ class BearCiIntegrationScriptsTest {
             Assumptions.assumeTrue(false, "PowerShell runtime unavailable in this environment");
         }
     }
+
     private static String fakeBearBat() {
         return "@echo off\r\n"
             + "setlocal\r\n"
@@ -537,16 +547,3 @@ class BearCiIntegrationScriptsTest {
     private record ScriptRunResult(int exitCode, String stdout, String stderr) {
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

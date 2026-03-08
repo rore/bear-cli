@@ -154,24 +154,25 @@ class BearPackageDocsConsistencyTest {
         assertContains(ciReadme, "bear-gates.ps1");
         assertContains(ciReadme, "bear-gates.sh");
         assertContains(ciReadme, "pwsh");
+        assertContains(ciReadme, "review-required");
 
         assertContains(index, "[CI_INTEGRATION.md](CI_INTEGRATION.md)");
         assertContains(install, ".bear/ci/");
         assertContains(install, ".\\.bear\\ci\\bear-gates.ps1 --mode observe --base-sha HEAD");
         assertContains(ciIntegration, "schemaVersion=bear.ci.governance.v1");
+        assertContains(ciIntegration, "review-required");
         assertContains(ciIntegration, "PR-CHECK NOT_RUN: BASE_UNRESOLVED");
         assertContains(ciIntegration, "examples/github-actions-bear-ci.yml");
-        assertContains(ciIntegration, "./.bear/ci/bear-gates.sh --mode enforce");
+        assertContains(ciIntegration, "./.bear/ci/bear-gates.sh --mode observe");
         assertTrue(Files.exists(repoRoot.resolve("docs/public/examples/github-actions-bear-ci.yml")), "GitHub Actions sample must exist");
         String githubSample = Files.readString(repoRoot.resolve("docs/public/examples/github-actions-bear-ci.yml"));
         assertContains(githubSample, "actions/checkout@v4");
         assertContains(githubSample, "actions/setup-java@v4");
-        assertContains(githubSample, "./.bear/ci/bear-gates.sh --mode enforce");
+        assertContains(githubSample, "./.bear/ci/bear-gates.sh --mode observe");
         assertContains(githubSample, "build/bear/ci/bear-ci-report.json");
         assertContains(githubSample, "build/bear/ci/bear-ci-summary.md");
         assertContains(packageReadme, ".bear/ci/bear-gates.ps1");
     }
-
 
     @Test
     void packagedPolicyTemplatesLiveOutsideDotBear() {
@@ -180,6 +181,7 @@ class BearPackageDocsConsistencyTest {
         assertTrue(Files.isRegularFile(repoRoot.resolve("docs/bear-package/bear-policy/reflection-allowlist.txt")));
         assertTrue(Files.isRegularFile(repoRoot.resolve("docs/bear-package/bear-policy/hygiene-allowlist.txt")));
     }
+
     @Test
     void troubleshootingTemplateKeyTablesStayInSyncWithRegistry() throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();

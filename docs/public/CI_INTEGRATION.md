@@ -37,11 +37,12 @@ In v1, `check` exit `6` is reported under `CI_GOVERNANCE_DRIFT` because the CI c
 
 `observe`:
 - wrapper still records both gate results
-- wrapper swallows result lanes `3`, `4`, `5`, `6`, `7`
-- wrapper still fails on `2`, `64`, `70`, `74`
+- wrapper returns `review-required` for boundary expansion (`pr-check exit 5`)
+- wrapper returns `fail` for real blocking problems, including drift, test failures, bypass, validation/usage, IO/git, base-resolution failure, and internal wrapper errors
 
 Wrapper process exit contract:
 - `0` for `pass`
+- `0` for `review-required`
 - `0` for `allowed-expansion`
 - `1` for `fail`
 
@@ -139,6 +140,7 @@ Allowed `reason` values:
 
 `decision` values:
 - `pass`
+- `review-required`
 - `fail`
 - `allowed-expansion`
 
@@ -149,7 +151,7 @@ The report also stores `bearRaw.checkAgentJson`, `bearRaw.prCheckAgentJson`, and
 Wrapper stdout stays compact:
 
 ```text
-MODE=enforce DECISION=pass BASE=<sha>
+MODE=observe DECISION=pass BASE=<sha>
 CHECK exit=0 code=- classes=CI_NO_STRUCTURAL_CHANGE
 PR-CHECK exit=0 code=- classes=CI_NO_STRUCTURAL_CHANGE
 ```
@@ -160,7 +162,7 @@ When `pr-check` is skipped:
 PR-CHECK NOT_RUN: BASE_UNRESOLVED
 ```
 
-The allow-entry candidate block is additive and appears only on the boundary-expansion path described above.
+In `observe`, boundary expansion is surfaced as `DECISION=review-required` instead of a clean pass. The allow-entry candidate block remains enforce-only.
 
 ## GitHub Markdown Summary
 
@@ -173,6 +175,7 @@ The markdown summary is derived only from the same wrapper facts already used fo
 
 Summary sections:
 - heading with `mode`, `decision`, `base SHA`, and report path
+- `Review Required` line when the wrapper decision is `review-required`
 - `Check`
 - `PR Check` or `NOT_RUN`
 - `Boundary Deltas` when any boundary-expanding deltas exist
@@ -186,18 +189,18 @@ In `pr-check --all`, the boundary summary uses the full boundary-expanding delta
 Canonical sample workflow:
 - [examples/github-actions-bear-ci.yml](examples/github-actions-bear-ci.yml)
 
-Ubuntu runner (`enforce`):
+Ubuntu runner (`observe`, recommended for review UX):
 
 ```yaml
 - name: BEAR CI governance
-  run: ./.bear/ci/bear-gates.sh --mode enforce
+  run: ./.bear/ci/bear-gates.sh --mode observe
 ```
 
-Ubuntu runner (`observe`):
+Ubuntu runner (`enforce`):
 
 ```yaml
-- name: BEAR CI governance (observe)
-  run: ./.bear/ci/bear-gates.sh --mode observe
+- name: BEAR CI governance (enforce)
+  run: ./.bear/ci/bear-gates.sh --mode enforce
 ```
 
 Windows runner (`enforce`):
@@ -211,7 +214,7 @@ Windows runner (`enforce`):
 The sample workflow shows the intended GitHub pattern:
 - checkout with full history so BEAR base resolution has the expected git context
 - set up Java before invoking the vendored BEAR wrapper
-- run `.bear/ci/bear-gates.sh --mode enforce`
+- run `.bear/ci/bear-gates.sh --mode observe` when you want governance-review PRs to stay non-blocking but visible
 - upload `build/bear/ci/bear-ci-report.json` and `build/bear/ci/bear-ci-summary.md` as artifacts
 
 Runtime note:

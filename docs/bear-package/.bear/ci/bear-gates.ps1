@@ -488,6 +488,9 @@ function New-MarkdownSummary($modeValue, $decision, $baseResolution, $checkRepor
     $lines.Add('- Decision: ' + $decision)
     $lines.Add('- Base SHA: ' + $baseDisplay)
     $lines.Add('- Report: build/bear/ci/bear-ci-report.json')
+    if ($decision -eq 'review-required') {
+        $lines.Add('- Review Required: boundary expansion detected.')
+    }
     $lines.Add('')
     $lines.Add('## Check')
     $lines.Add('- Exit: ' + $checkReport.exitCode)
@@ -704,6 +707,8 @@ try {
     $decision = 'pass'
     if ($checkClasses -contains 'CI_INTERNAL_ERROR') {
         $decision = 'fail'
+    } elseif ($mode -eq 'observe' -and $checkResult.exitCode -in @(2, 3, 4, 5, 6, 7, 64, 70, 74)) {
+        $decision = 'fail'
     } elseif ($checkResult.exitCode -in @(2, 5, 64, 70, 74)) {
         $decision = 'fail'
     } elseif (-not $baseResolution.resolved) {
@@ -713,6 +718,8 @@ try {
     } elseif ($mode -eq 'observe') {
         if (($prClasses -contains 'CI_INTERNAL_ERROR') -or $prResult.exitCode -in @(2, 64, 70, 74)) {
             $decision = 'fail'
+        } elseif ($prResult.exitCode -eq 5) {
+            $decision = 'review-required'
         }
     } elseif ($checkResult.exitCode -ne 0) {
         $decision = 'fail'
