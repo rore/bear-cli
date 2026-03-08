@@ -5,7 +5,7 @@ Current focus:
 - advance the active `P3` milestone with capability-first work
 - keep deterministic compile, check, and pr-check behavior intact while expanding BEAR's product surface
 - preserve the existing trusted-core and governance guardrails while the queue moves forward
-- keep detailed feature contracts in `docs/context/backlog/*.md` while minimap owns queue order and parked-item state
+- keep detailed feature and idea contracts directly in `roadmap/features/*.md` and `roadmap/ideas/*.md`
 
 Concrete next steps:
 - extend boundary-bypass coverage beyond the currently covered JVM HTTP-focused surfaces

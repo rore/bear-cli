@@ -12,9 +12,12 @@
 - future-spec-to-bear-ir-lowering
 - future-target-adaptable-cli-node
 - future-node-containment-profile
+- future-target-adaptable-cli-dotnet
+- future-dotnet-containment-profile
 - future-compile-package-customization
 - future-optional-scalar-inputs
 - p1-preview-closure-gaps
+- future-idea-families
 
 # Completed
 - p2-bear-fix-generated-only

@@ -5,10 +5,7 @@ Live roadmap planning now lives in minimap:
 - `roadmap/board.md`: canonical live groups and item order
 - `roadmap/scope.md`: canonical current-focus narrative
 - `roadmap/features/*.md`: committed, active, and completed roadmap items
-- `roadmap/ideas/*.md`: parked or uncommitted roadmap items
-
-Detailed feature specs still live under `docs/context/backlog/`.
-Long-horizon idea families that are not yet minimap items still live in `docs/context/future.md`.
+- `roadmap/ideas/*.md`: parked or uncommitted roadmap ideas, including broad future idea families
 
 ## Planning Split
 
@@ -16,13 +13,9 @@ Long-horizon idea families that are not yet minimap items still live in `docs/co
 - milestone contracts, done criteria, and scope guardrails
 2. `roadmap/board.md` + `roadmap/scope.md`:
 - canonical live planning state and execution order
-3. `roadmap/features/*.md` and `roadmap/ideas/*.md`:
-- minimap item summaries for completed, active, committed, and parked work
-4. `docs/context/backlog/*.md`:
-- detailed feature specs and locked contracts
-5. `docs/context/future.md`:
-- broad future idea families that are not yet tracked as minimap items
-6. `docs/context/state.md`:
+3. `roadmap/features/*.md` + `roadmap/ideas/*.md`:
+- canonical item files and detailed roadmap specs
+4. `docs/context/state.md`:
 - current-window handoff only
 
 ## Milestone Pipeline

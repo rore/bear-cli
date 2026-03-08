@@ -7,32 +7,24 @@ commitment: committed
 milestone: P3
 ---
 
-## Summary
+## Goal
 
 Provide deterministic starter packs that generate common capability scaffolding so agents and developers can start from governed templates instead of ad hoc boundary code.
 
-## Why
+## Scope
 
-Capability templates are one of the clearest product-facing ways to turn BEAR's governance model into a faster, more usable starting point for real work.
+- Template packs that generate ports, effects scaffolding, invariants, structural tests, and standard stubs.
+- Deterministic generation only; templates must produce reproducible BEAR-owned output.
+- Template selection and emitted artifacts must align with existing IR and compile ownership rules.
 
-## In Scope
+## Non-Goals
 
-- template packs that generate ports, effects scaffolding, invariants, structural tests, and standard stubs
-- deterministic generation only; templates must produce reproducible BEAR-owned output
-- template selection and emitted artifacts aligned with existing IR and compile ownership rules
+- No template-specific runtime framework coupling in the kernel.
+- No agent-specific generation behavior.
+- No expansion of IR semantics solely to support template convenience.
 
-## Out of Scope
-
-- template-specific runtime framework coupling in the kernel
-- agent-specific generation behavior
-- IR expansion solely to support template convenience
-
-## Done When
+## Acceptance Criteria
 
 1. Template packs generate deterministic scaffolding for at least one clearly useful capability shape.
 2. Generated artifacts preserve the existing two-tree ownership model.
 3. Template output integrates with existing compile, check, and structural-test contracts.
-
-## Notes
-
-Source spec: `docs/context/backlog/p3-capability-templates.md`

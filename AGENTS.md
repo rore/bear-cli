@@ -10,7 +10,7 @@ If you are an AI coding assistant (or a human picking up the repo), start here:
 Guardrails (v1 preview):
 - Keep `kernel/` deterministic and small (trusted seed). No LLM/agent logic in core.
 - Stay within v1-preview scope defined in `docs/context/architecture.md` + `docs/context/roadmap.md`.
-- Treat `docs/context/future.md` as explicitly out-of-scope unless asked.
+- Treat parked work in `roadmap/ideas/*.md` as out-of-scope unless asked.
 - Prefer the two-file approach (generated skeleton + separate impl), use `bear fix` for generated-artifact repair, and deterministic enforcement via `bear check`.
 
 Session hygiene:

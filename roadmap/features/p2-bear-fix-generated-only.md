@@ -7,34 +7,37 @@ commitment: committed
 milestone: P2
 ---
 
-## Summary
+## Goal
 
-Provide a deterministic repair command that normalizes and regenerates BEAR-owned generated artifacts without touching user-owned implementation files.
+Provide a deterministic repair command that normalizes/regenerates BEAR-owned generated artifacts without touching user-owned implementation files.
 
-## Why
+## Non-goals
 
-This completed a key post-preview workflow gap by giving agents and developers a canonical recovery command for generated drift without weakening the two-tree ownership model.
+- No edits to `src/main/java/**/<BlockName>Impl.java`
+- No domain logic synthesis
+- No policy/runtime behavior changes
 
-## In Scope
+## Candidate CLI shape
 
-- `bear fix` single-block mode
-- `bear fix --all` repo mode
-- deterministic regeneration of BEAR-owned generated outputs only
-- public docs and agent-package workflow updates for `fix`
+`bear fix <ir-file> --project <path>`
 
-## Out of Scope
+or (repo mode, later):
 
-- edits to user-owned impl files
-- domain logic synthesis
-- runtime or policy behavior changes
+`bear fix --all --project <repoRoot>`
 
-## Done When
+## Acceptance criteria (draft)
 
-1. Deterministic output and file diffs hold for unchanged IR input.
-2. Only BEAR-owned generated paths are touched.
-3. Non-zero exits use the standard failure envelope.
-4. `fix` integrates cleanly with existing `check` and `pr-check` contracts.
+1. Deterministic output and file diff for unchanged IR input.
+2. Touches only BEAR-owned generated paths.
+3. Emits standard failure envelope on non-zero exits.
+4. Integrates cleanly with existing `check`/`pr-check` contracts.
 
-## Notes
+## Dependencies
 
-Source spec: `docs/context/backlog/p2-bear-fix-generated-only.md`
+- none (ready to start).
+
+## Implementation Notes
+
+- Implemented `bear fix` single-block and `--all` modes in CLI.
+- Added deterministic command spec at `docs/public/commands-fix.md`.
+- Updated CLI and agent-package docs to include `fix` in canonical workflows.

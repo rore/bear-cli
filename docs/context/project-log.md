@@ -243,7 +243,7 @@ Identified risks:
 Mitigation:
 Strict roadmap.
 Strict v0 definition.
-Explicit FUTURE.md parking lot.
+Explicit minimap parking lot for future ideas.
 
 ---
 

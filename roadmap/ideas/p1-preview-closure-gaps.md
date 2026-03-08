@@ -7,31 +7,27 @@ commitment: uncommitted
 milestone: P1
 ---
 
-## Summary
+## Goal
 
-Optional documentation-only cleanup for leftover preview-release notes and historical milestone artifacts.
+Optional release-closure cleanup for Preview milestone artifacts.
 
-## Why
+## Scope
 
-This is parked housekeeping only. It may reduce confusion over time, but it does not currently compete with active product-value work.
+- Optional documentation cleanup for preview-release notes.
+- Optional decision-note cleanup for historical milestone artifacts.
+- No required product/code changes.
 
-## In Scope
+## Non-goals
 
-- preview-release documentation cleanup
-- historical milestone note cleanup
-- no product or runtime behavior changes
+- No new P2 feature implementation.
+- No expansion of IR expressiveness.
+- No roadmap phase redesign.
 
-## Out of Scope
+## Acceptance criteria
 
-- new feature work
-- IR expressiveness changes
-- roadmap redesign
+1. Any edits remain documentation-only.
+2. No impact to active feature queue or milestone feature status.
 
-## Done When
+## Note
 
-1. Remaining preview-era cleanup is handled as documentation-only work.
-2. No active queue priority or milestone status changes are required to complete it.
-
-## Notes
-
-Source spec: `docs/context/backlog/p1-preview-closure-gaps.md`
+This item is intentionally non-blocking for feature development.

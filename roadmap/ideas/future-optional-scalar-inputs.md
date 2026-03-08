@@ -7,34 +7,54 @@ commitment: uncommitted
 milestone: Future
 ---
 
-## Summary
+## Goal
 
-Support truly optional scalar input fields in BEAR IR and generated contracts so presence versus absence does not require sentinel values or custom transport workarounds.
+Support truly optional scalar input fields in BEAR IR and generated contracts, so agents do not need sentinel values or custom encoding to represent missing vs present.
 
-## Why
+## Problem
 
-The current workaround leaks encoding tricks into domain logic, which weakens the BEAR contract and makes agent-generated code less honest about optional inputs.
+In the feature-extension demo, the optional transaction `note` field had to be modeled as a normal string input and then manually encoded or decoded in user code. That is awkward and leaks transport workarounds into domain logic.
 
-## In Scope
+## Desired Outcome
 
-- IR support for optional scalar fields such as string, int, and enum
-- validator and code-generation support for explicit presence or absence
-- generated request or accessor contracts that preserve absence distinctly
-- focused docs and tests around optional string input first
+BEAR IR can express optional scalar inputs such as:
+- optional string
+- optional int
+- optional enum
 
-## Out of Scope
+Generated contracts preserve presence versus absence cleanly.
 
-- collection or union type systems
-- broad redesign of BEAR value semantics
-- changes to current required-field behavior
+## Scope
 
-## Done When
+- IR schema
+- validator
+- code generation and runtime data model
+- generated request and accessor classes
+- docs and examples
+- focused tests
 
-1. Optional scalar inputs are representable in IR with a narrow explicit syntax.
-2. Generated code can distinguish absence from present-empty or placeholder values.
-3. The transaction-note scenario no longer needs sentinel or Base64-style workarounds.
+## Non-Goals
+
+- No full collection or union type system.
+- No broad redesign of BEAR values.
+- No change to existing required-field semantics.
+
+## Minimal Design Target
+
+Allow an input field to be marked optional in IR via a minimal explicit attribute such as:
+- `required: false`
+
+or an equivalent narrow syntax.
+
+Generated Java behavior should preserve absence distinctly:
+- request objects can represent absence separately from an empty or placeholder value
+- block-to-block calls preserve absence without sentinel strings
+- ports and wrappers do not force fake placeholder values
+
+## Acceptance Criteria
+
+1. IR validator accepts optional scalar inputs.
+2. Generated code supports reading presence and absence explicitly.
+3. The transaction-note scenario can be modeled without Base64 or sentinel tricks.
 4. Existing required-field behavior remains unchanged.
-
-## Notes
-
-Source spec: `docs/context/backlog/future-optional-scalar-inputs.md`
+5. Tests cover validate, compile, and runtime behavior for optional string input.
