@@ -12,3 +12,4 @@ public final class ManifestParseException extends Exception {
         return reasonCode;
     }
 }
+

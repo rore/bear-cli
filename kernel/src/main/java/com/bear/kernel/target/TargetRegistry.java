@@ -1,5 +1,7 @@
 package com.bear.kernel.target;
 
+import com.bear.kernel.target.jvm.JvmTarget;
+
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Objects;

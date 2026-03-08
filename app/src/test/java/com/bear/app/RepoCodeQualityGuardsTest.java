@@ -21,8 +21,8 @@ class RepoCodeQualityGuardsTest {
         Map<String, Integer> budgets = Map.of(
             "app/src/main/java/com/bear/app/BearCli.java", 2000,
             "app/src/main/java/com/bear/app/CheckCommandService.java", 1600,
-            "kernel/src/main/java/com/bear/kernel/target/BoundaryBypassScanner.java", 1600,
-            "kernel/src/main/java/com/bear/kernel/target/JvmTarget.java", 2200
+            "kernel/src/main/java/com/bear/kernel/target/jvm/BoundaryBypassScanner.java", 1600,
+            "kernel/src/main/java/com/bear/kernel/target/jvm/JvmTarget.java", 2200
         );
         for (Map.Entry<String, Integer> entry : budgets.entrySet()) {
             Path file = repoRoot.resolve(entry.getKey());
@@ -35,8 +35,8 @@ class RepoCodeQualityGuardsTest {
     void directImplRegexPatternsAreCentralized() throws Exception {
         Path repoRoot = TestRepoPaths.repoRoot();
         String bearCli = Files.readString(repoRoot.resolve("app/src/main/java/com/bear/app/BearCli.java"), StandardCharsets.UTF_8);
-        String scanner = Files.readString(repoRoot.resolve("kernel/src/main/java/com/bear/kernel/target/BoundaryBypassScanner.java"), StandardCharsets.UTF_8);
-        String patterns = Files.readString(repoRoot.resolve("kernel/src/main/java/com/bear/kernel/target/PolicyPatterns.java"), StandardCharsets.UTF_8);
+        String scanner = Files.readString(repoRoot.resolve("kernel/src/main/java/com/bear/kernel/target/jvm/BoundaryBypassScanner.java"), StandardCharsets.UTF_8);
+        String patterns = Files.readString(repoRoot.resolve("kernel/src/main/java/com/bear/kernel/target/jvm/PolicyPatterns.java"), StandardCharsets.UTF_8);
 
         assertFalse(bearCli.contains("DIRECT_IMPL_IMPORT_PATTERN = Pattern.compile("));
         assertFalse(scanner.contains("DIRECT_IMPL_IMPORT_PATTERN = Pattern.compile("));
@@ -80,3 +80,4 @@ class RepoCodeQualityGuardsTest {
         assertEquals(1, count, "blocked marker path literal should exist in one main-source location");
     }
 }
+

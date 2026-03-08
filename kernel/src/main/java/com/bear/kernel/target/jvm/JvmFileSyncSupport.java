@@ -1,4 +1,4 @@
-package com.bear.kernel.target;
+package com.bear.kernel.target.jvm;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -241,3 +241,5 @@ final class JvmFileSyncSupport {
         void run() throws IOException;
     }
 }
+
+

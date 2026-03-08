@@ -4,7 +4,7 @@ import com.bear.kernel.ir.BearIr;
 import com.bear.kernel.ir.BearIrNormalizer;
 import com.bear.kernel.ir.BearIrParser;
 import com.bear.kernel.ir.BearIrValidator;
-import com.bear.kernel.target.JvmTarget;
+import com.bear.kernel.target.jvm.JvmTarget;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -254,6 +254,7 @@ class JvmTargetTest {
         return files;
     }
 }
+
 
 
 

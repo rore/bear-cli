@@ -1,5 +1,6 @@
-package com.bear.kernel.target;
+package com.bear.kernel.target.jvm;
 
+import com.bear.kernel.target.*;
 final class BoundaryJavaSourceSanitizer {
     private BoundaryJavaSourceSanitizer() {
     }
@@ -184,3 +185,5 @@ final class BoundaryJavaSourceSanitizer {
         return out.toString();
     }
 }
+
+

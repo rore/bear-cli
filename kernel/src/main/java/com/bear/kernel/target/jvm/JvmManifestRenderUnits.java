@@ -1,4 +1,4 @@
-package com.bear.kernel.target;
+package com.bear.kernel.target.jvm;
 
 import com.bear.kernel.ir.BearIr;
 import com.bear.kernel.ir.BearIrYamlEmitter;
@@ -229,3 +229,5 @@ final class JvmManifestRenderUnits {
         return out.toString();
     }
 }
+
+

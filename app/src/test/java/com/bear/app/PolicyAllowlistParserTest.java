@@ -117,3 +117,4 @@ class PolicyAllowlistParserTest {
         assertEquals(Set.of("java.time.Clock", "java.time.Instant"), parsed);
     }
 }
+

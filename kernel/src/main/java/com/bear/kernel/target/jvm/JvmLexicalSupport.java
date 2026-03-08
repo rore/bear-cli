@@ -1,4 +1,4 @@
-package com.bear.kernel.target;
+package com.bear.kernel.target.jvm;
 
 import com.bear.kernel.identity.BlockIdentityCanonicalizer;
 import com.bear.kernel.ir.BearIr;
@@ -173,3 +173,5 @@ final class JvmLexicalSupport {
         return new ArrayList<>(BlockIdentityCanonicalizer.canonicalTokens(raw));
     }
 }
+
+

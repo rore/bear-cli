@@ -703,7 +703,7 @@ final class CheckCommandService {
             if (testResult.status() == ProjectTestStatus.LOCKED) {
                 String lockLine = testResult.firstLockLine() != null
                     ? testResult.firstLockLine()
-                    : ProjectTestRunner.firstGradleLockLine(testResult.output());
+                    : ProjectTestDiagnostics.firstGradleLockLine(testResult.output());
                 String markerWriteSuffix = "";
                 try {
                     writeCheckBlockedMarker(projectRoot, CheckBlockedMarker.REASON_LOCK, lockLine);
@@ -740,7 +740,7 @@ final class CheckCommandService {
             if (testResult.status() == ProjectTestStatus.BOOTSTRAP_IO) {
                 String bootstrapLine = testResult.firstBootstrapLine() != null
                     ? testResult.firstBootstrapLine()
-                    : ProjectTestRunner.firstGradleBootstrapIoLine(testResult.output());
+                    : ProjectTestDiagnostics.firstGradleBootstrapIoLine(testResult.output());
                 String markerWriteSuffix = "";
                 try {
                     writeCheckBlockedMarker(projectRoot, CheckBlockedMarker.REASON_BOOTSTRAP, bootstrapLine);
@@ -777,7 +777,7 @@ final class CheckCommandService {
             if (testResult.status() == ProjectTestStatus.SHARED_DEPS_VIOLATION) {
                 String sharedLine = testResult.firstSharedDepsViolationLine() != null
                     ? testResult.firstSharedDepsViolationLine()
-                    : ProjectTestRunner.firstSharedDepsViolationLine(testResult.output());
+                    : ProjectTestDiagnostics.firstSharedDepsViolationLine(testResult.output());
                 String violationLine = "check: CONTAINMENT_REQUIRED: SHARED_DEPS_VIOLATION: "
                     + projectRoot.toString().replace('\\', '/')
                     + ":_shared";
@@ -797,7 +797,7 @@ final class CheckCommandService {
                 );
             }
             if (testResult.status() == ProjectTestStatus.COMPILE_FAILURE) {
-                String markerLine = ProjectTestRunner.firstCompileFailureLine(testResult.output());
+                String markerLine = ProjectTestDiagnostics.firstCompileFailureLine(testResult.output());
                 if (hasContainmentFailureSignal(testResult, markerLine)) {
                     String containmentLine = "check: CONTAINMENT_REQUIRED: CONTAINMENT_METADATA_MISMATCH: project compile preflight failed";
                     if (markerLine != null && !markerLine.isBlank()) {
@@ -842,7 +842,7 @@ final class CheckCommandService {
                 );
             }
             if (testResult.status() == ProjectTestStatus.FAILED) {
-                String markerLine = ProjectTestRunner.firstRelevantProjectTestFailureLine(testResult.output());
+                String markerLine = ProjectTestDiagnostics.firstRelevantProjectTestFailureLine(testResult.output());
                 if (hasContainmentFailureSignal(testResult, markerLine)) {
                     String containmentLine = "check: CONTAINMENT_REQUIRED: CONTAINMENT_METADATA_MISMATCH: project tests failed";
                     if (markerLine != null && !markerLine.isBlank()) {
@@ -883,7 +883,7 @@ final class CheckCommandService {
                 );
             }
             if (testResult.status() == ProjectTestStatus.INVARIANT_VIOLATION) {
-                String markerLine = ProjectTestRunner.firstInvariantViolationLine(testResult.output());
+                String markerLine = ProjectTestDiagnostics.firstInvariantViolationLine(testResult.output());
                 String line = markerLine == null
                     ? "check: TEST_FAILED: invariant violation detected"
                     : "check: TEST_FAILED: " + markerLine;
@@ -900,7 +900,7 @@ final class CheckCommandService {
                 );
             }
             if (testResult.status() == ProjectTestStatus.TIMEOUT) {
-                String timeoutLine = "check: TEST_TIMEOUT: project tests exceeded " + ProjectTestRunner.testTimeoutSeconds() + "s" + phaseTaskSuffix(testResult);
+                String timeoutLine = "check: TEST_TIMEOUT: project tests exceeded " + ProjectTestDiagnostics.testTimeoutSeconds() + "s" + phaseTaskSuffix(testResult);
                 diagnostics.add(timeoutLine);
                 diagnostics.addAll(CliText.tailLines(testResult.output()));
                 return checkFailure(
@@ -1162,7 +1162,7 @@ final class CheckCommandService {
         if (!"true".equalsIgnoreCase(System.getProperty("bear.check.test.forceTimeoutOutcome"))) {
             return null;
         }
-        String timeoutLine = "check: TEST_TIMEOUT: project tests exceeded " + ProjectTestRunner.testTimeoutSeconds() + "s";
+        String timeoutLine = "check: TEST_TIMEOUT: project tests exceeded " + ProjectTestDiagnostics.testTimeoutSeconds() + "s";
         return checkFailure(
             CliCodes.EXIT_TEST_FAILURE,
             List.of(timeoutLine),
@@ -1401,6 +1401,7 @@ final class CheckCommandService {
     }
 
 }
+
 
 
 

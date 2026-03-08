@@ -1,6 +1,6 @@
 package com.bear.kernel;
 
-import com.bear.kernel.target.JvmTarget;
+import com.bear.kernel.target.jvm.JvmTarget;
 import com.bear.kernel.target.Target;
 import com.bear.kernel.target.TargetId;
 import com.bear.kernel.target.TargetRegistry;

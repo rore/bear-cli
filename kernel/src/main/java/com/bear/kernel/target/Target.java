@@ -59,3 +59,4 @@ public interface Target {
 
     ProjectTestResult runProjectVerification(Path projectRoot, String initScriptRelativePath) throws IOException, InterruptedException;
 }
+

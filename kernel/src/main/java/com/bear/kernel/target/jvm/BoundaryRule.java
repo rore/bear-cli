@@ -1,5 +1,6 @@
-package com.bear.kernel.target;
+package com.bear.kernel.target.jvm;
 
+import com.bear.kernel.target.*;
 import java.util.Objects;
 import java.util.function.Predicate;
 
@@ -13,3 +14,5 @@ record BoundaryRule(String id, Predicate<String> appliesToPath) {
         return appliesToPath.test(relPath);
     }
 }
+
+

@@ -1,5 +1,6 @@
-package com.bear.kernel.target;
+package com.bear.kernel.target.jvm;
 
+import com.bear.kernel.target.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -234,3 +235,5 @@ final class UndeclaredReachScanner {
     private record ReachSurfaceSpec(ReachKind kind, String ownerFqcn, String methodName, String label) {
     }
 }
+
+

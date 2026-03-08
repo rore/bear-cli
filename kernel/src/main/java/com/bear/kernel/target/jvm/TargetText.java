@@ -1,5 +1,6 @@
-package com.bear.kernel.target;
+package com.bear.kernel.target.jvm;
 
+import com.bear.kernel.target.*;
 final class TargetText {
     private TargetText() {
     }
@@ -8,3 +9,4 @@ final class TargetText {
         return text == null ? "" : text.replace("\r\n", "\n").replace('\r', '\n');
     }
 }
+

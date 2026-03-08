@@ -1,5 +1,6 @@
-package com.bear.kernel.target;
+package com.bear.kernel.target.jvm;
 
+import com.bear.kernel.target.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,3 +24,5 @@ final class BoundaryRuleRegistry {
         return rule != null && rule.applies(relPath);
     }
 }
+
+

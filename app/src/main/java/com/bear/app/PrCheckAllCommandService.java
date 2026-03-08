@@ -302,3 +302,4 @@ final class PrCheckAllCommandService {
         );
     }
 }
+

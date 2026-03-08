@@ -483,14 +483,14 @@ final class CheckAllCommandService {
                 if (testResult.status() == ProjectTestStatus.LOCKED) {
                     String lockLine = testResult.firstLockLine() != null
                         ? testResult.firstLockLine()
-                        : ProjectTestRunner.firstGradleLockLine(testResult.output());
+                        : ProjectTestDiagnostics.firstGradleLockLine(testResult.output());
                     String markerWriteSuffix = "";
                     try {
                         BearCli.writeCheckBlockedMarker(root, CHECK_BLOCKED_REASON_LOCK, lockLine);
                     } catch (IOException markerWriteError) {
                         markerWriteSuffix = markerWriteFailureSuffix(markerWriteError);
                     }
-                    String detail = ProjectTestRunner.projectTestDetail(
+                    String detail = ProjectTestDiagnostics.projectTestDetail(
                         "root-level project test runner lock in projectRoot " + entry.getKey(),
                         lockLine,
                         null
@@ -513,14 +513,14 @@ final class CheckAllCommandService {
                 } else if (testResult.status() == ProjectTestStatus.BOOTSTRAP_IO) {
                     String bootstrapLine = testResult.firstBootstrapLine() != null
                         ? testResult.firstBootstrapLine()
-                        : ProjectTestRunner.firstGradleBootstrapIoLine(testResult.output());
+                        : ProjectTestDiagnostics.firstGradleBootstrapIoLine(testResult.output());
                     String markerWriteSuffix = "";
                     try {
                         BearCli.writeCheckBlockedMarker(root, CHECK_BLOCKED_REASON_BOOTSTRAP, bootstrapLine);
                     } catch (IOException markerWriteError) {
                         markerWriteSuffix = markerWriteFailureSuffix(markerWriteError);
                     }
-                    String detail = ProjectTestRunner.projectTestDetail(
+                    String detail = ProjectTestDiagnostics.projectTestDetail(
                         "root-level project test bootstrap IO failure in projectRoot " + entry.getKey(),
                         bootstrapLine,
                         CliText.shortTailSummary(testResult.output(), 3)
@@ -543,7 +543,7 @@ final class CheckAllCommandService {
                 } else if (testResult.status() == ProjectTestStatus.SHARED_DEPS_VIOLATION) {
                     String sharedLine = testResult.firstSharedDepsViolationLine() != null
                         ? testResult.firstSharedDepsViolationLine()
-                        : ProjectTestRunner.firstSharedDepsViolationLine(testResult.output());
+                        : ProjectTestDiagnostics.firstSharedDepsViolationLine(testResult.output());
                     String detail = "check: CONTAINMENT_REQUIRED: SHARED_DEPS_VIOLATION: "
                         + entry.getKey()
                         + ":_shared";
@@ -563,8 +563,8 @@ final class CheckAllCommandService {
                     }
                 } else if (testResult.status() == ProjectTestStatus.INVARIANT_VIOLATION) {
                     rootTestFailed++;
-                    String markerLine = ProjectTestRunner.firstInvariantViolationLine(testResult.output());
-                    String detail = ProjectTestRunner.projectTestDetail(
+                    String markerLine = ProjectTestDiagnostics.firstInvariantViolationLine(testResult.output());
+                    String detail = ProjectTestDiagnostics.projectTestDetail(
                         "root-level invariant violation in projectRoot " + entry.getKey(),
                         markerLine,
                         CliText.shortTailSummary(testResult.output(), 3)
@@ -582,7 +582,7 @@ final class CheckAllCommandService {
                     }
                 } else if (testResult.status() == ProjectTestStatus.COMPILE_FAILURE) {
                     rootTestFailed++;
-                    String markerLine = ProjectTestRunner.firstCompileFailureLine(testResult.output());
+                    String markerLine = ProjectTestDiagnostics.firstCompileFailureLine(testResult.output());
                     if (ContainmentFailureClassifier.hasContainmentSignal(testResult, markerLine)) {
                         String detail = "check: CONTAINMENT_REQUIRED: CONTAINMENT_METADATA_MISMATCH: root-level compile preflight failed for projectRoot " + entry.getKey();
                         if (markerLine != null && !markerLine.isBlank()) {
@@ -621,7 +621,7 @@ final class CheckAllCommandService {
                     }
                 } else if (testResult.status() == ProjectTestStatus.FAILED) {
                     rootTestFailed++;
-                    String markerLine = ProjectTestRunner.firstRelevantProjectTestFailureLine(testResult.output());
+                    String markerLine = ProjectTestDiagnostics.firstRelevantProjectTestFailureLine(testResult.output());
                     if (ContainmentFailureClassifier.hasContainmentSignal(testResult, markerLine)) {
                         String detail = "check: CONTAINMENT_REQUIRED: CONTAINMENT_METADATA_MISMATCH: root-level project tests failed for projectRoot " + entry.getKey();
                         if (markerLine != null && !markerLine.isBlank()) {
@@ -641,7 +641,7 @@ final class CheckAllCommandService {
                             ));
                         }
                     } else {
-                        String detail = ProjectTestRunner.projectTestDetail(
+                        String detail = ProjectTestDiagnostics.projectTestDetail(
                             "root-level project tests failed for projectRoot " + entry.getKey(),
                             markerLine,
                             CliText.shortTailSummary(testResult.output(), 3)
@@ -661,9 +661,9 @@ final class CheckAllCommandService {
                 } else if (testResult.status() == ProjectTestStatus.TIMEOUT) {
                 } else if (testResult.status() == ProjectTestStatus.TIMEOUT) {
                     rootTestFailed++;
-                    String detail = ProjectTestRunner.projectTestDetail(
+                    String detail = ProjectTestDiagnostics.projectTestDetail(
                         "root-level project tests timed out for projectRoot " + entry.getKey(),
-                        ProjectTestRunner.firstRelevantProjectTestFailureLine(testResult.output()),
+                        ProjectTestDiagnostics.firstRelevantProjectTestFailureLine(testResult.output()),
                         CliText.shortTailSummary(testResult.output(), 3)
                     ) + phaseTaskSuffix(testResult);
                     for (int idx : entry.getValue()) {
@@ -992,6 +992,7 @@ final class CheckAllCommandService {
         );
     }
 }
+
 
 
 

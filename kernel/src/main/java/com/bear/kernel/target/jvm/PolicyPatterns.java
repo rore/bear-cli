@@ -1,5 +1,6 @@
-package com.bear.kernel.target;
+package com.bear.kernel.target.jvm;
 
+import com.bear.kernel.target.*;
 import java.util.regex.Pattern;
 
 final class PolicyPatterns {
@@ -28,3 +29,5 @@ final class PolicyPatterns {
     private PolicyPatterns() {
     }
 }
+
+

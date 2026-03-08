@@ -1,6 +1,7 @@
 package com.bear.app;
 
 import com.bear.kernel.target.*;
+import com.bear.kernel.target.jvm.*;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -447,3 +448,4 @@ class PortImplContainmentScannerTest {
         );
     }
 }
+
