@@ -111,8 +111,9 @@ Candidate direction:
 ### Multi-Target Expansion Beyond Current Discoveries
 
 Possible future targets beyond the current parked Node and .NET items:
+- Python — see dedicated profile: `roadmap/ideas/future-python-containment-profile.md`
+- React/TypeScript frontend — see dedicated profile: `roadmap/ideas/future-react-containment-profile.md`
 - Kotlin
-- Python
 - Go
 - broader framework integrations
 
