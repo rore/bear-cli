@@ -135,10 +135,34 @@ interface TargetDetector {
 }
 ```
 
-Detection ambiguity behavior:
-- if multiple detectors match with equal confidence → fail `exit 64`, `CODE=TARGET_AMBIGUOUS`
-- pin file `.bear/target.id` (content: exactly `jvm`, `node`, `python`, or `react`) overrides
-  detection; invalid pin content → fail `exit 2` using validation semantics
+**`DetectedTarget` result model:**
+- `SUPPORTED` — detector has high confidence this project belongs to its target
+- `UNSUPPORTED` — detector recognizes the ecosystem but the project shape is not supported
+  (e.g. workspace layout, missing required config); produces `exit 64` with actionable remediation
+- `NONE` — detector does not recognize this ecosystem at all; silent pass-through
+
+Detectors **must not** silently "best guess" — resolution is deterministic:
+- exactly one `SUPPORTED` result → use that target
+- zero `SUPPORTED` results → fail `exit 64`, `CODE=TARGET_NOT_DETECTED`, with remediation
+  listing recognized ecosystems and required project signals
+- multiple `SUPPORTED` results without a `.bear/target.id` pin → fail `exit 64`,
+  `CODE=TARGET_AMBIGUOUS`, with remediation instructing the user to add a pin file
+- any `UNSUPPORTED` result blocks resolution even if another detector returns `SUPPORTED`,
+  unless `.bear/target.id` pin explicitly overrides
+
+**`.bear/target.id` pin semantics:**
+- file content: exactly one of `jvm`, `node`, `python`, `react` (no whitespace, no comments)
+- when present, pin overrides auto-detection entirely — no detectors run
+- invalid or unrecognized pin content → fail `exit 2` using validation semantics
+- pin file is optional; auto-detection is the default path for single-target repos
+
+**Implementation prerequisite tasks (must complete before multi-target rollout):**
+- [ ] Define `DetectedTarget` result model (`SUPPORTED` / `UNSUPPORTED` / `NONE`)
+- [ ] Define `.bear/target.id` pin file semantics and validation
+- [ ] Define ambiguity/fallback behavior (fail deterministically, never guess)
+- [ ] Refactor `TargetRegistry.resolve()` to support multiple registered detectors
+- [ ] Add detector tests for: single-target repo, mixed-signal repo, monorepo with pin,
+      partial config, and missing config scenarios
 
 ---
 
@@ -555,31 +579,77 @@ Same as Node: `impl.allowedDeps` → `exit 64`, `CODE=UNSUPPORTED_TARGET`.
 
 ### Phase ordering (recommended)
 
+Architecture prerequisites (must land before any non-JVM target ships):
+
 ```
 Phase 0:  Contract freeze — regression harness for JVM byte-identical behavior (already done)
-Phase 1:  Finalize canonical locator schema (PATH + structured locator)
-Phase 2:  Finalize target/profile separation contract
-Phase 3:  Add AnalyzerProvider SPI with simple/native analyzers
-Phase 4:  NodeTarget — scan-only (import containment + drift)              [see full spec above]
-Phase 5:  NodeTarget — undeclared reach (covered Node built-ins)
-Phase 6:  NodeTarget — dependency governance (pr-check)
-Phase 7:  NodeTarget — project verification (pnpm exec tsc --noEmit)
-Phase 8:  NodeTarget — agent docs overlay
-Phase 9:  DotnetTarget — separate initiative (future-target-adaptable-cli-dotnet.md)
-Phase 10: PythonTarget — scan-only (import containment + drift)
-Phase 11: PythonTarget — undeclared reach + dynamic import blocking
-Phase 12: PythonTarget — site-packages scan (pr-check advisory)
-Phase 13: PythonTarget — dependency governance (pr-check)
-Phase 14: PythonTarget — project verification (mypy --strict)
-Phase 15: PythonTarget — agent docs overlay
-Phase 16: ReactTarget — feature-boundary profile first; only after explicit product decision and
+Phase 1:  TargetDetector + .bear/target.id prerequisite epic
+            — define DetectedTarget result model (SUPPORTED/UNSUPPORTED/NONE)
+            — define .bear/target.id pin semantics and validation
+            — define ambiguity/fallback behavior (deterministic, never guess)
+            — refactor TargetRegistry.resolve() for multiple registered detectors
+            — add detector tests (single-target, mixed-signal, monorepo, partial config)
+Phase 2:  Finalize canonical locator schema (PATH + structured locator)
+Phase 3:  Finalize target/profile separation contract
+Phase 4:  Add AnalyzerProvider SPI with simple/native analyzers
+```
+
+First target implementation (always Node):
+
+```
+Phase 5:  NodeTarget — scan-only (import containment + drift)              [see full spec above]
+Phase 6:  NodeTarget — undeclared reach (covered Node built-ins)
+Phase 7:  NodeTarget — dependency governance (pr-check)
+Phase 8:  NodeTarget — project verification (pnpm exec tsc --noEmit)
+Phase 9:  NodeTarget — agent docs overlay
+```
+
+Second and third target implementations (order is strategy-dependent — see note below):
+
+```
+Phase 10: Second target — scan-only (import containment + drift)
+Phase 11: Second target — undeclared reach + dynamic import/call blocking
+Phase 12: Second target — dependency governance (pr-check)
+Phase 13: Second target — project verification
+Phase 14: Second target — agent docs overlay
+Phase 15–19: Third target — same phase structure
+```
+
+React (last, requires explicit product decision):
+
+```
+Phase 20: ReactTarget — feature-boundary profile first; only after explicit product decision and
           at least one non-JVM backend target is proven
 ```
+
+#### Post-Node ordering: technical readiness vs market priority
+
+The second non-JVM target after Node should be chosen based on both technical readiness and
+product strategy, not purely on static-analysis strength:
+
+**Technical readiness order** (strongest containment confidence first):
+```
+.NET → Python → React
+```
+.NET has the strongest static project/package model and no dynamic-import escape route. On
+pure technical grounds, .NET ships a more honest containment story than Python.
+
+**Market priority order** (highest commercial/user demand first):
+```
+Python → .NET → React
+```
+Python matters more commercially for AI-assisted development and LLM-heavy repos, which are
+BEAR's primary near-term adoption surface. Shipping Python second — even with its weaker
+containment guarantees — may deliver more product value earlier.
+
+**Recommendation:** choose the second target based on product strategy. Both orders are
+architecturally valid because the prerequisite seams (detector, locator, profile, analyzer)
+are target-agnostic. The spec for each target is defined above regardless of execution order.
 
 ### What stays the same across all phases
 
 - `TargetRegistry.resolve(projectRoot)` — one dispatch point per command, unchanged
-- `TargetDetector` confidence model — `HIGH`/`NONE`/`UNSUPPORTED`, unchanged
+- `TargetDetector` result model — `SUPPORTED`/`NONE`/`UNSUPPORTED`, unchanged
 - IR normalization and validation — target-agnostic, unchanged
 - Exit codes — frozen registry, unchanged
 - `CODE/PATH/REMEDIATION` envelope — frozen, unchanged

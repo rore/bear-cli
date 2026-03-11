@@ -303,28 +303,64 @@ The honest React first slice (if pursued) is:
 ### Recommended expansion priority
 
 ```
-JVM (done) → Node backend → .NET backend → Python backend → React frontend (last)
+JVM (done) → Architecture prerequisites → Node backend → [Python or .NET] → [remaining] → React frontend (last)
 ```
 
-Rationale with architecture gating:
-1. **Architecture gate first**: finalize shared locator model, target/profile separation, and
-   analyzer/evidence seam before landing additional targets
-2. **Node first implementation**: target seam already built; most complete implementation plan
-   exists; TypeScript static module system is the closest non-JVM approximation to Java
-   import-boundary enforcement
-3. **.NET second implementation**: stronger static project/package structure than Node;
-   `PackageReference` model maps well to governance and strengthens the non-JVM backend proof
-4. **Python third implementation**: viable but weaker due to dynamic import and native-extension
-   gaps; should stay narrow and honest
-5. **React last implementation**: different product direction; weakest containment; requires
-   explicit product decision and feature-boundary-first governance profile
+#### Architecture prerequisites (must land before any non-JVM target)
 
-### Shared architecture decisions (all three targets)
+1. **TargetDetector + `.bear/target.id` prerequisite epic**: `TargetRegistry.resolve()` must
+   stop being effectively JVM-only; detector result model (`SUPPORTED`/`UNSUPPORTED`/`NONE`),
+   `.bear/target.id` pin semantics, and ambiguity behavior must be defined and tested before
+   multi-target rollout. Conflicting signals without a pin must fail deterministically with
+   actionable remediation — never silently "best guess."
+2. **Finalize shared locator model**: canonical locator schema for all findings
+3. **Finalize target/profile separation**: decouple language/runtime from governance shape
+4. **Add AnalyzerProvider SPI**: evidence extraction seam with simple/native analyzers first
 
-All three targets must:
+#### First implementation: Node
+
+Node is always the first non-JVM target. The target seam was built for it; the implementation
+plan exists; TypeScript's static module system is the closest non-JVM approximation to Java's
+import-boundary enforcement.
+
+#### Second and third implementations: strategy-dependent
+
+After Node, the second target should be chosen based on both technical readiness and product
+strategy:
+
+**Technical readiness order** (strongest containment confidence first):
+```
+.NET → Python
+```
+.NET has the strongest static project/package model and no dynamic-import escape route. On
+pure technical grounds, .NET ships a more honest containment story.
+
+**Market priority order** (highest commercial/user demand first):
+```
+Python → .NET
+```
+Python matters more commercially for AI-assisted development and LLM-heavy repos. Shipping
+Python second — even with its weaker containment guarantees — may deliver more product value
+earlier.
+
+Both orders are architecturally valid because the prerequisite seams (detector, locator,
+profile, analyzer) are target-agnostic. Choose based on product strategy.
+
+#### Last: React
+
+React is last regardless of ordering strategy. It requires an explicit product decision,
+has the weakest containment story, and represents a different product direction (frontend
+governance vs backend governance).
+
+### Shared architecture decisions (all targets)
+
+All targets must:
 - implement the existing `Target` interface (`targetId`, `compileSingle`, `compileAll`,
   `generateWiringOnlySingle`, `generateWiringOnlyAll`, `targetChecks`, `runProjectVerification`,
   `governedRoots`) — no core changes required
+- provide a `TargetDetector` returning `SUPPORTED`, `UNSUPPORTED`, or `NONE` — detector
+  ambiguity must fail deterministically with actionable remediation, never silently guess
+- support `.bear/target.id` pin override for multi-ecosystem or ambiguous repos
 - use the same `TargetDetector`/`TargetRegistry` dispatch model — one detection point per command
 - produce BEAR-owned artifacts under `build/generated/bear/` — same ownership model as JVM
 - map all findings to the existing exit codes and `CODE/PATH/REMEDIATION` envelope
