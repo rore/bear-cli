@@ -208,6 +208,30 @@ The three-layer Python solution added in March 2026 and now canonical in the pro
 - structured findings are surfaced before merge; an agent can act on them without a human review
 - `bear pr-check` reviews lock-file and `pyproject.toml` deltas as boundary-expanding events
 
+### Concentric profiles
+
+Python governance supports two concentric profiles sharing the same `target=python` detection
+and infrastructure:
+
+**Inner profile: `python/service`** (strict, default)
+- third-party package imports from governed roots are **blocked**
+- strongest containment — governed blocks cannot silently acquire new capability surfaces
+- best for greenfield block development and agent-assisted workflows where block isolation
+  is the primary goal
+
+**Outer profile: `python/service-relaxed`** (pragmatic, opt-in)
+- third-party package imports from governed roots are **allowed but governed**
+- same-block/`_shared` boundaries remain enforced; no sibling block imports
+- `site-packages` power-surface scan becomes the **primary containment mechanism**
+- new packages in `pr-check` still trigger `BOUNDARY_EXPANDING`
+- best for existing Python services being incrementally brought under governance
+
+Both profiles share the same detection, generated artifacts, verification command, and
+`site-packages` scan infrastructure. The only behavioral difference is whether third-party
+imports from governed roots fail (strict) or are tracked and governed (relaxed).
+
+Ship `python/service` first; offer `python/service-relaxed` once the inner profile is proven.
+
 ### Tradeoffs
 
 | Tradeoff | Honest position |
@@ -285,20 +309,21 @@ The honest React first slice (if pursued) is:
 
 ### Capability comparison (honest first-slice assessment)
 
-| Capability | JVM | Node | Python | React |
-| --- | --- | --- | --- | --- |
-| Deterministic generated ownership | `ENFORCED` | `ENFORCED` | `ENFORCED` | `ENFORCED` |
-| Same-block import containment | `ENFORCED` | `ENFORCED` | `ENFORCED` | `ENFORCED` |
-| Shared root import containment | `ENFORCED` | `ENFORCED` | `ENFORCED` | `ENFORCED` |
-| Covered power-surface detection | `ENFORCED` | `ENFORCED` | `ENFORCED` | `PARTIAL` |
-| Block-level dependency allowlist | `ENFORCED` | `NOT_SUPPORTED` | `NOT_SUPPORTED` | `NOT_SUPPORTED` |
-| Repo-level dependency governance | `ENFORCED` | `ENFORCED` | `ENFORCED` | `ENFORCED` |
-| Installed-package power reach | `NOT_APPLICABLE` | `NOT_SUPPORTED` | `PARTIAL` (site-packages scan) | `NOT_SUPPORTED` |
-| Dynamic import blocking | `ENFORCED` | `PARTIAL` | `PARTIAL` | `PARTIAL` |
-| Runtime/process sandboxing | `NOT_SUPPORTED` | `NOT_SUPPORTED` | `NOT_SUPPORTED` | `NOT_SUPPORTED` |
-| Workspace/multi-package support | `PARTIAL` | `NOT_SUPPORTED` | `NOT_SUPPORTED` | `NOT_SUPPORTED` |
-| Project verification | `ENFORCED` (Gradle test) | `ENFORCED` (tsc --noEmit) | `ENFORCED` (mypy --strict) | `ENFORCED` (tsc --noEmit) |
-| Agent/branch workflow gate | `ENFORCED` | `ENFORCED` | `ENFORCED` | `ENFORCED` |
+| Capability | JVM | Node | Python (strict) | Python (relaxed) | React |
+| --- | --- | --- | --- | --- | --- |
+| Deterministic generated ownership | `ENFORCED` | `ENFORCED` | `ENFORCED` | `ENFORCED` | `ENFORCED` |
+| Same-block import containment | `ENFORCED` | `ENFORCED` | `ENFORCED` | `ENFORCED` | `ENFORCED` |
+| Shared root import containment | `ENFORCED` | `ENFORCED` | `ENFORCED` | `ENFORCED` | `ENFORCED` |
+| Third-party imports from governed roots | `ENFORCED` | `NOT_SUPPORTED` | `ENFORCED` (blocked) | `GOVERNED` (allowed, delta-reviewed) | `NOT_SUPPORTED` |
+| Covered power-surface detection | `ENFORCED` | `ENFORCED` | `ENFORCED` | `ENFORCED` | `PARTIAL` |
+| Block-level dependency allowlist | `ENFORCED` | `NOT_SUPPORTED` | `NOT_SUPPORTED` | `NOT_SUPPORTED` | `NOT_SUPPORTED` |
+| Repo-level dependency governance | `ENFORCED` | `ENFORCED` | `ENFORCED` | `ENFORCED` | `ENFORCED` |
+| Installed-package power reach | `NOT_APPLICABLE` | `NOT_SUPPORTED` | `PARTIAL` (site-packages scan) | `PARTIAL` (primary mechanism) | `NOT_SUPPORTED` |
+| Dynamic import blocking | `ENFORCED` | `PARTIAL` | `PARTIAL` | `PARTIAL` | `PARTIAL` |
+| Runtime/process sandboxing | `NOT_SUPPORTED` | `NOT_SUPPORTED` | `NOT_SUPPORTED` | `NOT_SUPPORTED` | `NOT_SUPPORTED` |
+| Workspace/multi-package support | `PARTIAL` | `NOT_SUPPORTED` | `NOT_SUPPORTED` | `NOT_SUPPORTED` | `NOT_SUPPORTED` |
+| Project verification | `ENFORCED` (Gradle test) | `ENFORCED` (tsc --noEmit) | `ENFORCED` (mypy --strict) | `ENFORCED` (mypy --strict) | `ENFORCED` (tsc --noEmit) |
+| Agent/branch workflow gate | `ENFORCED` | `ENFORCED` | `ENFORCED` | `ENFORCED` | `ENFORCED` |
 
 ### Recommended expansion priority
 

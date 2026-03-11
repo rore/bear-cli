@@ -176,7 +176,8 @@ Model:
 
 Initial profile examples:
 - `target=node`, `profile=backend-service`
-- `target=python`, `profile=service`
+- `target=python`, `profile=service` (strict: no third-party imports in governed roots)
+- `target=python`, `profile=service-relaxed` (pragmatic: third-party imports allowed, governed)
 - `target=react`, `profile=feature-ui`
 
 Benefits:
@@ -378,6 +379,10 @@ src/ outside src/blocks/
 
 ### Import containment rules
 
+Python import containment behavior depends on the active governance profile:
+
+#### `python/service` profile (strict, default)
+
 Enforced by `PythonImportContainmentScanner` (implements `TargetCheck`):
 - scan `import X` and `from X import Y` statements in governed `.py` files only (no `.pyi`)
 - resolve relative imports lexically against the module's package path
@@ -390,6 +395,16 @@ Enforced by `PythonImportContainmentScanner` (implements `TargetCheck`):
   - `__import__(...)` → same
   - `importlib.util.spec_from_file_location(...)` → same
   - `sys.path` mutation → same (`PARTIAL`)
+
+#### `python/service-relaxed` profile (pragmatic, opt-in)
+
+Same scanner with relaxed third-party rule:
+- **same** block-boundary enforcement (no sibling blocks, no nongoverned source)
+- **allow** third-party package imports from governed roots — the import is permitted but
+  the package is tracked; new packages appearing in `pr-check` are `BOUNDARY_EXPANDING`
+- **same** dynamic import facility blocking
+- the `site-packages` power-surface scan becomes the primary signal for capability governance
+  in this profile — every allowed package's power-surface exposure is surfaced advisory
 
 ### Undeclared reach rules
 

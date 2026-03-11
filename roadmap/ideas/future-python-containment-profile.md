@@ -39,10 +39,86 @@ Why:
   Python's module system and dynamic import facilities make it impossible to provide JVM-equivalent
   containment or runtime sandboxing claims.
 
+## Concentric Profile Model
+
+Python governance works in two concentric rings, each an independent governance profile
+sharing the same `target=python` detection and generated-artifact layout:
+
+### Inner profile: `python/service` (strict, default)
+
+This is the narrow first-slice profile described throughout this document.
+
+Key property:
+- **third-party package imports from governed roots are forbidden**
+- governed blocks may only import from same-block, `_shared`, BEAR-generated companions,
+  and Python standard library (excluding covered power surfaces)
+
+When to use:
+- agent-assisted block development where block isolation is the primary goal
+- repos where blocks should never directly depend on external packages
+
+Containment confidence: highest available for Python — governed code cannot silently acquire
+new capability surfaces through package imports.
+
+### Outer profile: `python/service-relaxed` (pragmatic, opt-in)
+
+Key property:
+- **third-party package imports from governed roots are allowed but governed**
+- governed blocks may import declared third-party packages; undeclared or newly added packages
+  in `pr-check` still trigger `BOUNDARY_EXPANDING` classification
+- the `site-packages` power-surface scan becomes the primary mechanism for surfacing capability
+  exposure through allowed packages
+- import containment still enforces same-block/`_shared` boundaries (no sibling block imports)
+- covered power-surface detection and dynamic import blocking remain enforced
+
+When to use:
+- existing Python services with third-party dependencies in block code
+- repos where the team accepts the tradeoff of allowing package imports in exchange for
+  `site-packages` advisory scanning and lock-file governance
+
+Containment confidence: lower than `python/service` — governed code can acquire new capabilities
+through allowed packages, but those capabilities are surfaced (not silently hidden) via the
+`site-packages` scan and dependency governance.
+
+### Capability comparison between profiles
+
+| Capability | `python/service` | `python/service-relaxed` |
+| --- | --- | --- |
+| Same-block import containment | `ENFORCED` | `ENFORCED` |
+| `_shared` import containment | `ENFORCED` | `ENFORCED` |
+| Sibling block imports | `ENFORCED` (blocked) | `ENFORCED` (blocked) |
+| Third-party package imports | `ENFORCED` (blocked) | `GOVERNED` (allowed, delta-reviewed) |
+| Covered power-surface detection | `ENFORCED` | `ENFORCED` |
+| `site-packages` power scan | Advisory | **Primary containment mechanism** |
+| Dynamic import blocking | `PARTIAL` | `PARTIAL` |
+| Lock-file governance | `ENFORCED` | `ENFORCED` |
+| Block-level dependency allowlist | `NOT_SUPPORTED` | `NOT_SUPPORTED` |
+
+### Profile selection
+
+- detection is always `target=python` (same `PythonTargetDetector`)
+- profile is selected via `.bear/profile.id` or auto-derived from project shape
+- `python/service` is the default if no profile is specified
+- `python/service-relaxed` requires explicit opt-in
+
+### Why two profiles instead of one
+
+A single Python profile forces a binary choice between "honest but impractical for existing
+repos" (strict) and "practical but weakened containment" (relaxed). Concentric profiles let
+BEAR offer both honestly:
+- strict profile for new greenfield blocks with maximum containment
+- relaxed profile for existing services being brought under governance incrementally
+
+Both profiles share the same detection, generated artifacts, verification command, and
+`site-packages` scan infrastructure. The only difference is whether third-party imports from
+governed roots are blocked or governed.
+
+---
+
 ## Supported Python Profile
 
 Profile name:
-- `python-pyproject-single-package-v1`
+- `python-pyproject-single-package-v1` (maps to `python/service` inner profile)
 
 Required repo shape:
 - one Python package root only
@@ -445,15 +521,20 @@ Reason:
 
 ### Smallest honest future slice
 
-If Python is pursued later, ship only this:
+If Python is pursued later, ship the inner `python/service` profile first:
 - deterministic generation + drift
 - governed roots under `src/blocks/<blockKey>/` and `_shared`
-- static import containment for local roots only
+- static import containment for local roots only (no third-party imports)
 - direct built-in reach blocking for the covered built-ins above
 - repo-level dependency-governance signaling
 - `uv run mypy src/blocks/ --strict` (or `poetry run mypy`) verification
 - `site-packages` pure-Python power-surface scan triggered on lock-file changes
 - `bear check` as a commit-time static gate for branch/agent workflows
+
+Then, once the inner profile is proven, offer `python/service-relaxed` as an opt-in
+outer profile for existing repos that need third-party package imports in governed roots.
+The relaxed profile reuses all infrastructure from the strict profile; the only change is
+allowing (and governing) third-party imports instead of blocking them.
 
 ### Explicit deferrals
 
