@@ -306,6 +306,33 @@ Decision:
 Future direction:
 - do not add a Python analogue unless BEAR later gains a real deterministic package-isolation mechanism
 
+## Analysis Strategy
+
+### AST-first requirement
+
+All Python static analysis in BEAR must use Python `ast` module parsing, not regex or text
+matching, as the primary enforcement mechanism.
+
+Use AST for:
+- import extraction (`import X`, `from X import Y`, `from X import Y as Z`)
+- alias tracking (renaming via `as` must not bypass governance)
+- detection of `importlib.import_module(...)`, `__import__(...)`,
+  `importlib.util.spec_from_file_location(...)`
+- detection of `eval(...)`, `exec(...)`, `compile(...)` calls
+- detection of statically visible dynamic-import patterns
+- `os.system`/`os.popen`/`os.exec*` call-site pattern detection
+
+Regex/text heuristics may exist only as fallback advisory signals for patterns the AST
+cannot capture (for example, multi-line string-based `exec` usage). They must not be the
+primary enforcement mechanism.
+
+Why:
+- AST parsing handles aliasing, multi-line imports, and `from X import Y as Z` correctly
+- regex-based import scanning is fragile and easy to bypass with formatting changes
+- Python's `ast` module is stable, standard-library, and zero-dependency
+
+---
+
 ## Undeclared Reach and Boundary Bypass Coverage
 
 The realistic first covered set is smaller than JVM and must be stated explicitly.
@@ -326,6 +353,19 @@ Why these first:
   dependency-graph guesswork
 - `os` is special: BEAR should flag `os.system`/`os.popen`/`os.exec*` call patterns in governed
   roots, not the bare `import os` statement (which is used for `os.path` and other benign operations)
+
+### Dynamic execution escape hatches
+
+Direct usage of these built-in functions in governed roots should be treated as boundary bypass:
+- `eval(...)` — arbitrary code execution from string
+- `exec(...)` — arbitrary statement execution from string
+- `compile(...)` — dynamic code compilation
+
+Treatment:
+- findings map to `CODE=BOUNDARY_BYPASS`, same lane as dynamic import facilities
+- status is `PARTIAL`: BEAR detects direct call-site patterns via AST but cannot trace
+  string arguments or runtime-constructed code
+- these are escape hatches that can bypass any static governance BEAR provides
 
 ### Dynamic import and resolver-bypass coverage
 
@@ -491,6 +531,7 @@ enforcement guarantees the language and tooling cannot provide.
 | `os.system`/`os.popen`/`os.exec*` patterns in governed roots | `PARTIAL` | BEAR can flag direct call-site patterns; not all `os` usage is bannable. |
 | Repo-level dependency graph deltas (`pyproject.toml`, lock file) | `ENFORCED` | `pr-check` surfaces them as reviewable boundary expansion. |
 | Dynamic import (`importlib.import_module`, `__import__`, `sys.path` mutation) in governed roots | `PARTIAL` | BEAR can block direct usage in governed files, but not all runtime indirection outside that scope. |
+| Dynamic execution escape hatches (`eval`, `exec`, `compile`) in governed roots | `PARTIAL` | BEAR can flag direct call-site patterns via AST; cannot trace runtime-constructed code strings. |
 | Installed-package power-surface scan (`site-packages` pure-Python source scan) | `PARTIAL` | BEAR surfaces which installed packages directly or transitively (up to depth limit) reach covered power surfaces; native extension files are `NOT_COVERABLE`. |
 | Commit-time boundary gate for branch/agent workflows (`bear check` on committed source) | `ENFORCED` | BEAR runs statically on committed files; no runtime required; structured findings surfaced before merge. |
 | Custom import hooks, finders, or loaders outside governed roots | `NOT_SUPPORTED` | No honest deterministic runtime guarantee. |

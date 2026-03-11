@@ -415,6 +415,10 @@ Every finding should carry:
 ## What This Plan Does Not Cover
 
 - `.NET` — covered in dedicated profile and CLI initiative files; not duplicated here
+- **Go** — identified as a strong future target candidate (explicit imports, deterministic
+  `go.mod`/`go.sum`, minimal dynamic loading, strong backend relevance, simple verification
+  via `go test`/`go vet`). Worth evaluating ahead of more speculative frontend scope, but
+  requires a dedicated containment profile before planning. See `future-idea-families.md`.
 - IR schema expansion — out of scope for all non-JVM first slices
 - Runtime policy engines or process-level sandboxing — explicitly excluded from BEAR's scope
 - Production readiness of any specific target — each target requires a separate phased

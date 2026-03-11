@@ -186,6 +186,17 @@ Deterministic first-slice contract:
 - this is `PARTIAL` enforcement: BEAR can flag the most common direct patterns, but cannot
   prevent all forms of network access
 
+Supplementary data-fetching hook detection (advisory, `PARTIAL`):
+- scan governed `.tsx` component files for direct usage of common data-fetching hooks:
+  - TanStack Query: `useQuery`, `useMutation`, `useInfiniteQuery`
+  - SWR: `useSWR`
+  - Apollo Client: `useQuery`, `useMutation`, `useSubscription`
+  - tRPC hooks: `trpc.*.useQuery`, `trpc.*.useMutation`
+  - Axios instances: `axios.get`, `axios.post`, `axios.create`
+- these are **supplementary signals**, not primary enforcement — they indicate that a component
+  is directly performing data access rather than routing through a declared service layer
+- primary governance remains module/feature ownership boundaries and service access boundaries
+
 Rationale:
 - this encourages centralizing API calls in declared service files within each feature block,
   which maps to BEAR's "port" concept and makes boundary expansion visible in PRs

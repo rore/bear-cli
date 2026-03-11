@@ -164,6 +164,22 @@ Detectors **must not** silently "best guess" — resolution is deterministic:
 - [ ] Add detector tests for: single-target repo, mixed-signal repo, monorepo with pin,
       partial config, and missing config scenarios
 
+### Version-aware detection
+
+Detectors may validate minimum supported versions for target toolchains and frameworks:
+- TypeScript version (from `tsconfig.json` or `package.json`)
+- React version (from `package.json` dependencies)
+- Python version (from `pyproject.toml` `requires-python` or runtime detection)
+- .NET target framework version (from `.csproj`)
+
+Behavior:
+- detected but below minimum supported version → `UNSUPPORTED` with remediation stating
+  the required minimum version
+- supported version → proceed normally
+- version not determinable → proceed with advisory warning (do not block)
+
+This becomes important once React/Node patterns start varying across framework generations.
+
 ---
 
 ## Target vs Governance Profile
@@ -377,6 +393,13 @@ config files
 src/ outside src/blocks/
 ```
 
+### Analysis strategy
+
+Python static analysis must use Python `ast` module parsing as the primary enforcement
+mechanism. All import extraction, alias tracking, dynamic import detection, and call-site
+pattern detection must be AST-based. Regex/text heuristics may exist only as fallback
+advisory signals for patterns the AST cannot capture.
+
 ### Import containment rules
 
 Python import containment behavior depends on the active governance profile:
@@ -422,6 +445,18 @@ Enforced by `PythonUndeclaredReachScanner` (implements `TargetCheck`):
 - `import os` alone is **not** flagged (benign for `os.path` usage)
 - call-site pattern scanner: flag `os.system(`, `os.popen(`, `os.exec*(` in governed `.py`
   source text → `exit 6`, `CODE=UNDECLARED_REACH`, `PARTIAL` status
+
+### Dynamic execution escape hatches
+
+Enforced by `PythonDynamicExecutionScanner` (implements `TargetCheck`, `PARTIAL` status):
+- scan governed `.py` files via AST for direct calls to:
+  - `eval(...)` — arbitrary code execution from string
+  - `exec(...)` — arbitrary statement execution from string
+  - `compile(...)` — dynamic code compilation
+- **fail** (`exit 6`, `CODE=BOUNDARY_BYPASS`) — these are escape hatches that can bypass any
+  static governance BEAR provides
+- status is `PARTIAL`: BEAR detects direct call-site patterns but cannot trace
+  runtime-constructed code strings or aliased references outside governed roots
 
 ### `site-packages` scan
 
@@ -567,6 +602,18 @@ Enforced by `ReactApiBoundaryScanner` (implements `TargetCheck`, `PARTIAL` statu
 - **flag** (`exit 6`, `CODE=BOUNDARY_BYPASS`) — advisory: encourages routing API calls through
   declared service files within each feature block, mapping to BEAR's "port" concept
 - status is `PARTIAL`: only the most direct call patterns are detected
+
+Supplementary data-fetching hook detection (advisory, `PARTIAL`):
+- scan governed `.tsx` component files for direct usage of common data-fetching hooks:
+  - TanStack Query: `useQuery(`, `useMutation(`, `useInfiniteQuery(`
+  - SWR: `useSWR(`
+  - Apollo Client: `useQuery(`, `useMutation(`, `useSubscription(`
+  - tRPC hooks: `trpc.*.useQuery(`, `trpc.*.useMutation(`
+  - Axios instances: `axios.get(`, `axios.post(`, `axios.create(`
+- these are **supplementary signals**, not primary enforcement — they indicate that a component
+  is directly performing data access rather than routing through a declared service layer
+- primary governance remains module/feature ownership boundaries and service access boundaries
+- function/component-level evidence is supplementary and should not become the primary contract
 
 React emphasis:
 - primary enforcement units are module/feature ownership boundaries and service access boundaries
