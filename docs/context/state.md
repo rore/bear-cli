@@ -6,7 +6,7 @@ Long-form historical notes are archived in `docs/context/archive/archive-state-h
 
 ## Last Updated
 
-2026-03-10
+2026-03-11
 
 ## Current Focus
 
@@ -25,4 +25,5 @@ The packaged downstream CI integration is complete and stable, and `main` now al
 - Kept runtime behavior unchanged during the split: target-owned manifest, findings, and project-verification DTOs now sit in the generic package, `TargetRegistry` still resolves `JvmTarget`, and app orchestration consumes only generic seam types.
 - Adopted minimap as the canonical live planning workflow under `roadmap/`; completed roadmap history now lives in minimap item files and `roadmap/board.md`.
 - Added parked Python containment profile (`future-python-containment-profile.md`) and React/TypeScript frontend containment profile (`future-react-containment-profile.md`) to document the honest first-slice plans for those targets. Both are marked uncommitted and parked behind the Node and .NET profiles.
+- Expanded the Python containment profile with gap solutions: (1) static `site-packages` scan to surface power-surface exposure in installed pure-Python packages at dependency-change time; (2) an explicit commit-time boundary gate model for branch/agent workflows where `bear check` runs on committed source without needing a runtime. Native extension reach remains an accepted `NOT_COVERABLE` gap. Capability matrix updated accordingly.
 

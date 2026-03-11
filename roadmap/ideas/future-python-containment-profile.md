@@ -174,7 +174,9 @@ Definition:
 Deterministic first-slice contract:
 - direct covered built-in module imports in governed roots can be flagged
 - direct dynamic import facilities in governed roots can be flagged
-- indirect reach through existing third-party packages cannot be proven absent
+- indirect reach through existing third-party packages cannot be proven absent at runtime,
+  but can be partially surfaced via static `site-packages` inspection (see "Installed-package
+  power-surface exposure" below)
 
 ### 4. Generated/owned artifact containment
 
@@ -257,6 +259,35 @@ Direct usage in governed roots should be treated as boundary bypass:
 - `importlib.util.spec_from_file_location(...)`
 - `sys.path` mutation in governed modules
 
+### Installed-package power-surface exposure
+
+Gap:
+- third-party packages installed in the project's virtual environment may themselves import covered
+  power surfaces, giving governed code indirect reach that BEAR's source-file scan cannot see
+
+Static `site-packages` scan (partial coverage, honest bounds):
+- when a virtual environment is present (`.venv/lib/pythonX.Y/site-packages/`), BEAR can run a
+  one-pass static scan of the `.py` files belonging to each installed package
+- the scan applies the same covered power-surface rules used for governed roots:
+  `socket`, `http`, `urllib`, `subprocess`, `multiprocessing`, `os.system`/`os.popen` patterns
+- the output is a **dependency power-surface report**: a list of installed packages that directly
+  or transitively import covered power surfaces in their pure-Python source
+- this report is surfaced in `pr-check` when the lock file changes; it does not block the build but
+  requires explicit team acknowledgement for packages newly entering the report
+- packages whose entire implementation is in native extensions (`.pyd`/`.so` only; no `.py` source)
+  are explicitly listed as `NOT_COVERABLE` in the report and treated as a team-accepted opaque gap
+
+Limitations of the approach (must be stated honestly):
+- native extension code cannot be statically scanned; any power reach inside `.pyd`/`.so` files
+  is outside BEAR's coverage
+- the scan reflects the state of the virtual environment at scan time; a stale or absent `.venv`
+  produces no coverage
+- transitive reach chains through multiple packages can be long; BEAR should surface direct
+  first-hop exposure and cap depth at a configurable limit (default: 2 hops) to stay fast and
+  transparent about scan depth limitations
+- this is a signal, not a guarantee: a package can conditionally import power surfaces in code
+  paths BEAR's static analysis treats as reachable even when runtime conditions would prevent them
+
 ### Third-party packages
 
 First-slice rule:
@@ -310,6 +341,64 @@ Why:
 - dependencies are not installed
 - the verification command fails for environment/bootstrap reasons rather than reported type errors
 
+## Branch and Agent Workflow
+
+### BEAR as a commit-time boundary gate
+
+BEAR's Python containment story is entirely pre-runtime:
+- import boundary check: governs what the authored `.py` files may import
+- `site-packages` scan: surfaces power-surface exposure in installed dependencies
+- lock-file delta review in `pr-check`: dependency changes are boundary-expanding events
+
+BEAR never claims to prevent execution of disallowed code at runtime. It claims to detect and
+surface violations before they reach a merge, which is a weaker but honest and achievable guarantee.
+
+### Sandbox/branch integration for agent-driven development
+
+An AI agent working on code in a sandbox branch can run `bear check` against committed changes
+without needing a running application:
+- BEAR's static scanner operates purely on source files and generated artifacts
+- no running server, no live process, no interpreter execution is required
+
+The branch integration model:
+1. Agent commits changes to a sandbox branch
+2. `bear check` runs as a CI step (or as a local pre-push step) on the branch
+3. BEAR surfaces boundary escapes, undeclared reach, and import violations as structured findings
+4. Agent reads findings and fixes violations before proposing a merge
+5. `bear pr-check` runs on the PR diff to surface dependency-graph changes that are boundary-expanding
+6. Lock-file changes that introduce packages with covered power-surface exposure trigger the
+   `site-packages` scan and produce a dependency power-surface report for team review
+
+This model works today for JVM and transfers cleanly to Python: BEAR checks static artifacts, never
+runtime state. The key property is that BEAR is a **commit-time gate**, not a runtime monitor —
+it operates on the same evidence an agent can produce (committed source files and a lock file).
+
+### What the agent can rely on
+
+Findings BEAR can provide deterministically while the agent works:
+- import-boundary violations in governed `.py` files (same-block, `_shared`, BEAR-generated only)
+- direct covered power-surface imports (`socket`, `http`, `subprocess`, etc.) in governed roots
+- direct dynamic import facility usage (`importlib.import_module`, `__import__`, `sys.path`
+  mutation) in governed roots
+- drift between committed generated artifacts under `build/generated/bear/` and expected output
+- lock-file and `pyproject.toml` dependency changes classified as boundary-expanding
+
+Findings BEAR cannot provide (agent must accept these as open gaps):
+- runtime behavior of installed packages (native extension reach, conditional imports)
+- violations introduced purely through packages already installed but not changed in the PR
+
+### What "beyond runtime" means for Python
+
+Runtime sandboxing (process isolation, syscall filtering, network namespace isolation) is out of
+scope for BEAR. The honest "beyond runtime" contribution is:
+- a static pre-merge gate that the agent can trigger deterministically
+- a `site-packages` scan that surfaces power-surface exposure in installed pure-Python packages
+  at dependency-change time
+- a structured findings model that an agent can act on before a human reviewer sees the PR
+
+This approach makes Python containment usable in an agent workflow without overclaiming runtime
+enforcement guarantees the language and tooling cannot provide.
+
 ## Capability Matrix
 
 | Area | Status | Honest first-slice meaning |
@@ -324,6 +413,8 @@ Why:
 | `os.system`/`os.popen`/`os.exec*` patterns in governed roots | `PARTIAL` | BEAR can flag direct call-site patterns; not all `os` usage is banneable. |
 | Repo-level dependency graph deltas (`pyproject.toml`, lock file) | `ENFORCED` | `pr-check` surfaces them as reviewable boundary expansion. |
 | Dynamic import (`importlib.import_module`, `__import__`, `sys.path` mutation) in governed roots | `PARTIAL` | BEAR can block direct usage in governed files, but not all runtime indirection outside that scope. |
+| Installed-package power-surface scan (`site-packages` pure-Python source scan) | `PARTIAL` | BEAR surfaces which installed packages directly or transitively (up to depth limit) reach covered power surfaces; native extension files are `NOT_COVERABLE`. |
+| Commit-time boundary gate for branch/agent workflows (`bear check` on committed source) | `ENFORCED` | BEAR runs statically on committed files; no runtime required; structured findings surfaced before merge. |
 | Custom import hooks, finders, or loaders outside governed roots | `NOT_SUPPORTED` | No honest deterministic runtime guarantee. |
 | Block-level dependency allowlist (`impl.allowedDeps` equivalent) | `NOT_SUPPORTED` | No real Python analogue in the first slice. |
 | Workspace support (`uv` workspaces, poetry monorepo) | `NOT_SUPPORTED` | Single-package layout only in the first slice. |
@@ -331,6 +422,7 @@ Why:
 | Cython or C extension code in governed roots | `NOT_SUPPORTED` | Outside the static `.py`-only first slice. |
 | Arbitrary test runner integration (`pytest`, `unittest`, etc.) | `NOT_SUPPORTED` | First-slice verification is typecheck only (`mypy --strict`). |
 | Runtime sandboxing or runtime prevention of file/network/process access | `NOT_SUPPORTED` | BEAR is a static/deterministic governance layer, not a runtime policy engine. |
+| Native extension reach inside installed `.pyd`/`.so` files | `NOT_COVERABLE` | Binary code cannot be statically scanned; team must accept this as an open gap. |
 
 ## Recommendation
 
@@ -345,6 +437,9 @@ Reason:
   make it harder to provide the same level of containment confidence as JVM or even .NET
 - Python's static analysis story (`mypy`) is strong enough for the verification contract but
   less reliable than Java's compile-time guarantees for import-boundary enforcement
+- the `site-packages` scan and commit-time agent workflow gate materially close the gap on
+  the "installed packages BEAR cannot inspect at runtime" problem — but the native extension
+  gap remains an accepted open hole that the team must acknowledge
 
 ### Smallest honest future slice
 
@@ -355,6 +450,8 @@ If Python is pursued later, ship only this:
 - direct built-in reach blocking for the covered built-ins above
 - repo-level dependency-governance signaling
 - `uv run mypy src/blocks/ --strict` (or `poetry run mypy`) verification
+- `site-packages` pure-Python power-surface scan triggered on lock-file changes
+- `bear check` as a commit-time static gate for branch/agent workflows
 
 ### Explicit deferrals
 
