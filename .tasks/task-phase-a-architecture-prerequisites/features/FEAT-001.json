@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Tasks A1 + A3: Create TargetDetector interface, DetectedTarget, TargetPinFile, JvmTargetDetector, and Canonical Locator Schema types. These are Level 1 tasks with no prerequisites and can be implemented together as pure additive new files.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Step 1 - Create DetectionStatus enum at kernel/src/main/java/com/bear/kernel/target/DetectionStatus.java with values: SUPPORTED, UNSUPPORTED, NONE",
     "Step 2 - Create DetectedTarget record at kernel/src/main/java/com/bear/kernel/target/DetectedTarget.java with fields: TargetId targetId, DetectionStatus status, String reason. Factory methods: supported(TargetId, String), unsupported(TargetId, String), none(). The none() factory should use null for targetId and empty reason.",
@@ -39,5 +39,5 @@
     "Verify existing TargetRegistryTest.java still compiles after TargetId changes"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 10 source files compile cleanly with javac 17. Test files have expected JUnit 5 import errors (no junit-jupiter jar available in INTEGRATIONS_ONLY mode) but all project type references resolve correctly. TargetId modification is backward-compatible with existing TargetRegistry and TargetRegistryTest."
 }
