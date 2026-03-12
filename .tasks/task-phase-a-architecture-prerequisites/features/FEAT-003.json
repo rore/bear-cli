@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "feat",
   "description": "Task A5: Create AnalyzerProvider SPI draft types including evidence edge types, EvidenceBundle, AnalyzerCapabilities, and the AnalyzerProvider interface. Depends on A1 (TargetId), A3 (CanonicalLocator), and A4 (GovernanceProfile).",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Step 1 - Create analyzer package directory: kernel/src/main/java/com/bear/kernel/target/analyzer/",
     "Step 2 - Create AnalyzerId.java at kernel/src/main/java/com/bear/kernel/target/analyzer/AnalyzerId.java as a record wrapping String id.",
@@ -32,5 +32,5 @@
     "Verify imports resolve correctly to CanonicalLocator, GovernanceProfile, TargetId"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 10 source files in analyzer/ package compile successfully with javac 17. Test file compiles except for expected JUnit 5 import errors (no JUnit jar available in INTEGRATIONS_ONLY). All internal imports (CanonicalLocator, LocatorSymbol, SymbolKind, TargetId, GovernanceProfile) resolve correctly."
 }
