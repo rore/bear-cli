@@ -12,6 +12,13 @@ public class TargetResolutionException extends RuntimeException {
         this.remediation = remediation;
     }
 
+    public TargetResolutionException(String code, String path, String remediation, Throwable cause) {
+        super(code + ": " + path + " -- " + remediation, cause);
+        this.code = code;
+        this.path = path;
+        this.remediation = remediation;
+    }
+
     public String code() { return code; }
     public String path() { return path; }
     public String remediation() { return remediation; }

@@ -39,6 +39,11 @@ public final class TargetRegistry {
         return DEFAULT;
     }
 
+    /**
+     * Resolves the Target for the given project root directory.
+     * The path must be the project root (not a file within the project).
+     * Detection checks for .bear/target.id pin files and build files relative to this path.
+     */
     public Target resolve(Path projectRoot) {
         Objects.requireNonNull(projectRoot, "projectRoot");
 
@@ -63,7 +68,15 @@ public final class TargetRegistry {
             throw new TargetResolutionException(
                 "TARGET_PIN_INVALID",
                 bearDir.resolve("target.id").toString(),
-                e.getMessage()
+                e.getMessage(),
+                e
+            );
+        } catch (java.io.UncheckedIOException e) {
+            throw new TargetResolutionException(
+                "TARGET_PIN_UNREADABLE",
+                bearDir.resolve("target.id").toString(),
+                "Failed to read .bear/target.id: " + e.getMessage(),
+                e
             );
         }
 
@@ -135,12 +148,21 @@ public final class TargetRegistry {
         }
 
         DetectedTarget winner = unblocked.get(0);
-        Target target = targets.get(winner.targetId());
+        TargetId winnerId = winner.targetId();
+        if (winnerId == null) {
+            throw new TargetResolutionException(
+                "TARGET_DETECTOR_INVALID",
+                projectRoot.toString(),
+                "A target detector reported a SUPPORTED target with a null TargetId. "
+                    + "This indicates a bug in the detector implementation."
+            );
+        }
+        Target target = targets.get(winnerId);
         if (target == null) {
             throw new TargetResolutionException(
                 "TARGET_NOT_DETECTED",
                 projectRoot.toString(),
-                "Detected target '" + winner.targetId().value() + "' but no Target implementation is registered for it."
+                "Detected target '" + winnerId.value() + "' but no Target implementation is registered for it."
             );
         }
         return target;
