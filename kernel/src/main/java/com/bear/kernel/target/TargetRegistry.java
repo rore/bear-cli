@@ -50,7 +50,10 @@ public final class TargetRegistry {
 
         // Normalize: if a file path was passed (e.g., an IR file), use its parent directory.
         if (Files.isRegularFile(projectRoot)) {
-            projectRoot = projectRoot.getParent();
+            Path parent = projectRoot.getParent();
+            // For relative file paths like "ir.bear.yaml", getParent() may be null.
+            // In that case, treat the current working directory as the project root.
+            projectRoot = (parent != null) ? parent : Path.of(".");
         }
 
         // Step 1: Check for pin file
@@ -82,6 +85,7 @@ public final class TargetRegistry {
                 "TARGET_PIN_UNREADABLE",
                 bearDir.resolve("target.id").toString(),
                 "Failed to read .bear/target.id: " + e.getMessage(),
+                74,
                 e
             );
         }
@@ -106,7 +110,16 @@ public final class TargetRegistry {
         // Step 3: Run detectors
         List<DetectedTarget> results = new ArrayList<>();
         for (TargetDetector detector : detectors) {
-            results.add(detector.detect(projectRoot));
+            DetectedTarget result = detector.detect(projectRoot);
+            if (result == null) {
+                throw new TargetResolutionException(
+                    "TARGET_DETECTOR_INVALID",
+                    projectRoot.toString(),
+                    "A target detector returned null instead of a DetectedTarget. "
+                        + "This indicates a bug in the detector implementation."
+                );
+            }
+            results.add(result);
         }
 
         // Step 4: Collect SUPPORTED and UNSUPPORTED
@@ -139,6 +152,20 @@ public final class TargetRegistry {
 
         // Step 6: Resolution
         if (unblocked.isEmpty()) {
+            // Check if any SUPPORTED results were blocked by same-ecosystem UNSUPPORTED
+            if (!supported.isEmpty()) {
+                // Find the UNSUPPORTED result that blocked the SUPPORTED one
+                DetectedTarget blocker = unsupported.stream()
+                    .filter(u -> supported.stream().anyMatch(s -> u.targetId() == s.targetId()))
+                    .findFirst()
+                    .orElse(null);
+                String reason = blocker != null ? blocker.reason() : "unsupported project shape";
+                throw new TargetResolutionException(
+                    "TARGET_UNSUPPORTED",
+                    projectRoot.toString(),
+                    "Target ecosystem recognized but project shape is unsupported: " + reason
+                );
+            }
             throw new TargetResolutionException(
                 "TARGET_NOT_DETECTED",
                 projectRoot.toString(),
