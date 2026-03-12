@@ -10,6 +10,10 @@ import java.util.Set;
 public interface Target {
     TargetId targetId();
 
+    default GovernanceProfile defaultProfile() {
+        return GovernanceProfile.of(targetId(), "default");
+    }
+
     void compile(BearIr ir, Path projectRoot, String blockKey) throws IOException;
 
     void generateWiringOnly(BearIr ir, Path projectRoot, Path outputRoot, String blockKey) throws IOException;
