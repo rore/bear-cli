@@ -1,0 +1,7 @@
+{
+  "task_id": "task-phase-a-architecture-prerequisites",
+  "task_description": "Implement Phase A: Architecture Prerequisites (tasks A1 through A5) for the BEAR CLI project. This includes creating TargetDetector interface and detection types (A1), refactoring TargetRegistry to use detectors (A2), creating Canonical Locator schema types (A3), adding GovernanceProfile for target/profile separation (A4), and creating AnalyzerProvider SPI draft types (A5).",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001", "FEAT-002", "FEAT-003"],
+  "blocked_reason": null
+}
