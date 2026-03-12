@@ -133,14 +133,15 @@ public final class TargetRegistry {
             }
         }
 
-        // Step 5: Filter out SUPPORTED results blocked by same-target UNSUPPORTED.
-        // Currently ecosystem family == TargetId. If ecosystem families diverge from
-        // target IDs in the future, add a TargetId.ecosystemFamily() mapping here.
+        // Step 5: Filter out SUPPORTED results blocked by same-ecosystem-family UNSUPPORTED.
+        // Use ecosystem family instead of TargetId equality so that Node/React can share a family.
         List<DetectedTarget> unblocked = new ArrayList<>();
         for (DetectedTarget sup : supported) {
             boolean blocked = false;
+            String supFamily = sup.targetId() != null ? sup.targetId().ecosystemFamily() : null;
             for (DetectedTarget unsup : unsupported) {
-                if (unsup.targetId() != null && unsup.targetId() == sup.targetId()) {
+                String unsupFamily = unsup.targetId() != null ? unsup.targetId().ecosystemFamily() : null;
+                if (supFamily != null && supFamily.equals(unsupFamily)) {
                     blocked = true;
                     break;
                 }
@@ -155,10 +156,18 @@ public final class TargetRegistry {
             // Check if any SUPPORTED results were blocked by same-ecosystem UNSUPPORTED
             if (!supported.isEmpty()) {
                 // Find the UNSUPPORTED result that blocked the SUPPORTED one
-                DetectedTarget blocker = unsupported.stream()
-                    .filter(u -> supported.stream().anyMatch(s -> u.targetId() == s.targetId()))
-                    .findFirst()
-                    .orElse(null);
+                DetectedTarget blocker = null;
+                for (DetectedTarget sup : supported) {
+                    String supFamily = sup.targetId() != null ? sup.targetId().ecosystemFamily() : null;
+                    for (DetectedTarget unsup : unsupported) {
+                        String unsupFamily = unsup.targetId() != null ? unsup.targetId().ecosystemFamily() : null;
+                        if (supFamily != null && supFamily.equals(unsupFamily)) {
+                            blocker = unsup;
+                            break;
+                        }
+                    }
+                    if (blocker != null) break;
+                }
                 String reason = blocker != null ? blocker.reason() : "unsupported project shape";
                 throw new TargetResolutionException(
                     "TARGET_UNSUPPORTED",

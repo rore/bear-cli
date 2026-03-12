@@ -24,4 +24,17 @@ public enum TargetId {
         }
         throw new IllegalArgumentException("Unknown target id: " + value);
     }
+
+    /**
+     * Returns the ecosystem family for this target.
+     * Targets in the same ecosystem family share detection concerns and can block each other.
+     * For example, Node and React both belong to the JavaScript ecosystem family.
+     */
+    public String ecosystemFamily() {
+        return switch (this) {
+            case JVM -> "jvm";
+            case NODE, REACT -> "javascript";
+            case PYTHON -> "python";
+        };
+    }
 }
