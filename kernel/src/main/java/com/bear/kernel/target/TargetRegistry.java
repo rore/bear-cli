@@ -20,14 +20,11 @@ public final class TargetRegistry {
 
     /**
      * Backward-compatible constructor. Creates a registry with no detectors.
-     * Requires a JVM target for backward compatibility.
+     * Uses the provided targets as-is, without enforcing a particular TargetId.
      */
     public TargetRegistry(Map<TargetId, Target> targets) {
         this.targets = Map.copyOf(targets);
         this.detectors = List.of();
-        if (!this.targets.containsKey(TargetId.JVM)) {
-            throw new IllegalArgumentException("TargetRegistry requires a JVM target");
-        }
     }
 
     /**
@@ -70,9 +67,21 @@ public final class TargetRegistry {
             );
         }
 
-        // Step 2: If no detectors, fall back to legacy behavior (backward compat)
+        // Step 2: If no detectors, resolve only in unambiguous configurations
         if (detectors.isEmpty()) {
-            return targets.get(TargetId.JVM);
+            if (targets.size() == 1) {
+                return targets.values().iterator().next();
+            }
+            Target jvmFallback = targets.get(TargetId.JVM);
+            if (jvmFallback != null) {
+                return jvmFallback;
+            }
+            throw new TargetResolutionException(
+                "TARGET_NOT_DETECTED",
+                projectRoot.toString(),
+                "No target detectors are configured and automatic resolution is ambiguous. "
+                    + "Either register exactly one target, or add detectors or a .bear/target.id pin file."
+            );
         }
 
         // Step 3: Run detectors
@@ -92,7 +101,9 @@ public final class TargetRegistry {
             }
         }
 
-        // Step 5: Filter out SUPPORTED results blocked by same-ecosystem UNSUPPORTED
+        // Step 5: Filter out SUPPORTED results blocked by same-target UNSUPPORTED.
+        // Currently ecosystem family == TargetId. If ecosystem families diverge from
+        // target IDs in the future, add a TargetId.ecosystemFamily() mapping here.
         List<DetectedTarget> unblocked = new ArrayList<>();
         for (DetectedTarget sup : supported) {
             boolean blocked = false;

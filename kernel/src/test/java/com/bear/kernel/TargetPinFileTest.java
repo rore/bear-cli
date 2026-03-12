@@ -18,46 +18,59 @@ class TargetPinFileTest {
 
     @Test
     void validJvmPin(@TempDir Path tempDir) throws IOException {
-        Files.writeString(tempDir.resolve("target.id"), "jvm");
+        Path bearDir = tempDir.resolve(".bear");
+        Files.createDirectories(bearDir);
+        Files.writeString(bearDir.resolve("target.id"), "jvm");
 
-        Optional<TargetId> result = TargetPinFile.read(tempDir);
+        Optional<TargetId> result = TargetPinFile.read(bearDir);
 
         assertEquals(Optional.of(TargetId.JVM), result);
     }
 
     @Test
     void validNodePin(@TempDir Path tempDir) throws IOException {
-        Files.writeString(tempDir.resolve("target.id"), "node");
+        Path bearDir = tempDir.resolve(".bear");
+        Files.createDirectories(bearDir);
+        Files.writeString(bearDir.resolve("target.id"), "node");
 
-        Optional<TargetId> result = TargetPinFile.read(tempDir);
+        Optional<TargetId> result = TargetPinFile.read(bearDir);
 
         assertEquals(Optional.of(TargetId.NODE), result);
     }
 
     @Test
     void invalidPin(@TempDir Path tempDir) throws IOException {
-        Files.writeString(tempDir.resolve("target.id"), "unknown");
+        Path bearDir = tempDir.resolve(".bear");
+        Files.createDirectories(bearDir);
+        Files.writeString(bearDir.resolve("target.id"), "unknown");
 
-        assertThrows(IllegalArgumentException.class, () -> TargetPinFile.read(tempDir));
+        assertThrows(IllegalArgumentException.class, () -> TargetPinFile.read(bearDir));
     }
 
     @Test
     void emptyFile(@TempDir Path tempDir) throws IOException {
-        Files.writeString(tempDir.resolve("target.id"), "");
+        Path bearDir = tempDir.resolve(".bear");
+        Files.createDirectories(bearDir);
+        Files.writeString(bearDir.resolve("target.id"), "");
 
-        assertThrows(IllegalArgumentException.class, () -> TargetPinFile.read(tempDir));
+        assertThrows(IllegalArgumentException.class, () -> TargetPinFile.read(bearDir));
     }
 
     @Test
     void whitespaceOnlyFile(@TempDir Path tempDir) throws IOException {
-        Files.writeString(tempDir.resolve("target.id"), "  \n  ");
+        Path bearDir = tempDir.resolve(".bear");
+        Files.createDirectories(bearDir);
+        Files.writeString(bearDir.resolve("target.id"), "  \n  ");
 
-        assertThrows(IllegalArgumentException.class, () -> TargetPinFile.read(tempDir));
+        assertThrows(IllegalArgumentException.class, () -> TargetPinFile.read(bearDir));
     }
 
     @Test
-    void missingFile(@TempDir Path tempDir) {
-        Optional<TargetId> result = TargetPinFile.read(tempDir);
+    void missingFile(@TempDir Path tempDir) throws IOException {
+        Path bearDir = tempDir.resolve(".bear");
+        Files.createDirectories(bearDir);
+
+        Optional<TargetId> result = TargetPinFile.read(bearDir);
 
         assertTrue(result.isEmpty());
     }

@@ -1,6 +1,7 @@
 package com.bear.kernel.target;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -21,7 +22,7 @@ public class TargetPinFile {
             TargetId targetId = TargetId.fromValue(trimmed);
             return Optional.of(targetId);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to read target.id file", e);
+            throw new UncheckedIOException("Failed to read " + pinFile, e);
         }
     }
 }
