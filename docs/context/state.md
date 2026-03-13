@@ -10,16 +10,16 @@ Long-form historical notes are archived in `docs/context/archive/archive-state-h
 
 ## Current Focus
 
-Phase B (Node Target — Scan Only) merged to `feature/multi-target-expansion`. PR #4 closed. Roadmap updated.
+Phase P (Python Target — Scan Only) spec complete. Ready for implementation. Spec covers detection, AST-based import scanning, artifact generation, inner profile only (`python/service`).
 
 ## Next Concrete Task
 
-1. Decide next phase: Phase C (Node runtime execution) or begin Phase D (Python/.NET).
-2. If Phase C: create spec in `.kiro/specs/phase-c-node-runtime-execution/`.
-3. Update `docs/context/architecture.md` and `docs/public/OVERVIEW.md` to mention Node target support.
+1. Begin Phase P implementation following `tasks.md` — start with Task 1 (PythonTargetDetector) on branch `feature/phase-p-python-scan-only`.
+2. After Phase P is merged, update roadmap board to reflect Phase P complete.
 
 ## Session Notes
 
+- Phase P (Python Target — Scan Only) spec complete: `requirements.md`, `design.md`, `tasks.md` written in BEAR CLI terse/declarative style. 33 correctness properties defined. 11 implementation tasks covering detection, artifact generation, governed roots, AST-based import containment scanner, drift gate, and `impl.allowedDeps` guard. Inner profile only (`python/service`): strict third-party import blocking. AST-first analysis strategy using Python `ast` module. Reuses `BoundaryDecision` model from Node. `TargetId.PYTHON` to be added.
 - Phase B implementation complete: 11 source files, 96 tests passing, branch pushed, PR ready at https://github.com/Premshay/bear-cli/pull/new/feature/phase-b-node-target-scan-only (GitHub MCP auth unavailable — create PR manually). Key fixes: `BoundaryDecision.allowed()` rename, `_shared` boundary logic, `StandardOpenOption.SYNC` for WSL2 write caching, `gradle.properties` toolchain path.
 - Phase B (Node Target — Scan Only) Kiro spec complete: `requirements.md`, `design.md`, `tasks.md` written in BEAR CLI terse/declarative style. 36 correctness properties defined. 12 implementation tasks covering detection, artifact generation, governed roots, concern-separated import containment scanner, drift gate, and `impl.allowedDeps` guard. Fixed `exit 6` → `exit 7` (`BOUNDARY_BYPASS`) typos in `roadmap/ideas/future-multi-target-spec-design.md`. Confirmed `TargetId.NODE` already exists from Phase A — spec does not re-add it.
 - Completed `P3` target-adaptable CLI preparation as a JVM-only slice: app command orchestration now routes through a kernel-owned `Target` seam via `TargetRegistry`, with no Node behavior, no `.bear/target.id`, and no CLI surface changes.
