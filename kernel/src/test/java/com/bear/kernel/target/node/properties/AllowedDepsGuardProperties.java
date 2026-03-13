@@ -17,7 +17,7 @@ class AllowedDepsGuardProperties {
 
     private final NodeTarget target = new NodeTarget();
 
-    /** Property 32: impl.allowedDeps + Node -> blockDeclaresAllowedDeps() returns true for IR with allowedDeps. */
+    /** Property 32: impl.allowedDeps + Node -> considerContainmentSurfaces() returns false even with allowedDeps. */
     @Test
     void considerContainmentSurfacesAlwaysFalse_withAllowedDeps() {
         BearIr ir = makeBearIrWithAllowedDeps("PaymentService");

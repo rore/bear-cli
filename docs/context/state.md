@@ -10,7 +10,7 @@ Long-form historical notes are archived in `docs/context/archive/archive-state-h
 
 ## Current Focus
 
-Phase P (Python Target — Scan Only) spec complete. Ready for implementation. Spec covers detection, AST-based import scanning, artifact generation, inner profile only (`python/service`).
+Phase B (Node Target — Scan Only) merged via PR #4. Phase P (Python Target — Scan Only) spec complete. Ready for implementation. Spec covers detection, AST-based import scanning, artifact generation, inner profile only (`python/service`).
 
 ## Next Concrete Task
 

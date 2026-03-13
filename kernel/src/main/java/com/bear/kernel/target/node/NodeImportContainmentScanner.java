@@ -41,7 +41,7 @@ public class NodeImportContainmentScanner {
             dynamicDetector.detectDynamicImports(content);
         }
 
-        // Sort findings by file path, then line number
+        // Sort findings by file path
         findings.sort(Comparator.comparing(
             (BoundaryBypassFinding f) -> f.path(),
             Comparator.naturalOrder()
@@ -76,11 +76,12 @@ public class NodeImportContainmentScanner {
 
         for (Path root : governedRoots) {
             if (Files.exists(root)) {
-                Files.walk(root)
-                    .filter(Files::isRegularFile)
-                    .filter(path -> path.toString().endsWith(".ts"))
-                    .filter(path -> !path.toString().endsWith(".test.ts"))
-                    .forEach(files::add);
+                try (var stream = Files.walk(root)) {
+                    stream.filter(Files::isRegularFile)
+                        .filter(path -> path.toString().endsWith(".ts"))
+                        .filter(path -> !path.toString().endsWith(".test.ts"))
+                        .forEach(files::add);
+                }
             }
         }
 

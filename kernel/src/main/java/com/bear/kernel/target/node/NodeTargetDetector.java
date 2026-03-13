@@ -5,6 +5,8 @@ import com.bear.kernel.target.DetectionStatus;
 import com.bear.kernel.target.TargetDetector;
 import com.bear.kernel.target.TargetId;
 
+import org.yaml.snakeyaml.Yaml;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -22,10 +24,19 @@ public class NodeTargetDetector implements TargetDetector {
         // Parse package.json to check type and packageManager
         try {
             String content = Files.readString(packageJson);
-            if (!content.contains("\"type\": \"module\"")) {
+            Yaml yaml = new Yaml();
+            Object parsed = yaml.load(content);
+            if (!(parsed instanceof Map)) {
                 return DetectedTarget.none();
             }
-            if (!content.contains("\"packageManager\": \"pnpm")) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> pkg = (Map<String, Object>) parsed;
+            Object typeVal = pkg.get("type");
+            if (!"module".equals(typeVal)) {
+                return DetectedTarget.none();
+            }
+            Object pmVal = pkg.get("packageManager");
+            if (!(pmVal instanceof String) || !((String) pmVal).startsWith("pnpm")) {
                 return DetectedTarget.none();
             }
         } catch (Exception e) {
