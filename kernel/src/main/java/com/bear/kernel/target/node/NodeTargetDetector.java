@@ -4,12 +4,11 @@ import com.bear.kernel.target.DetectedTarget;
 import com.bear.kernel.target.TargetDetector;
 import com.bear.kernel.target.TargetId;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
 
 public class NodeTargetDetector implements TargetDetector {
 
@@ -25,22 +24,13 @@ public class NodeTargetDetector implements TargetDetector {
 
         // Parse package.json (strict JSON) to check type and packageManager
         try {
-            String content = Files.readString(packageJson, StandardCharsets.UTF_8);
-            LoaderOptions loaderOptions = new LoaderOptions();
-            loaderOptions.setAllowDuplicateKeys(false);
-            Yaml yaml = new Yaml(new SafeConstructor(loaderOptions));
-            Object parsed = yaml.load(content);
-            if (!(parsed instanceof Map)) {
+            JsonNode pkg = OBJECT_MAPPER.readTree(packageJson.toFile());
+            JsonNode typeNode = pkg.get("type");
+            if (typeNode == null || !"module".equals(typeNode.asText())) {
                 return DetectedTarget.none();
             }
-            @SuppressWarnings("unchecked")
-            Map<String, Object> pkg = OBJECT_MAPPER.readValue(packageJson.toFile(), Map.class);
-            Object typeVal = pkg.get("type");
-            if (!"module".equals(typeVal)) {
-                return DetectedTarget.none();
-            }
-            Object pmVal = pkg.get("packageManager");
-            if (!(pmVal instanceof String) || !((String) pmVal).startsWith("pnpm")) {
+            JsonNode pmNode = pkg.get("packageManager");
+            if (pmNode == null || !pmNode.asText().startsWith("pnpm")) {
                 return DetectedTarget.none();
             }
         } catch (Exception e) {

@@ -18,8 +18,8 @@ public class TargetPinFile {
             if (content.isEmpty()) {
                 throw new IllegalArgumentException("target.id file is empty");
             }
-            // Allow an optional single trailing newline (LF or CRLF) for POSIX-friendly files,
-            // but otherwise require the content to be exactly the target token.
+            // Allow an optional single trailing newline (LF or CRLF) for editors and tools
+            // that append a trailing newline, but otherwise require the content to be exactly the target token.
             String value;
             if (content.endsWith("\r\n")) {
                 value = content.substring(0, content.length() - 2);
