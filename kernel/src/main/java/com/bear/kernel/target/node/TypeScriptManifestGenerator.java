@@ -28,9 +28,17 @@ public class TypeScriptManifestGenerator {
         sb.append("  \"targetId\": \"node\",\n");
 
         String blockName = TypeScriptLexicalSupport.deriveBlockName(blockKey);
+<<<<<<< HEAD
 
         sb.append("  \"generatedPackage\": \"build/generated/bear/types/").append(blockKey).append("\",\n");
         sb.append("  \"implPackage\": \"src/blocks/").append(blockKey).append("/impl\",\n");
+=======
+        // Use blockKey directly for paths (already kebab-case)
+        String blockKeyPath = blockKey;
+
+        sb.append("  \"generatedPackage\": \"build/generated/bear/types/").append(blockKeyPath).append("\",\n");
+        sb.append("  \"implPackage\": \"src/blocks/").append(blockKeyPath).append("/impl\",\n");
+>>>>>>> 40bd18f (fix: address Copilot PR review comments)
 
         // Wrappers
         sb.append("  \"wrappers\": [\n");
@@ -38,7 +46,11 @@ public class TypeScriptManifestGenerator {
         for (BearIr.Operation op : ir.block().operations()) {
             String opName = op.name();
             String wrapperName = blockName + "_" + opName;
+<<<<<<< HEAD
             String wrapperPath = blockKey + "/" + blockName + "_" + opName + ".ts";
+=======
+            String wrapperPath = blockKeyPath + "/" + blockName + "_" + opName + ".ts";
+>>>>>>> 40bd18f (fix: address Copilot PR review comments)
             wrapperList.add("    { \"operation\": \"" + opName + "\", \"wrapperClass\": \"" + wrapperName + "\", \"wrapperPath\": \"" + wrapperPath + "\" }");
         }
         sb.append(String.join(",\n", wrapperList));

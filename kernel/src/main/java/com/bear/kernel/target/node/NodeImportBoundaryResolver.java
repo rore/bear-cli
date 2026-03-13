@@ -24,7 +24,12 @@ public class NodeImportBoundaryResolver {
             return BoundaryDecision.fail("URL_IMPORT");
         }
 
-        // 4. Resolve relative specifier lexically
+        // 4. Check for absolute path specifier (e.g., "/absolute/path")
+        if (specifier.startsWith("/")) {
+            return BoundaryDecision.fail("ABSOLUTE_PATH_IMPORT");
+        }
+
+        // 5. Resolve relative specifier lexically
         Path resolved = resolveRelative(importingFile, specifier);
 
         // 5. Check if resolved path is within BEAR-generated directory

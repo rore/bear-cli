@@ -179,9 +179,16 @@ The demo currently showcases three PR outcomes:
 - Primary containment enforcement path is Java plus Gradle wrapper when `impl.allowedDeps` is declared.
 - Node/TypeScript target in Preview (scan-only). Import containment scanning for `pnpm` + TypeScript ESM projects.
 
+<<<<<<< HEAD
 Future targets (parked, not yet committed):
+=======
+Experimental targets (scan-only, no full enforcement):
+- Node/TypeScript backend (`node-ts-pnpm-single-package-v1`) — detection, artifact generation, import containment scanning
+- Python (`python-pyproject-single-package-v1`) — detection, artifact generation, AST-based import containment scanning
+
+Future targets (not yet started):
+>>>>>>> 40bd18f (fix: address Copilot PR review comments)
 - .NET/C# (`dotnet-csharp-sdk-single-project-v1`) — see `roadmap/ideas/future-dotnet-containment-profile.md`
-- Python (`python-pyproject-single-package-v1`) — see `roadmap/ideas/future-python-containment-profile.md`
 - React/TypeScript frontend (`react-ts-vite-pnpm-single-package-v1`) — see `roadmap/ideas/future-react-containment-profile.md`
 
 The CLI has a deterministic `Target` seam. New targets extend through that seam without changing
