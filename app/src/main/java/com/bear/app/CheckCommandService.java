@@ -931,7 +931,7 @@ final class CheckCommandService {
                 e.exitCode(),
                 List.of(e.code() + ": " + e.path()),
                 e.code(),
-                e.exitCode(),
+                e.code(),
                 e.path(),
                 e.remediation(),
                 e.code() + ": " + e.path()

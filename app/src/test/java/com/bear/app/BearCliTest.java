@@ -4778,6 +4778,10 @@ class BearCliTest {
             // Fallback for environments where POSIX permission APIs are unavailable or partial.
             wrapper.toFile().setExecutable(true, false);
         }
+        // Ensure JvmTargetDetector can detect this as a JVM project.
+        if (!Files.exists(projectRoot.resolve("build.gradle"))) {
+            Files.writeString(projectRoot.resolve("build.gradle"), "// test fixture\n");
+        }
     }
 
     private static boolean isWindows() {

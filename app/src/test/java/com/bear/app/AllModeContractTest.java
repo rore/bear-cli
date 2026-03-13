@@ -213,6 +213,10 @@ class AllModeContractTest {
             : "#!/usr/bin/env sh\necho TEST_OK\nexit 0\n";
         Files.writeString(projectRoot.resolve("gradlew.bat"), windows, StandardCharsets.UTF_8);
         Files.writeString(projectRoot.resolve("gradlew"), unix, StandardCharsets.UTF_8);
+        // Ensure JvmTargetDetector can detect this as a JVM project.
+        if (!Files.exists(projectRoot.resolve("build.gradle"))) {
+            Files.writeString(projectRoot.resolve("build.gradle"), "// test fixture\n", StandardCharsets.UTF_8);
+        }
     }
 
     private static void writeWorkingWithdrawImpl(Path projectRoot) throws Exception {

@@ -685,6 +685,10 @@ class BearCliAgentModeTest {
             }
             wrapper.toFile().setExecutable(true, false);
         }
+        // Ensure JvmTargetDetector can detect this as a JVM project.
+        if (!Files.exists(projectRoot.resolve("build.gradle"))) {
+            Files.writeString(projectRoot.resolve("build.gradle"), "// test fixture\n", StandardCharsets.UTF_8);
+        }
     }
 
     private static boolean isWindows() {

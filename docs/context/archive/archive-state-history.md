@@ -783,3 +783,24 @@ next feature sequence (one-by-one):
 
 
 
+
+---
+
+## Archived from state.md (2026-03-13) — Multi-Target Expansion Session Notes
+
+- Phase P (Python Target — Scan Only) spec complete: `requirements.md`, `design.md`, `tasks.md` written in BEAR CLI terse/declarative style. 33 correctness properties defined. 11 implementation tasks covering detection, artifact generation, governed roots, AST-based import containment scanner, drift gate, and `impl.allowedDeps` guard. Inner profile only (`python/service`): strict third-party import blocking. AST-first analysis strategy using Python `ast` module. Reuses `BoundaryDecision` model from Node. `TargetId.PYTHON` to be added.
+- Phase P tasks 1-10 complete: All Python target components implemented and tested: `PythonTargetDetector`, `PythonTarget` skeleton, artifact generators (`*_ports.py`, `*_logic.py`, `*_wrapper.py`, `wiring.json`), governed roots computation, AST-based import extraction/detection/resolution, import containment scanner, drift gate, `impl.allowedDeps` guard. All unit tests, property tests, and integration tests passing.
+- Phase P task 11 (Fixture projects + integration tests) complete: Created 9 Python fixture projects under `kernel/src/test/resources/fixtures/python/`. Created `PythonFixtureIntegrationTest.java` with 18 integration tests. Full kernel test suite passing with zero JVM/Node regressions.
+- Phase B implementation complete: 11 source files, 96 tests passing, branch pushed. Key fixes: `BoundaryDecision.allowed()` rename, `_shared` boundary logic, `StandardOpenOption.SYNC` for WSL2 write caching, `gradle.properties` toolchain path.
+- Phase B (Node Target — Scan Only) Kiro spec complete: 36 correctness properties defined. 12 implementation tasks. Fixed `exit 6` → `exit 7` (`BOUNDARY_BYPASS`) typos. Confirmed `TargetId.NODE` already exists from Phase A.
+- Completed `P3` target-adaptable CLI preparation as a JVM-only slice: app command orchestration now routes through a kernel-owned `Target` seam via `TargetRegistry`.
+- Target-seam package cleanup: generic ownership stays in `com.bear.kernel.target`, JVM-only renderers/scanners and `JvmTarget` live under `com.bear.kernel.target.jvm`.
+- Adopted minimap as the canonical live planning workflow under `roadmap/`.
+- Added parked Python containment profile and React/TypeScript frontend containment profile.
+- Expanded Python containment profile with gap solutions: static `site-packages` scan, commit-time boundary gate model.
+- Added `future-multi-target-expansion-plan.md` and `future-multi-target-spec-design.md` to `roadmap/board.md` Ideas section.
+- Refined multi-target plan/spec docs with architectural guardrails: two-seam model (`Target` + `AnalyzerProvider`), canonical locator schema, separated target identity from governance profile identity.
+- Elevated `TargetDetector` + `.bear/target.id` to an explicit prerequisite epic.
+- Added two concentric Python profiles: inner `python/service` (strict) and outer `python/service-relaxed` (pragmatic).
+- PR review refinements: Python AST-first analysis, `eval`/`exec`/`compile` in covered power surfaces, broadened React framework surfaces, version-aware detection, `bear init` idea, Go as future target candidate.
+- Created `future-python-implementation-context.md` as fast-onboarding summary for Python implementation specs.

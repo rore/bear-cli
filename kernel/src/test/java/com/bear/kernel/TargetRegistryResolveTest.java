@@ -43,17 +43,14 @@ class TargetRegistryResolveTest {
     }
 
     @Test
-    void noMatchThrowsTargetNotDetected(@TempDir Path tempDir) {
-        // Empty dir, no build.gradle, no pin
+    void noMatchFallsBackToJvmWhenRegistered(@TempDir Path tempDir) {
+        // Empty dir, no build.gradle, no pin — falls back to JVM for backward compatibility
         TargetRegistry registry = new TargetRegistry(
             Map.of(TargetId.JVM, new JvmTarget()),
             List.of(new JvmTargetDetector())
         );
-        TargetResolutionException ex = assertThrows(
-            TargetResolutionException.class,
-            () -> registry.resolve(tempDir)
-        );
-        assertEquals("TARGET_NOT_DETECTED", ex.code());
+        Target resolved = registry.resolve(tempDir);
+        assertEquals(TargetId.JVM, resolved.targetId());
     }
 
     @Test

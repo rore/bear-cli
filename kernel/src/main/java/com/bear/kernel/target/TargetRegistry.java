@@ -4,6 +4,8 @@ import com.bear.kernel.target.jvm.JvmTarget;
 import com.bear.kernel.target.jvm.JvmTargetDetector;
 import com.bear.kernel.target.node.NodeTarget;
 import com.bear.kernel.target.node.NodeTargetDetector;
+import com.bear.kernel.target.python.PythonTarget;
+import com.bear.kernel.target.python.PythonTargetDetector;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,8 +16,16 @@ import java.util.Objects;
 
 public final class TargetRegistry {
     private static final TargetRegistry DEFAULT = new TargetRegistry(
-        Map.of(TargetId.JVM, new JvmTarget(), TargetId.NODE, new NodeTarget()),
-        List.of(new JvmTargetDetector(), new NodeTargetDetector())
+        Map.of(
+            TargetId.JVM, new JvmTarget(),
+            TargetId.NODE, new NodeTarget(),
+            TargetId.PYTHON, new PythonTarget()
+        ),
+        List.of(
+            new JvmTargetDetector(),
+            new NodeTargetDetector(),
+            new PythonTargetDetector()
+        )
     );
 
     private final Map<TargetId, Target> targets;
@@ -176,6 +186,11 @@ public final class TargetRegistry {
                     projectRoot.toString(),
                     "Target ecosystem recognized but project shape is unsupported: " + reason
                 );
+            }
+            // No detector matched (all returned NONE). Fall back to JVM for backward compatibility.
+            Target jvmFallback = targets.get(TargetId.JVM);
+            if (jvmFallback != null) {
+                return jvmFallback;
             }
             throw new TargetResolutionException(
                 "TARGET_NOT_DETECTED",

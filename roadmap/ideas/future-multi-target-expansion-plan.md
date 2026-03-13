@@ -141,7 +141,7 @@ statically on committed source files; no running Node server is required.
 
 ### Tradeoffs
 
-| Tradeoff | Honest position |
+| Tradeoff | position |
 | --- | --- |
 | Block-level dependency containment | Not enforceable; `pnpm` resolution is package-scoped |
 | Dynamic import detection completeness | Only direct syntax in governed files; loader hooks are out of scope |

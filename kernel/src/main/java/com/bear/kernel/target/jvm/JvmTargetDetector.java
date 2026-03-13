@@ -15,6 +15,10 @@ public class JvmTargetDetector implements TargetDetector {
                 || Files.exists(projectRoot.resolve("build.gradle.kts"))) {
             return DetectedTarget.supported(TargetId.JVM, "Gradle build file detected");
         }
+        if (Files.exists(projectRoot.resolve("gradlew"))
+                || Files.exists(projectRoot.resolve("gradlew.bat"))) {
+            return DetectedTarget.supported(TargetId.JVM, "Gradle wrapper detected");
+        }
         return DetectedTarget.none();
     }
 }
