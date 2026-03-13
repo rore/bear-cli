@@ -4,9 +4,7 @@ import com.bear.kernel.target.DetectedTarget;
 import com.bear.kernel.target.TargetDetector;
 import com.bear.kernel.target.TargetId;
 
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.LoaderOptions;
-import org.yaml.snakeyaml.constructor.SafeConstructor;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -14,6 +12,8 @@ import java.nio.file.Path;
 import java.util.Map;
 
 public class NodeTargetDetector implements TargetDetector {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Override
     public DetectedTarget detect(Path projectRoot) {
@@ -23,7 +23,7 @@ public class NodeTargetDetector implements TargetDetector {
             return DetectedTarget.none();
         }
 
-        // Parse package.json to check type and packageManager
+        // Parse package.json (strict JSON) to check type and packageManager
         try {
             String content = Files.readString(packageJson, StandardCharsets.UTF_8);
             LoaderOptions loaderOptions = new LoaderOptions();
@@ -34,7 +34,7 @@ public class NodeTargetDetector implements TargetDetector {
                 return DetectedTarget.none();
             }
             @SuppressWarnings("unchecked")
-            Map<String, Object> pkg = (Map<String, Object>) parsed;
+            Map<String, Object> pkg = OBJECT_MAPPER.readValue(packageJson.toFile(), Map.class);
             Object typeVal = pkg.get("type");
             if (!"module".equals(typeVal)) {
                 return DetectedTarget.none();
