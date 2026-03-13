@@ -169,6 +169,16 @@ public final class BearCli {
 
             target.compile(normalized, projectRoot, identity.blockKey());
             return new FixResult(CliCodes.EXIT_OK, List.of("fix: OK"), List.of(), null, null, null, null, null);
+        } catch (com.bear.kernel.target.TargetResolutionException e) {
+            return fixFailure(
+                e.exitCode(),
+                List.of(e.code() + ": " + e.path()),
+                e.code(),
+                e.exitCode(),
+                e.path(),
+                e.remediation(),
+                e.code() + ": " + e.path()
+            );
         } catch (BearIrValidationException e) {
             return fixFailure(
                 CliCodes.EXIT_VALIDATION,
@@ -254,6 +264,16 @@ public final class BearCli {
                 );
             target.compile(normalized, projectRoot, identity.blockKey());
             return new CompileResult(CliCodes.EXIT_OK, List.of("compiled: OK"), List.of(), null, null, null, null, null);
+        } catch (com.bear.kernel.target.TargetResolutionException e) {
+            return compileFailure(
+                e.exitCode(),
+                List.of(e.code() + ": " + e.path()),
+                e.code(),
+                e.exitCode(),
+                e.path(),
+                e.remediation(),
+                e.code() + ": " + e.path()
+            );
         } catch (BearIrValidationException e) {
             return compileFailure(
                 CliCodes.EXIT_VALIDATION,

@@ -33,10 +33,25 @@ Safety guardrails:
 ## Repo Skills
 
 The following repo-local skills can be used in this project:
-- workflow-orchestration: plan-first, verification-heavy workflow adapted to BEAR context docs and guardrails. Trigger for non-trivial tasks (3+ steps), architectural/refactor work, bug investigations, or explicit user request. (file: `c:/Dev/rore/bear-cli/skills/workflow-orchestration/SKILL.md`)
+- workflow-orchestration: plan-first, verification-heavy workflow adapted to BEAR context docs and guardrails. Trigger for non-trivial tasks (3+ steps), architectural/refactor work, bug investigations, or explicit user request. (file: `skills/workflow-orchestration/SKILL.md`)
 
 Default policy:
 - For non-trivial tasks (3+ steps), load and follow `workflow-orchestration` before implementation.
+- Also available as `.agent/skills/workflow-orchestration/SKILL.md` for Kiro skill activation.
+
+## Agent Skills and Personas
+
+Kiro has access to domain-specific skills and agent personas from the `.agent/` directory:
+- Skills: 15 domain-specific knowledge modules (architecture, testing, debugging, clean-code, etc.)
+- Agents: 8 behavioral personas (orchestrator, debugger, test-engineer, etc.)
+- Workflows: 8 structured procedures (brainstorm, plan, create, debug, test, etc.)
+
+Integration details in `.kiro/steering/`:
+- `skills-integration.md` - Available skills and when to use them
+- `agents-integration.md` - Agent personas and behavioral modes
+- `workflows-integration.md` - Workflow procedures and mapping
+
+Kiro automatically selects appropriate skills and personas based on task context.
 
 ## Minimap
 

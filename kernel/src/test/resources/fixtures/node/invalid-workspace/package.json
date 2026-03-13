@@ -1,0 +1,5 @@
+{
+  "name": "invalid-workspace",
+  "type": "module",
+  "packageManager": "pnpm@8.0.0"
+}

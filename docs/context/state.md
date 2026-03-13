@@ -6,29 +6,31 @@ Long-form historical notes are archived in `docs/context/archive/archive-state-h
 
 ## Last Updated
 
-2026-03-08
+2026-03-13
 
 ## Current Focus
 
-The packaged downstream CI integration is complete and stable, and `main` now also includes the completed JVM-only target-adaptation prep slice plus the follow-on seam cleanup that makes `com.bear.kernel.target` genuinely generic while keeping JVM implementation code under `com.bear.kernel.target.jvm`. The planning workflow now uses minimap under `roadmap/` as the only live planning surface. With the target seam and package ownership cleaned up, the next active product-value feature is broader boundary-escape coverage.
+Phase B (Node Target — Scan Only) implementation complete. PR open: `feature/phase-b-node-target-scan-only` → `feature/multi-target-expansion`. 96 tests passing.
 
 ## Next Concrete Task
 
-1. Start `roadmap/features/p3-broader-boundary-escape-coverage.md` as the next execution slice.
-2. Keep the shipped target-seam and CI contracts stable while future multi-target work stays parked behind the prep seam.
-3. Keep `roadmap/board.md`, `roadmap/scope.md`, and minimap item files as the canonical live planning source.
+1. Merge Phase B PR into `feature/multi-target-expansion`.
+2. Update `roadmap/board.md`: move Phase B from Active → Completed.
+3. Update `roadmap/features/multi-target-foundation-phases.md`: mark Phase B complete.
 
 ## Session Notes
 
+- Phase B implementation complete: 11 source files, 96 tests passing, branch pushed, PR ready at https://github.com/Premshay/bear-cli/pull/new/feature/phase-b-node-target-scan-only (GitHub MCP auth unavailable — create PR manually). Key fixes: `BoundaryDecision.allowed()` rename, `_shared` boundary logic, `StandardOpenOption.SYNC` for WSL2 write caching, `gradle.properties` toolchain path.
+- Phase B (Node Target — Scan Only) Kiro spec complete: `requirements.md`, `design.md`, `tasks.md` written in BEAR CLI terse/declarative style. 36 correctness properties defined. 12 implementation tasks covering detection, artifact generation, governed roots, concern-separated import containment scanner, drift gate, and `impl.allowedDeps` guard. Fixed `exit 6` → `exit 7` (`BOUNDARY_BYPASS`) typos in `roadmap/ideas/future-multi-target-spec-design.md`. Confirmed `TargetId.NODE` already exists from Phase A — spec does not re-add it.
 - Completed `P3` target-adaptable CLI preparation as a JVM-only slice: app command orchestration now routes through a kernel-owned `Target` seam via `TargetRegistry`, with no Node behavior, no `.bear/target.id`, and no CLI surface changes.
 - Followed with target-seam package cleanup: generic ownership stays in `com.bear.kernel.target`, JVM-only renderers/scanners and `JvmTarget` live under `com.bear.kernel.target.jvm`, and `Target.java` no longer imports JVM package types.
 - Kept runtime behavior unchanged during the split: target-owned manifest, findings, and project-verification DTOs now sit in the generic package, `TargetRegistry` still resolves `JvmTarget`, and app orchestration consumes only generic seam types.
 - Adopted minimap as the canonical live planning workflow under `roadmap/`; completed roadmap history now lives in minimap item files and `roadmap/board.md`.
-- Removed the redundant `docs/context/backlog` layer by migrating detailed specs into the corresponding minimap item files under `roadmap/features/*.md` and `roadmap/ideas/*.md`.
-- Consolidated the remaining broad future themes into minimap as `roadmap/ideas/future-idea-families.md`, so `docs/context` no longer carries a parallel future-planning surface.
-- Imported the parked Node discovery work into minimap and kept the recommendation intentionally narrow: do not pursue Node unless the product explicitly accepts the `node-ts-pnpm-single-package-v1` profile.
-- Added parked .NET discovery docs as a stronger-fit second-target candidate, focused on a narrow C# SDK-style profile with deterministic `dotnet` verification and project/package governance.
-- Archived or removed stale process docs that no longer earn their keep in a public repo, including the old simulation, grading, checkpoint, and duplicate board docs.
-- Tightened README and public docs wording so the intended agent loop is explicit: boundary changes update IR first, BEAR compiles constraints, then implementation happens inside those constraints.
-- Verification: ./gradlew.bat --no-daemon :kernel:test, ./gradlew.bat --no-daemon :app:test, ./gradlew.bat --no-daemon :app:test :kernel:test, ./gradlew.bat --no-daemon :app:test --tests com.bear.app.ContextDocsConsistencyTest, ./gradlew.bat :app:compileJava :app:compileTestJava :kernel:compileJava :kernel:compileTestJava.
-
+- Added parked Python containment profile (`future-python-containment-profile.md`) and React/TypeScript frontend containment profile (`future-react-containment-profile.md`) to document the honest first-slice plans for those targets. Both are marked uncommitted and parked behind the Node and .NET profiles.
+- Expanded the Python containment profile with gap solutions: (1) static `site-packages` scan to surface power-surface exposure in installed pure-Python packages at dependency-change time (cross-platform path detection using `purelib`/`platlib`); (2) an explicit commit-time boundary gate model for branch/agent workflows. Native extension reach remains an accepted `NOT_COVERABLE` gap. Typo fix: "banneable" → "bannable".
+- Added two new cross-cutting multi-target documents: `future-multi-target-expansion-plan.md` (unified problems/solutions/tradeoffs for Node, Python, React) and `future-multi-target-spec-design.md` (spec-driven design covering the Target interface contract, per-language detector/scanner/verification specs, phase ordering, and agent workflow integration). Both added to `roadmap/board.md` Ideas section.
+- Refined the multi-target plan/spec docs with architectural guardrails before more target implementation: introduced a two-seam model (`Target` + `AnalyzerProvider`), added a canonical locator schema requirement (`PATH` + structured locator), separated target identity from governance profile identity, added React feature-boundary-first emphasis, added Python non-overclaim scope guardrails, and reordered rollout phases to gate on locator/profile/analyzer seams first.
+- Elevated `TargetDetector` + `.bear/target.id` to an explicit prerequisite epic: defined detector result model (`SUPPORTED`/`UNSUPPORTED`/`NONE`), `.bear/target.id` pin semantics, deterministic ambiguity failure behavior, and prerequisite task checklist. Made post-Node target ordering strategy-aware: distinguished technical readiness order (.NET first) from market priority order (Python first) and recommended choosing based on product strategy rather than purely technical grounds.
+- Added two concentric Python profiles: inner `python/service` (strict — third-party imports from governed roots blocked) and outer `python/service-relaxed` (pragmatic — third-party imports allowed but governed, `site-packages` scan becomes primary containment). Both share detection, generated artifacts, verification, and scan infrastructure. Updated capability matrix to show both profiles. Updated spec design with profile-dependent import containment rules.
+- Addressed remaining PR review refinements: (1) Python analysis explicitly AST-first with `ast` module as primary enforcement mechanism, not regex/text; (2) added `eval`/`exec`/`compile` to Python covered power surfaces as dynamic execution escape hatches; (3) broadened React covered framework surfaces beyond `fetch`/`XMLHttpRequest` to include TanStack Query, SWR, Apollo Client, tRPC hooks, and Axios as supplementary advisory signals; (4) added version-aware detection requirements to the detector contract; (5) added `bear init` command to idea families; (6) elevated Go as a strong future target candidate in both expansion plan and idea families.
+- Created `future-python-implementation-context.md` as a fast-onboarding summary document for Python implementation specs. References all relevant context documents, summarizes key decisions (concentric profiles, AST-first analysis, covered surfaces, site-packages scan, architecture seams, phase ordering), includes the spec review checklist, and lists open work items remaining before Python implementation can start.

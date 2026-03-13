@@ -926,6 +926,16 @@ final class CheckCommandService {
             }
             successLines.add("check: OK");
             return new CheckResult(CliCodes.EXIT_OK, List.copyOf(successLines), List.of(), null, null, null, null, null);
+        } catch (com.bear.kernel.target.TargetResolutionException e) {
+            return checkFailure(
+                e.exitCode(),
+                List.of(e.code() + ": " + e.path()),
+                e.code(),
+                e.exitCode(),
+                e.path(),
+                e.remediation(),
+                e.code() + ": " + e.path()
+            );
         } catch (BearIrValidationException e) {
             return checkFailure(
                 CliCodes.EXIT_VALIDATION,

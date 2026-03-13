@@ -53,6 +53,11 @@ public final class JvmTarget implements Target {
     }
 
     @Override
+    public GovernanceProfile defaultProfile() {
+        return GovernanceProfile.of(TargetId.JVM, "backend-service");
+    }
+
+    @Override
     public void compile(BearIr ir, Path projectRoot, String blockKey) throws IOException {
         Files.createDirectories(projectRoot);
 

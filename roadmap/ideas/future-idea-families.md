@@ -111,10 +111,35 @@ Candidate direction:
 ### Multi-Target Expansion Beyond Current Discoveries
 
 Possible future targets beyond the current parked Node and .NET items:
+- Python — see dedicated profile: `roadmap/ideas/future-python-containment-profile.md`
+- React/TypeScript frontend — see dedicated profile: `roadmap/ideas/future-react-containment-profile.md`
 - Kotlin
-- Python
-- Go
+- Go — strong candidate: explicit imports, deterministic `go.mod`/`go.sum`, minimal dynamic
+  module loading, strong backend relevance, simple verification (`go test`, `go vet`). Worth
+  evaluating ahead of more speculative frontend governance scope.
 - broader framework integrations
+
+### `bear init` Command
+
+A future `bear init` command to lower adoption friction for new targets:
+
+```
+bear init --target <target> --profile <profile>
+```
+
+Minimal responsibilities:
+- write `.bear/target.id`
+- scaffold minimal config (`.bear/` directory structure)
+- scaffold minimal governed-root structure or example declarations where appropriate
+- avoid inferring too much automatically
+
+Why it matters:
+- lowers adoption friction for new target onboarding
+- makes target/profile selection explicit from the start
+- supports agent-assisted setup cleanly
+- pairs well with `bear ir-suggest` (advisory) for discovering existing structure
+
+This belongs in the roadmap even if implementation is not immediate.
 
 ### Plugin Architecture
 

@@ -1,0 +1,5 @@
+{
+  "name": "valid-single-block",
+  "type": "module",
+  "packageManager": "pnpm@8.0.0"
+}

@@ -1,0 +1,5 @@
+{
+  "name": "valid-with-shared",
+  "type": "module",
+  "packageManager": "pnpm@8.0.0"
+}

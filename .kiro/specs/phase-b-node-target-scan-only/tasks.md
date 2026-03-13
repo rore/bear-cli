@@ -1,0 +1,192 @@
+# Tasks: Phase B — Node Target (Scan Only)
+
+## Implementation Tasks
+
+- [ ] 1. NodeTargetDetector
+  - **Context:** Read `design.md` sections: NodeTargetDetector, Detection algorithm. Reference `JvmTargetDetector` for pattern.
+  - **Execution:** Implement directly. Can run in parallel with task 2. Use `context-gatherer` if unfamiliar with JvmTargetDetector pattern.
+  - **Verification:** Run tests after completion. Verify no JVM test regressions. Update `docs/context/state.md`.
+  - [ ] 1.1 Create `NodeTargetDetector.java` implementing `TargetDetector`
+    - File-presence detection: `package.json` (parse `type` + `packageManager`), `pnpm-lock.yaml`, `tsconfig.json`
+    - Returns `SUPPORTED` / `UNSUPPORTED` (workspace) / `NONE`
+    - No version checking; no `tsconfig.json` content validation
+  - [ ] 1.2 Write `NodeTargetDetectorTest.java`
+    - Valid project → `SUPPORTED`; missing each required file → `NONE`; workspace → `UNSUPPORTED`; JVM project → `NONE`; CJS project → `NONE`; npm project → `NONE`
+  - [ ] 1.3 Write `NodeDetectionProperties.java` (jqwik)
+    - Property 1: valid Node project structure → `SUPPORTED`, `targetId=NODE`
+    - Property 2: `TargetRegistry.resolve()` on valid Node project → `NodeTarget` instance
+
+- [ ] 2. NodeTarget skeleton + TargetRegistry registration
+  - **Context:** Read `design.md` sections: NodeTarget, Target Interface Contract. Reference `JvmTarget` for pattern.
+  - **Execution:** Implement directly. Can run in parallel with task 1. Tasks 3-4 depend on this completing.
+  - **Verification:** Run all existing JVM tests - must pass without modification. Update `docs/context/state.md`.
+  - [ ] 2.1 Create `NodeTarget.java` implementing `Target`
+    - `targetId()` → `TargetId.NODE`
+    - `defaultProfile()` → `GovernanceProfile.of(NODE, "backend-service")`
+    - `considerContainmentSurfaces()` → `false`
+    - `sharedContainmentInScope()` → `false`
+    - All Phase C methods stub with `UnsupportedOperationException`
+  - [ ] 2.2 Register `NodeTarget` + `NodeTargetDetector` in `TargetRegistry.defaultRegistry()`
+    - Add `TargetId.NODE → new NodeTarget()` to the targets map
+    - Add `new NodeTargetDetector()` to the detectors list
+  - [ ] 2.3 Verify all existing JVM tests pass without modification
+
+- [ ] 3. TypeScript artifact generation
+  - **Context:** Read `design.md` sections: TypeScript Artifact Generators, Data Models. Reference `JvmRenderUnits` for pattern.
+  - **Execution:** Implement directly. Depends on task 2 completing. Subtasks 3.1-3.4 can run in parallel. Task 12 depends on this.
+  - **Verification:** Run tests after each subtask. Verify generated TypeScript parses with `tsc`. Update `docs/context/state.md`.
+  - [ ] 3.1 Create `TypeScriptLexicalSupport.java`
+    - Kebab-case → PascalCase, camelCase conversions
+    - Block key → block name derivation
+  - [ ] 3.2 Create `TypeScriptTypeMapper.java`
+    - IR type → TypeScript type mapping (`string`→`string`, `int`→`number`, `decimal`→`string`, `bool`→`boolean`)
+  - [ ] 3.3 Create `TypeScriptArtifactGenerator.java`
+    - `generatePorts(BearIr, Path, String)` → `<BlockName>Ports.ts`
+    - `generateLogic(BearIr, Path, String)` → `<BlockName>Logic.ts`
+    - `generateWrapper(BearIr, Path, String)` → `<BlockName>Wrapper.ts`
+    - `generateUserImplSkeleton(BearIr, Path, String)` → `<BlockName>Impl.ts` (create once, never overwrite)
+  - [ ] 3.4 Create `TypeScriptManifestGenerator.java`
+    - `generateWiringManifest(BearIr, Path, String)` → `<blockKey>.wiring.json`
+  - [ ] 3.5 Implement `NodeTarget.compile()` and `NodeTarget.generateWiringOnly()`
+    - `compile()`: generate Ports.ts, Logic.ts, Wrapper.ts, wiring.json, user impl skeleton (if absent)
+    - `generateWiringOnly()`: generate only wiring.json
+    - Use staging directory pattern for atomic artifact updates
+  - [ ] 3.6 Implement `NodeTarget.parseWiringManifest()` and `NodeTarget.ownedGeneratedPrefixes()`
+  - [ ] 3.7 Write `TypeScriptArtifactGeneratorTest.java`
+    - Each artifact type generated correctly; generated TypeScript parses without errors; user impl created once, not overwritten
+  - [ ] 3.8 Write `ArtifactGenerationProperties.java` (jqwik)
+    - Property 3: `compile()` on any valid `BearIr` → all four artifacts at expected paths
+    - Property 4: `compile()` twice without modifying user impl → user impl unchanged
+    - Property 5: `generateWiringOnly()` → only wiring manifest generated
+    - Property 6: all generated TypeScript files parseable by `tsc`
+
+- [ ] 4. Governed roots computation
+  - **Context:** Read `design.md` sections: Governed Roots Computer. Reference `JvmTarget` governed roots logic.
+  - **Execution:** Implement directly. Depends on task 2 completing. Can run in parallel with task 3.
+  - **Verification:** Run tests after completion. Verify file filtering works correctly.
+  - [ ] 4.1 Implement governed roots and file collection in `NodeTarget`
+    - `src/blocks/<blockKey>/` per block; `src/blocks/_shared/` if present
+    - Walk only `.ts` files; exclude `*.test.ts`; exclude `.js/.jsx/.tsx/.mjs/.cjs/.cts/.mts`
+  - [ ] 4.2 Write governed roots unit tests in `NodeTargetTest.java`
+    - Single block, multi-block, with `_shared`, without `_shared`, test file exclusion, extension filtering
+  - [ ] 4.3 Write `GovernedRootsProperties.java` (jqwik)
+    - Property 7: any block key → `src/blocks/<blockKey>/` in governed roots
+    - Property 8: any path outside `src/blocks/` → excluded
+    - Property 9: any `*.test.ts` → excluded
+    - Property 10: any non-`.ts` extension in `src/blocks/` → excluded
+
+- [ ] 5. NodeImportSpecifierExtractor
+  - **Context:** Read `design.md` sections: Import Containment Scanner, NodeImportSpecifierExtractor. No direct JVM equivalent.
+  - **Execution:** Implement directly. Independent, can run in parallel with tasks 1-4. Task 7-8 depend on this.
+  - **Verification:** Run tests after completion. Verify all import patterns detected with correct line numbers.
+  - [ ] 5.1 Create `NodeImportSpecifierExtractor.java`
+    - Regex-based extraction of: `import { x } from`, `import * as x from`, `import x from`, `import "..."` (side-effect), `export { x } from`, `export * from`
+    - Returns `List<ImportSpecifier>` with line/column numbers
+  - [ ] 5.2 Write `NodeImportSpecifierExtractorTest.java`
+    - All six import/export patterns; returns correct line numbers; handles empty files
+  - [ ] 5.3 Write extraction property in `ImportContainmentProperties.java` (jqwik)
+    - Property 20: any TypeScript source → all static import/export specifiers extracted with locations
+
+- [ ] 6. NodeDynamicImportDetector
+  - **Context:** Read `design.md` sections: Import Containment Scanner, NodeDynamicImportDetector. Phase B: detect only, no enforcement.
+  - **Execution:** Implement directly. Independent, can run in parallel with tasks 1-5. Task 8 depends on this.
+  - **Verification:** Run tests after completion. Verify dynamic imports detected but don't fail.
+  - [ ] 6.1 Create `NodeDynamicImportDetector.java`
+    - Regex detection of `import(...)` expressions
+    - Returns `List<DynamicImport>` with line/column numbers
+    - Phase B: detect only, no enforcement
+  - [ ] 6.2 Write `NodeDynamicImportDetectorTest.java`
+    - Detects `import("./path")`; detects `const x = import("./path")`; distinguishes from static imports
+  - [ ] 6.3 Write detection property in `ImportContainmentProperties.java` (jqwik)
+    - Property 21: any TypeScript source with `import()` → all dynamic imports identified
+
+- [ ] 7. NodeImportBoundaryResolver
+  - **Context:** Read `design.md` sections: Import Containment Scanner, NodeImportBoundaryResolver. Uses `CanonicalLocator` from Phase A.
+  - **Execution:** Implement directly. Depends on task 5 completing (needs ImportSpecifier model). Task 8 depends on this.
+  - **Verification:** Run tests after completion. Verify all pass/fail cases work correctly.
+  - [ ] 7.1 Create `NodeImportBoundaryResolver.java`
+    - Bare specifier → `FAIL(BARE_PACKAGE_IMPORT)`
+    - `#` alias → `FAIL(ALIAS_IMPORT)`
+    - URL-like → `FAIL(URL_IMPORT)`
+    - Lexical relative resolution; BEAR-generated → `PASS`; same block root → `PASS`; `_shared` → `PASS` (unless `_shared` imports block → `FAIL(SHARED_IMPORTS_BLOCK)`); all other → `FAIL(BOUNDARY_BYPASS)`
+    - Uses `CanonicalLocator` for structured finding locators
+  - [ ] 7.2 Write `NodeImportBoundaryResolverTest.java`
+    - All pass/fail cases: same-block, `_shared`, generated artifact, sibling block, escaping, bare package, alias, URL, `_shared`→block
+  - [ ] 7.3 Write resolution properties in `ImportContainmentProperties.java` (jqwik)
+    - Properties 22–28: all pass/fail classification cases + `CanonicalLocator` usage
+
+- [ ] 8. NodeImportContainmentScanner
+  - **Context:** Read `design.md` sections: Import Containment Scanner, NodeImportContainmentScanner (orchestrator). Reference `BoundaryBypassScanner` for pattern.
+  - **Execution:** Implement directly. Depends on tasks 5, 6, 7 completing. Orchestrates all three components.
+  - **Verification:** Run tests after completion. Verify findings sorted deterministically. Update `docs/context/state.md`.
+  - [ ] 8.1 Create `NodeImportContainmentScanner.java`
+    - Orchestrates `NodeImportSpecifierExtractor`, `NodeDynamicImportDetector`, `NodeImportBoundaryResolver`
+    - Computes governed roots from wiring manifests; collects governed files; scans each file
+    - Dynamic imports: detect but do not fail in Phase B
+    - Findings sorted by file path, then line number
+  - [ ] 8.2 Implement `NodeTarget.scanBoundaryBypass()` delegating to `NodeImportContainmentScanner.scan()`
+  - [ ] 8.3 Write `NodeImportContainmentScannerTest.java`
+    - Clean project → no findings; boundary bypass → finding with exit `7`; multiple violations collected; finding includes path and specifier
+  - [ ] 8.4 Write containment properties in `ImportContainmentProperties.java` (jqwik)
+    - Properties 11–19: all pass/fail containment cases + finding locator completeness
+
+- [ ] 9. Drift gate
+  - **Context:** Read `design.md` sections: Drift Gate. Reference `JvmTarget` drift checking for pattern.
+  - **Execution:** Implement directly. Depends on task 3 completing (needs artifact generation). Can run in parallel with tasks 10-12.
+  - **Verification:** Run tests after completion. Verify byte-for-byte comparison works.
+  - [ ] 9.1 Implement drift checking in `NodeTarget`
+    - Generate fresh artifacts to temp directory; byte-for-byte compare against workspace
+    - `DRIFT_DETECTED` on mismatch; `DRIFT_MISSING_BASELINE` on missing file
+    - Exclude user-owned impl files
+  - [ ] 9.2 Write drift gate tests in `NodeTargetTest.java`
+    - Clean state → no findings; modified generated file → `DRIFT_DETECTED`; missing file → `DRIFT_MISSING_BASELINE`; user impl modified → no findings
+  - [ ] 9.3 Write `DriftGateProperties.java` (jqwik)
+    - Property 29: `compile()` then immediate drift check → no findings
+    - Property 30: generated file modified → `DRIFT_DETECTED`
+    - Property 31: user-owned impl modified → no drift findings
+
+- [ ] 10. impl.allowedDeps unsupported guard
+  - **Context:** Read `design.md` sections: Error Handling, impl.allowedDeps guard. Reference `requirements.md` for exit codes.
+  - **Execution:** Implement directly. Depends on task 2 completing (needs NodeTarget skeleton). Can run in parallel with tasks 9, 11-12.
+  - **Verification:** Run tests after completion. Verify exit 64 for Node+allowedDeps, JVM unaffected.
+  - [ ] 10.1 Implement `NodeTarget.blockDeclaresAllowedDeps()` — parse IR for `impl.allowedDeps` presence
+  - [ ] 10.2 Implement guard in check pipeline: if `blockDeclaresAllowedDeps()` and target=Node → fail, exit `64`, `CODE=UNSUPPORTED_TARGET`, IR file path, remediation message
+  - [ ] 10.3 Verify `pr-check` is unaffected by `impl.allowedDeps`
+  - [ ] 10.4 Write guard tests in `NodeTargetTest.java`
+    - Block without `allowedDeps` → passes; block with `allowedDeps` → exit `64`; error output includes code, path, remediation; `pr-check` unaffected; JVM with `allowedDeps` → continues to work
+  - [ ] 10.5 Write `AllowedDepsGuardProperties.java` or add to existing properties file (jqwik)
+    - Property 32: `impl.allowedDeps` + Node → exit `64`, `CODE=UNSUPPORTED_TARGET`
+    - Property 33: error output includes IR file path
+    - Property 34: `pr-check` operates normally
+
+- [ ] 11. Fixture projects + integration tests
+  - **Context:** Read `design.md` sections: Testing Strategy, Integration Tests, Fixture projects. Reference `kernel/src/test/resources/fixtures/jvm/` for pattern.
+  - **Execution:** Implement directly. Depends on tasks 1-10 completing (needs all components). Can run in parallel with task 12.
+  - **Verification:** Run full test suite. Verify zero JVM test failures. Update `docs/context/state.md` - Phase B complete.
+  - [ ] 11.1 Create fixture projects under `kernel/src/test/resources/fixtures/node/`
+    - `valid-single-block/` — minimal valid Node project with one block
+    - `valid-multi-block/` — two blocks
+    - `valid-with-shared/` — one block + `_shared`
+    - `invalid-workspace/` — `pnpm-workspace.yaml` present
+    - `invalid-missing-lockfile/` — no `pnpm-lock.yaml`
+    - `boundary-bypass-escape/` — import escaping block root
+    - `boundary-bypass-sibling/` — import reaching sibling block
+    - `boundary-bypass-bare-import/` — bare package import from governed root
+  - [ ] 11.2 Write end-to-end integration tests
+    - Detect → compile → check (clean)
+    - Detect → compile → modify generated file → check (drift, exit `5`)
+    - Detect → compile → add boundary bypass → check (fail, exit `7`)
+    - Detect with `allowedDeps` → check (exit `64`)
+    - JVM project → resolves to `JvmTarget` (no interference)
+  - [ ] 11.3 Run full JVM regression test suite; confirm zero failures
+
+- [ ] 12. TypeScript pretty printer
+  - **Context:** Read `design.md` sections: TypeScript Pretty Printer. Reference `JvmRenderUnits` formatting for pattern.
+  - **Execution:** Implement directly. Depends on task 3 completing (needs TypeScriptArtifactGenerator). Can run in parallel with tasks 9-11.
+  - **Verification:** Run tests after completion. Verify round-trip stability.
+  - [ ] 12.1 Implement consistent indentation and line break formatting in `TypeScriptArtifactGenerator`
+  - [ ] 12.2 Write pretty printer tests
+    - Consistent formatting across invocations; output parseable by `tsc`; round-trip stability
+  - [ ] 12.3 Write pretty printer properties (jqwik)
+    - Property 35: any generated TypeScript AST → parseable by `tsc`
+    - Property 36: consistent indentation and line breaks across invocations
