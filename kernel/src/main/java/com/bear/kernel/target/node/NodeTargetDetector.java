@@ -1,7 +1,6 @@
 package com.bear.kernel.target.node;
 
 import com.bear.kernel.target.DetectedTarget;
-import com.bear.kernel.target.DetectionStatus;
 import com.bear.kernel.target.TargetDetector;
 import com.bear.kernel.target.TargetId;
 
