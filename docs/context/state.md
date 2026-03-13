@@ -6,19 +6,21 @@ Long-form historical notes are archived in `docs/context/archive/archive-state-h
 
 ## Last Updated
 
-2026-03-12
+2026-03-13
 
 ## Current Focus
 
-Phase B (Node Target — Scan Only) spec is complete and ready for implementation. The Kiro spec has been written in BEAR CLI documentation style (terse, declarative, no User Story patterns) covering detection, TypeScript artifact generation, governed roots, import containment (with concern separation), drift gate, and `impl.allowedDeps` unsupported guard. Implementation branch will be `copilot/implement-phase-b` off `feature/multi-target-expansion`.
+Phase B (Node Target — Scan Only) implementation complete. PR open: `feature/phase-b-node-target-scan-only` → `feature/multi-target-expansion`. 96 tests passing.
 
 ## Next Concrete Task
 
-1. Begin Phase B implementation following `tasks.md` — start with Task 1 (NodeTargetDetector) on branch `copilot/implement-phase-b`.
-2. After Phase B is merged to `feature/multi-target-expansion`, update roadmap board to reflect Phase B complete.
+1. Merge Phase B PR into `feature/multi-target-expansion`.
+2. Update `roadmap/board.md`: move Phase B from Active → Completed.
+3. Update `roadmap/features/multi-target-foundation-phases.md`: mark Phase B complete.
 
 ## Session Notes
 
+- Phase B implementation complete: 11 source files, 96 tests passing, branch pushed, PR ready at https://github.com/Premshay/bear-cli/pull/new/feature/phase-b-node-target-scan-only (GitHub MCP auth unavailable — create PR manually). Key fixes: `BoundaryDecision.allowed()` rename, `_shared` boundary logic, `StandardOpenOption.SYNC` for WSL2 write caching, `gradle.properties` toolchain path.
 - Phase B (Node Target — Scan Only) Kiro spec complete: `requirements.md`, `design.md`, `tasks.md` written in BEAR CLI terse/declarative style. 36 correctness properties defined. 12 implementation tasks covering detection, artifact generation, governed roots, concern-separated import containment scanner, drift gate, and `impl.allowedDeps` guard. Fixed `exit 6` → `exit 7` (`BOUNDARY_BYPASS`) typos in `roadmap/ideas/future-multi-target-spec-design.md`. Confirmed `TargetId.NODE` already exists from Phase A — spec does not re-add it.
 - Completed `P3` target-adaptable CLI preparation as a JVM-only slice: app command orchestration now routes through a kernel-owned `Target` seam via `TargetRegistry`, with no Node behavior, no `.bear/target.id`, and no CLI surface changes.
 - Followed with target-seam package cleanup: generic ownership stays in `com.bear.kernel.target`, JVM-only renderers/scanners and `JvmTarget` live under `com.bear.kernel.target.jvm`, and `Target.java` no longer imports JVM package types.

@@ -285,7 +285,7 @@ src/ outside src/blocks/
 Enforced by `NodeImportContainmentScanner` (implements `TargetCheck`):
 - scan literal `import` and `export ... from` specifiers in governed `.ts` files
 - resolve relative specifiers lexically against the importing file
-- **fail** (`exit 6`, `CODE=BOUNDARY_BYPASS`) when resolved target escapes the block root or
+- **fail** (`exit 7`, `CODE=BOUNDARY_BYPASS`) when resolved target escapes the block root or
   reaches a sibling block root or nongoverned repo source
 - **fail** on non-relative user-authored imports from governed roots:
   - bare package specifiers
@@ -306,7 +306,7 @@ Enforced by `NodeUndeclaredReachScanner` (implements `TargetCheck`):
 - **fail** (`exit 6`, `CODE=UNDECLARED_REACH`)
 
 Dynamic import detection:
-- direct `import(...)` expression in governed roots → `exit 6`, `CODE=BOUNDARY_BYPASS`, `PARTIAL`
+- direct `import(...)` expression in governed roots → `exit 7`, `CODE=BOUNDARY_BYPASS`, `PARTIAL`
 - direct `require(...)` in governed roots → same
 - direct `module.createRequire(...)` in governed roots → same
 
@@ -409,12 +409,12 @@ Python import containment behavior depends on the active governance profile:
 Enforced by `PythonImportContainmentScanner` (implements `TargetCheck`):
 - scan `import X` and `from X import Y` statements in governed `.py` files only (no `.pyi`)
 - resolve relative imports lexically against the module's package path
-- **fail** (`exit 6`, `CODE=BOUNDARY_BYPASS`) when resolved target escapes block root, reaches
+- **fail** (`exit 7`, `CODE=BOUNDARY_BYPASS`) when resolved target escapes block root, reaches
   sibling block root, or reaches nongoverned repo source
 - **fail** on third-party package imports from governed roots (bare package imports not under
   `src/blocks/` or standard library)
 - **fail** on direct dynamic import facilities:
-  - `importlib.import_module(...)` → `exit 6`, `CODE=BOUNDARY_BYPASS`
+  - `importlib.import_module(...)` → `exit 7`, `CODE=BOUNDARY_BYPASS`
   - `__import__(...)` → same
   - `importlib.util.spec_from_file_location(...)` → same
   - `sys.path` mutation → same (`PARTIAL`)
@@ -453,7 +453,7 @@ Enforced by `PythonDynamicExecutionScanner` (implements `TargetCheck`, `PARTIAL`
   - `eval(...)` — arbitrary code execution from string
   - `exec(...)` — arbitrary statement execution from string
   - `compile(...)` — dynamic code compilation
-- **fail** (`exit 6`, `CODE=BOUNDARY_BYPASS`) — these are escape hatches that can bypass any
+- **fail** (`exit 7`, `CODE=BOUNDARY_BYPASS`) — these are escape hatches that can bypass any
   static governance BEAR provides
 - status is `PARTIAL`: BEAR detects direct call-site patterns but cannot trace
   runtime-constructed code strings or aliased references outside governed roots
@@ -588,7 +588,7 @@ config files
 Enforced by `ReactImportContainmentScanner` (implements `TargetCheck`):
 - scan `import` and `export ... from` specifiers in governed `.ts`/`.tsx` files
 - resolve relative specifiers lexically
-- **fail** (`exit 6`, `CODE=BOUNDARY_BYPASS`) when resolved target reaches a sibling feature root
+- **fail** (`exit 7`, `CODE=BOUNDARY_BYPASS`) when resolved target reaches a sibling feature root
   or nongoverned source
 - allowed from governed roots: `react`, `react-dom` only (no other bare package imports)
 - path aliases (`compilerOptions.paths`, `baseUrl`, Vite `resolve.alias`) → `exit 64`,
@@ -599,7 +599,7 @@ Enforced by `ReactImportContainmentScanner` (implements `TargetCheck`):
 Enforced by `ReactApiBoundaryScanner` (implements `TargetCheck`, `PARTIAL` status):
 - scan governed `.tsx` files (component files only; not `*Service.ts` or `*Api.ts` within the
   same block root) for direct `fetch(` or `new XMLHttpRequest(` call patterns
-- **flag** (`exit 6`, `CODE=BOUNDARY_BYPASS`) — advisory: encourages routing API calls through
+- **flag** (`exit 7`, `CODE=BOUNDARY_BYPASS`) — advisory: encourages routing API calls through
   declared service files within each feature block, mapping to BEAR's "port" concept
 - status is `PARTIAL`: only the most direct call patterns are detected
 
