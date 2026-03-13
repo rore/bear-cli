@@ -6,6 +6,8 @@ import com.bear.kernel.target.TargetDetector;
 import com.bear.kernel.target.TargetId;
 
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.LoaderOptions;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,7 +26,8 @@ public class NodeTargetDetector implements TargetDetector {
         // Parse package.json to check type and packageManager
         try {
             String content = Files.readString(packageJson);
-            Yaml yaml = new Yaml();
+            LoaderOptions loaderOptions = new LoaderOptions();
+            Yaml yaml = new Yaml(new SafeConstructor(loaderOptions));
             Object parsed = yaml.load(content);
             if (!(parsed instanceof Map)) {
                 return DetectedTarget.none();
