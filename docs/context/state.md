@@ -10,13 +10,13 @@ Long-form historical notes are archived in `docs/context/archive/archive-state-h
 
 ## Current Focus
 
-Phase B (Node Target — Scan Only) implementation complete. PR open: `feature/phase-b-node-target-scan-only` → `feature/multi-target-expansion`. 96 tests passing.
+Phase B (Node Target — Scan Only) merged to `feature/multi-target-expansion`. PR #4 closed. Roadmap updated.
 
 ## Next Concrete Task
 
-1. Merge Phase B PR into `feature/multi-target-expansion`.
-2. Update `roadmap/board.md`: move Phase B from Active → Completed.
-3. Update `roadmap/features/multi-target-foundation-phases.md`: mark Phase B complete.
+1. Decide next phase: Phase C (Node runtime execution) or begin Phase D (Python/.NET).
+2. If Phase C: create spec in `.kiro/specs/phase-c-node-runtime-execution/`.
+3. Update `docs/context/architecture.md` and `docs/public/OVERVIEW.md` to mention Node target support.
 
 ## Session Notes
 
