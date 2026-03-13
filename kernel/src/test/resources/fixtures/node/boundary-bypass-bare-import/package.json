@@ -1,0 +1,5 @@
+{
+  "name": "boundary-bypass-bare-import",
+  "type": "module",
+  "packageManager": "pnpm@8.0.0"
+}

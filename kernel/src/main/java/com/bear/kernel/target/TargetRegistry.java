@@ -2,6 +2,8 @@ package com.bear.kernel.target;
 
 import com.bear.kernel.target.jvm.JvmTarget;
 import com.bear.kernel.target.jvm.JvmTargetDetector;
+import com.bear.kernel.target.node.NodeTarget;
+import com.bear.kernel.target.node.NodeTargetDetector;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,8 +14,8 @@ import java.util.Objects;
 
 public final class TargetRegistry {
     private static final TargetRegistry DEFAULT = new TargetRegistry(
-        Map.of(TargetId.JVM, new JvmTarget()),
-        List.of(new JvmTargetDetector())
+        Map.of(TargetId.JVM, new JvmTarget(), TargetId.NODE, new NodeTarget()),
+        List.of(new JvmTargetDetector(), new NodeTargetDetector())
     );
 
     private final Map<TargetId, Target> targets;

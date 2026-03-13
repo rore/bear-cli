@@ -6,20 +6,20 @@ Long-form historical notes are archived in `docs/context/archive/archive-state-h
 
 ## Last Updated
 
-2026-03-11
+2026-03-12
 
 ## Current Focus
 
-The packaged downstream CI integration is complete and stable, and `main` now also includes the completed JVM-only target-adaptation prep slice plus the follow-on seam cleanup that makes `com.bear.kernel.target` genuinely generic while keeping JVM implementation code under `com.bear.kernel.target.jvm`. The planning workflow now uses minimap under `roadmap/` as the only live planning surface. With the target seam and package ownership cleaned up, the next active product-value feature is broader boundary-escape coverage. Python and React/frontend containment profiles have been added as new parked ideas in the roadmap to document honest first-slice plans for multi-language expansion.
+Phase B (Node Target — Scan Only) spec is complete and ready for implementation. The Kiro spec has been written in BEAR CLI documentation style (terse, declarative, no User Story patterns) covering detection, TypeScript artifact generation, governed roots, import containment (with concern separation), drift gate, and `impl.allowedDeps` unsupported guard. Implementation branch will be `copilot/implement-phase-b` off `feature/multi-target-expansion`.
 
 ## Next Concrete Task
 
-1. Start `roadmap/features/p3-broader-boundary-escape-coverage.md` as the next execution slice.
-2. Keep the shipped target-seam and CI contracts stable while future multi-target work stays parked behind the prep seam.
-3. Keep `roadmap/board.md`, `roadmap/scope.md`, and minimap item files as the canonical live planning source.
+1. Begin Phase B implementation following `tasks.md` — start with Task 1 (NodeTargetDetector) on branch `copilot/implement-phase-b`.
+2. After Phase B is merged to `feature/multi-target-expansion`, update roadmap board to reflect Phase B complete.
 
 ## Session Notes
 
+- Phase B (Node Target — Scan Only) Kiro spec complete: `requirements.md`, `design.md`, `tasks.md` written in BEAR CLI terse/declarative style. 36 correctness properties defined. 12 implementation tasks covering detection, artifact generation, governed roots, concern-separated import containment scanner, drift gate, and `impl.allowedDeps` guard. Fixed `exit 6` → `exit 7` (`BOUNDARY_BYPASS`) typos in `roadmap/ideas/future-multi-target-spec-design.md`. Confirmed `TargetId.NODE` already exists from Phase A — spec does not re-add it.
 - Completed `P3` target-adaptable CLI preparation as a JVM-only slice: app command orchestration now routes through a kernel-owned `Target` seam via `TargetRegistry`, with no Node behavior, no `.bear/target.id`, and no CLI surface changes.
 - Followed with target-seam package cleanup: generic ownership stays in `com.bear.kernel.target`, JVM-only renderers/scanners and `JvmTarget` live under `com.bear.kernel.target.jvm`, and `Target.java` no longer imports JVM package types.
 - Kept runtime behavior unchanged during the split: target-owned manifest, findings, and project-verification DTOs now sit in the generic package, `TargetRegistry` still resolves `JvmTarget`, and app orchestration consumes only generic seam types.
