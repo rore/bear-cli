@@ -6,7 +6,7 @@ If you are new to BEAR vocabulary (effects/ports/ops, governed roots), start wit
 
 Promise boundary:
 
-- BEAR is a compiler and CI gate for architecture and declared semantics.
+- BEAR is a compiler and deterministic governance system for architecture and declared semantics.
 - It enforces only declared behaviors that the active target can support through generated wrappers/ports.
 - Undeclared or non-supportable behaviors are intentionally outside BEAR guarantees.
 
@@ -19,7 +19,7 @@ BEAR enforcement and governance connect three things: the declared boundary (IR)
 - **Deterministic gates and deltas.** `bear check` enforces the repo state against the declared boundary and generated layout (drift, covered reach/bypass rules, optional containment) and runs project tests deterministically. `bear pr-check` compares normalized deltas against a base ref and flags boundary expansion (exit `5`), including shared policy deltas.
 
 Practical contract:
-- a green `check` means the repo is consistent with the current declared boundary (and the test gate passed)
+- a green `check` means the repo is consistent with the current declared boundary, so the agent can keep working inside it (and the test gate passed)
 - `pr-check` makes boundary changes explicit, so expansion can be intentionally accepted (or reverted)
 
 ## Preview invariant status model
@@ -76,8 +76,9 @@ Rationale:
 
 ## Where signals show up for developers
 
+- Agent loop: `check` gives immediate deterministic feedback while the agent is still working locally.
 - PR review: boundary expansion is surfaced as explicit `pr-check` output.
-- CI gate: deterministic exit codes and failure footer make policy enforcement automatable.
+- CI automation: deterministic exit codes and failure footer make policy enforcement automatable.
 - Local triage: deterministic line ordering and path shapes help fast diagnosis.
 
 See [output-format.md](output-format.md) and [exit-codes.md](exit-codes.md).
@@ -96,3 +97,4 @@ See [output-format.md](output-format.md) and [exit-codes.md](exit-codes.md).
 - [commands-check.md](commands-check.md)
 - [commands-pr-check.md](commands-pr-check.md)
 - [troubleshooting.md](troubleshooting.md)
+

@@ -1,6 +1,6 @@
 # Demo
 
-BEAR is a deterministic governance CLI and CI gate for agentic backend development.
+BEAR is a deterministic governance CLI that constrains the agent while it works and then surfaces governance decisions in PRs and CI.
 
 In plain terms:
 - when boundary authority changes, the agent updates BEAR IR first
@@ -16,7 +16,7 @@ BEAR ships with a companion demo repo:
 - Demo repo: [bear-account-demo](https://github.com/rore/bear-account-demo)
 - CLI repo: [bear-cli](https://github.com/rore/bear-cli)
 
-The demo is meant to show BEAR review behavior, not just local command usage.
+The demo emphasizes the PR/CI review half of the model; the local inner-loop path is covered in QUICKSTART.
 
 ## What The Demo Shows
 

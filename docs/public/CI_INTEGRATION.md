@@ -1,6 +1,7 @@
 # CI Integration
 
 BEAR ships a downstream CI wrapper under `.bear/ci/` so consuming repos can run deterministic governance gates without copying policy logic into workflow YAML.
+This is the downstream PR/CI layer. The inner-loop BEAR path still lives in the agent workflow through `validate`, `compile`, and `check` before code reaches review.
 
 Canonical packaged assets:
 - `.bear/ci/bear-gates.ps1`
@@ -265,3 +266,4 @@ Runtime note:
 - [PR_REVIEW.md](PR_REVIEW.md)
 - [commands-pr-check.md](commands-pr-check.md)
 - [output-format.md](output-format.md)
+

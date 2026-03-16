@@ -9,16 +9,18 @@ Block Enforceable Architectural Representation
 Agents can generate large amounts of code very quickly.
 The dangerous changes are often structural: new dependencies, widened boundaries, and new authority surfaces.
 
-BEAR is a deterministic governance CLI and CI gate that makes those structural changes explicit and visible in CI.
+BEAR is a deterministic governance CLI that constrains agents during development and emits stable governance signals in PRs and CI.
 
 Demo repo: [bear-account-demo](https://github.com/rore/bear-account-demo)
+
+BEAR runs in two places: inside the agent working loop for immediate corrective feedback, and in PR/CI so humans can review structural authority changes.
 
 ## How BEAR works (10 seconds)
 
 1. The agent updates BEAR IR when boundary authority must change.
 2. `bear compile` materializes deterministic structural constraints from that IR.
-3. The agent implements code inside those constraints.
-4. `check` and `pr-check` surface drift, bypass, and boundary expansion in CI.
+3. The agent implements code and runs `check` to catch drift and bypasses early.
+4. `pr-check` surfaces structural authority expansion in PRs and CI for human review.
 
 ## Example governance signal
 
@@ -66,7 +68,7 @@ flowchart LR
 - BEAR compiles that declaration into deterministic guardrails (wrappers, ports, manifests).
 - The agent then implements code inside those guardrails instead of inventing the boundary shape ad hoc.
 - Blocks interact only through declared ports; cross-boundary access outside a declared port is flagged as a violation (or PR signal).
-- CI gets deterministic governance signals from `check` and `pr-check`.
+- Agents get immediate deterministic feedback from `check`, and CI gets stable governance signals from `check` and `pr-check`.
 
 ## What you get
 
@@ -179,7 +181,4 @@ The demo currently showcases three PR outcomes:
 - Primary containment enforcement path is Java plus Gradle wrapper when `impl.allowedDeps` is declared.
 
 This project uses [Minimap](https://github.com/rore/minimap) for repo-local roadmap and feature planning.
-
-
-
 

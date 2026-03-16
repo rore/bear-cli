@@ -8,13 +8,13 @@ For onboarding, use [OVERVIEW.md](OVERVIEW.md), [QUICKSTART.md](QUICKSTART.md), 
 ## Why BEAR exists
 
 Agent-generated code can move fast and hide architectural drift.
-BEAR exists to make boundary authority changes explicit, enforceable, and CI-visible.
+BEAR exists to make boundary authority changes explicit, enforceable, visible to the agent while it works, and reviewable in PRs and CI.
 
 ## How It Works
 
 - **Declare boundary in IR.** IR defines block operations and allowed effects. `port.kind` can be `external` (`ops`) or `block` (`targetBlock` + `targetOps`). `block.kind` remains `logic` in v1.
 - **Generate governed surface.** `bear compile` (or `bear fix`) emits deterministic wrappers/ports/manifests. Generated manifests include governed ownership roots (`governedSourceRoots`) used by enforcement.
-- **Run deterministic gates.** `bear check` validates drift, covered bypass/reach rules, containment lanes, and runs project tests deterministically. `bear pr-check` compares against base and classifies boundary-expanding deltas.
+- **Run deterministic gates.** `bear check` gives immediate inner-loop feedback on drift, covered bypass/reach rules, containment lanes, and project tests. `bear pr-check` compares against base and classifies boundary-expanding deltas for PR/CI governance.
 
 ## Intended Workflow Loop
 

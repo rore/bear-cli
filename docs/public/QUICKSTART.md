@@ -1,6 +1,6 @@
 # Quickstart
 
-This quickstart runs BEAR on the demo repo with the minimal local command path.
+This quickstart shows BEAR in the local agent loop first, using the demo repo and the minimal local command path.
 
 Prerequisites:
 

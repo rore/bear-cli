@@ -109,7 +109,7 @@ Status:
 
 ### 5.1 No structural rule may exist only in documentation
 Requirement:
-- Invariants are enforced mechanically by IR validation, generation, structural checks, or CI gates.
+- Invariants are enforced mechanically by IR validation, generation, structural checks in the agent loop, or PR/CI gates.
 Status:
 - `ENFORCED` for preview invariants.
 - `PLANNED` for post-preview hardening invariants.
@@ -166,3 +166,4 @@ Do not add:
 - style linting
 
 These belong to other layers.
+

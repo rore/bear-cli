@@ -1,4 +1,4 @@
-﻿# Vision (Directional, Engineering Scope)
+# Vision (Directional, Engineering Scope)
 
 This page captures longer-horizon BEAR direction.
 It is not a milestone plan and it does not imply dates or active implementation.
@@ -17,7 +17,7 @@ This means the page avoids near-term queue items and avoids restating capabiliti
 
 - Agent-first workflow remains the default: agents handle IR mechanics.
 - Developers are not expected to hand-author IR in routine usage.
-- BEAR remains deterministic and CI-oriented, not a runtime policy engine.
+- BEAR remains deterministic in both the agent loop and PR/CI, not a runtime policy engine.
 
 ## Direction 1: Boundary usage visibility, not only capability visibility
 
@@ -65,3 +65,4 @@ One explicit candidate is Node.js/TypeScript, with target-specific containment c
 - [FOUNDATIONS.md](FOUNDATIONS.md)
 - [CONTRACTS.md](CONTRACTS.md)
 - [VERSIONING.md](VERSIONING.md)
+

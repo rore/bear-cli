@@ -20,7 +20,8 @@ New to vocabulary? See [TERMS.md](TERMS.md).
 
 BEAR is:
 - a deterministic governance CLI for backend boundaries
-- a CI-friendly signal producer (`exit` + stable footer contract)
+- part of the agent working loop for immediate corrective feedback
+- a CI-friendly signal producer (`exit` + stable footer contract) for PR and automation review
 
 BEAR is not:
 - a business-rule correctness engine
@@ -30,7 +31,7 @@ BEAR is not:
 ## Who edits IR?
 
 In the intended workflow, developers do not hand-author IR routinely.
-The agent updates IR as needed; developers review resulting governance signals.
+The agent updates IR as needed, runs BEAR while it works, and developers review the resulting governance signals.
 
 ## Read next
 

@@ -11,7 +11,7 @@ It uses an **IR** (Intermediate Representation): a small YAML spec file (for exa
 - allowed external capabilities (effects/ports)
 - key invariants and idempotency settings
 
-From that IR, BEAR validates, generates deterministic code artifacts, and enforces consistency through `bear check` and `bear pr-check`.
+From that IR, BEAR validates, generates deterministic code artifacts, gives immediate local feedback through `bear check`, and produces review signals through `bear pr-check`.
 
 ## Operating model (developer + agent)
 
@@ -37,6 +37,7 @@ In AI-assisted development, code can be produced quickly, but structural risk ca
 
 BEAR is designed to counter that pattern with deterministic, machine-checkable contracts:
 - IR-first boundary declaration instead of implicit behavior spread
+- immediate local gate feedback (`check`) while the agent is still working
 - explicit boundary-expansion signaling (`pr-check`) for review and governance
 - deterministic gate outputs and failure envelopes for reliable CI/agent loops
 

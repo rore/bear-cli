@@ -1,6 +1,6 @@
 # Public Docs
 
-These docs are split into two lanes: a default guide path for humans and a reference path for automation/parsers.
+These docs are split into two lanes: a default guide path that starts with the agent working loop and then moves into PR/CI review, and a reference path for automation/parsers.
 
 ## Guide (Start Here: 4 pages)
 
@@ -28,3 +28,4 @@ If you are adopting BEAR in a real CI workflow, continue with [CI_INTEGRATION.md
 ## If You Are Modifying bear-cli
 
 Start with [docs/context/CONTEXT_BOOTSTRAP.md](../context/CONTEXT_BOOTSTRAP.md) (repo-maintainer routing and guardrails).
+

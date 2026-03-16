@@ -12,7 +12,7 @@ It exists because:
 - generated artifacts can drift from declared structure
 - production workflows need deterministic, independent gates
 
-BEAR uses strict BEAR IR plus deterministic commands to make boundary changes explicit and enforceable.
+BEAR uses strict BEAR IR plus deterministic commands to constrain the agent locally and make boundary changes explicit and enforceable in review.
 
 ## Philosophy in Agentic Development
 
@@ -71,12 +71,12 @@ Role split:
 
 Expected loop:
 1. Prompt in domain language.
-2. Agent updates IR and implementation.
+2. Agent updates IR first when boundary authority changes, then updates implementation.
 3. Agent runs deterministic gates (`validate`, `compile`/`fix`, `check`, `pr-check`).
 4. Agent reports implementation summary and explicit boundary-governance signals.
 
 Required property:
-- boundary-expanding changes are visible in PR/CI in seconds.
+- boundary-expanding changes are visible to the agent locally and to humans in PR/CI in seconds.
 - ordinary changes remain low-friction.
 
 ## What BEAR Guarantees in Preview
@@ -138,3 +138,4 @@ Out of scope:
 ## Governance Reference
 
 `docs/context/governance.md` is the normative source for IR diff classification and boundary-expansion review semantics.
+
