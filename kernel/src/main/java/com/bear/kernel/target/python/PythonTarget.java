@@ -6,7 +6,9 @@ import com.bear.kernel.ir.BearIrValidationException;
 import com.bear.kernel.target.*;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -58,12 +60,15 @@ public class PythonTarget implements Target {
 
     @Override
     public WiringManifest parseWiringManifest(Path path) throws IOException, ManifestParseException {
-        throw new UnsupportedOperationException("parseWiringManifest not implemented in Phase P");
+        return TargetManifestParsers.parseWiringManifest(path);
     }
 
     @Override
     public void prepareCheckWorkspace(Path projectRoot, Path tempRoot) throws IOException {
-        throw new UnsupportedOperationException("prepareCheckWorkspace not implemented in Phase P");
+        Path sharedDir = projectRoot.resolve("src/blocks/_shared");
+        if (Files.isDirectory(sharedDir)) {
+            Files.createDirectories(tempRoot.resolve("src/blocks/_shared"));
+        }
     }
 
     @Override
@@ -97,28 +102,67 @@ public class PythonTarget implements Target {
 
     @Override
     public String containmentSkipInfoLine(String projectRootLabel, Path projectRoot, boolean considerContainmentSurfaces) {
-        throw new UnsupportedOperationException("containmentSkipInfoLine not implemented in Phase P");
+        return null; // JVM-style containment markers not applicable to Python
     }
 
     @Override
     public TargetCheckIssue preflightContainmentIfRequired(Path projectRoot, boolean considerContainmentSurfaces) throws IOException {
-        throw new UnsupportedOperationException("preflightContainmentIfRequired not implemented in Phase P");
+        return null; // JVM-style containment markers not applicable to Python
     }
 
     @Override
     public TargetCheckIssue verifyContainmentMarkersIfRequired(Path projectRoot, boolean considerContainmentSurfaces) throws IOException {
-        throw new UnsupportedOperationException("verifyContainmentMarkersIfRequired not implemented in Phase P");
+        return null; // JVM-style containment markers not applicable to Python
     }
 
     @Override
     public List<UndeclaredReachFinding> scanUndeclaredReach(Path projectRoot) throws IOException, PolicyValidationException {
-        throw new UnsupportedOperationException("scanUndeclaredReach not implemented in Phase P");
+        // Discover wiring manifests from project root
+        List<WiringManifest> wiringManifests = discoverWiringManifests(projectRoot);
+        return PythonUndeclaredReachScanner.scan(projectRoot, wiringManifests);
     }
 
     @Override
     public List<UndeclaredReachFinding> scanForbiddenReflectionDispatch(Path projectRoot, List<WiringManifest> wiringManifests)
             throws IOException {
-        throw new UnsupportedOperationException("scanForbiddenReflectionDispatch not implemented in Phase P");
+        // Combine dynamic execution scanner and dynamic import enforcer findings
+        List<UndeclaredReachFinding> execFindings = PythonDynamicExecutionScanner.scan(projectRoot, wiringManifests);
+        List<UndeclaredReachFinding> importFindings = PythonDynamicImportEnforcer.scan(projectRoot, wiringManifests);
+        
+        List<UndeclaredReachFinding> combined = new ArrayList<>();
+        combined.addAll(execFindings);
+        combined.addAll(importFindings);
+        
+        // Sort by path then surface
+        combined.sort(java.util.Comparator.comparing(UndeclaredReachFinding::path)
+            .thenComparing(UndeclaredReachFinding::surface));
+        
+        return combined;
+    }
+
+    /**
+     * Discovers wiring manifests from the project root by scanning build/generated/bear/wiring/.
+     */
+    private List<WiringManifest> discoverWiringManifests(Path projectRoot) throws IOException {
+        Path wiringDir = projectRoot.resolve("build/generated/bear/wiring");
+        List<WiringManifest> manifests = new ArrayList<>();
+        
+        if (!Files.isDirectory(wiringDir)) {
+            return manifests;
+        }
+        
+        try (var stream = Files.list(wiringDir)) {
+            stream.filter(p -> p.toString().endsWith(".wiring.json"))
+                  .forEach(p -> {
+                      try {
+                          manifests.add(parseWiringManifest(p));
+                      } catch (IOException | ManifestParseException e) {
+                          // Skip invalid manifests - they'll be caught by drift gate
+                      }
+                  });
+        }
+        
+        return manifests;
     }
 
     @Override
@@ -133,7 +177,7 @@ public class PythonTarget implements Target {
     @Override
     public List<BoundaryBypassFinding> scanPortImplContainmentBypass(Path projectRoot, List<WiringManifest> wiringManifests)
             throws IOException, ManifestParseException {
-        throw new UnsupportedOperationException("scanPortImplContainmentBypass not implemented in Phase P");
+        return List.of(); // JVM-specific port binding checks not applicable to Python
     }
 
     @Override
@@ -142,7 +186,7 @@ public class PythonTarget implements Target {
             List<WiringManifest> wiringManifests,
             Set<String> inboundTargetWrapperFqcns
     ) throws IOException {
-        throw new UnsupportedOperationException("scanBlockPortBindings not implemented in Phase P");
+        return List.of(); // JVM-specific port binding checks not applicable to Python
     }
 
     @Override
@@ -150,12 +194,13 @@ public class PythonTarget implements Target {
             Path projectRoot,
             List<WiringManifest> wiringManifests
     ) throws IOException, ManifestParseException {
-        throw new UnsupportedOperationException("scanMultiBlockPortImplAllowedSignals not implemented in Phase P");
+        return List.of(); // JVM-specific port binding checks not applicable to Python
     }
 
     @Override
     public ProjectTestResult runProjectVerification(Path projectRoot, String initScriptRelativePath) throws IOException, InterruptedException {
-        throw new UnsupportedOperationException("runProjectVerification not implemented in Phase P");
+        // initScriptRelativePath is JVM-specific (Gradle init script); Python ignores it
+        return PythonProjectVerificationRunner.run(projectRoot);
     }
 
     // Helper methods

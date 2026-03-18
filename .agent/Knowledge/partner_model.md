@@ -130,6 +130,16 @@ Don't just suggest updates — make them. Specific observations beat generic one
 - Correction received: "don't duplicate content between .agent/ and .kiro/steering/ — reference instead"
 - Correction received: intelligent-routing skill should be kept (relevant to Kiro's subagent routing)
 
+### 2026-03-18 — Phase P2 Python Checking Complete
+- Completed all 13 tasks for Phase P2 (Python full check pipeline)
+- Key pattern: embedded Python scripts via ProcessBuilder work well for AST analysis
+- Key pattern: `TYPE_CHECKING` block exclusion is critical for Python static analysis tools
+- Key pattern: test file exclusion (`test_*.py`, `*_test.py`) prevents false positives
+- Key insight: shared `TargetManifestParsers` enables cross-target wiring manifest parsing
+- Key insight: `TargetRegistry` silent fallback removal improves error clarity
+- Verified: 16 correctness properties pass with 100+ iterations each
+- Verified: zero regressions in JVM, Node, and Phase P tests
+
 ---
 
 ## Usage Notes for AI Agents

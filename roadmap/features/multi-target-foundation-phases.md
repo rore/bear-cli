@@ -1,7 +1,7 @@
 ---
 id: multi-target-foundation-phases
-title: Multi-target Foundation — Phases A, B, P
-status: in-progress (Phase B complete, Phase P spec complete)
+title: Multi-target Foundation — Phases A, B, P, P2
+status: in-progress (Phase P2 complete)
 priority: high
 commitment: committed
 milestone: P2
@@ -266,9 +266,91 @@ Spec created on 2026-03-13. Implementation branch: TBD.
 - Reuses `BoundaryDecision` model from Node implementation
 - `TargetId.PYTHON` enum value to be added
 
-
+## Phase P2: Python Target — Full Check Pipeline (COMPLETE)
 
 ### Purpose
+Complete the Python target check pipeline with undeclared reach scanning, dynamic execution
+detection, dynamic import enforcement, and project verification (mypy integration).
+
+### Scope
+- Shared `TargetManifestParsers` for wiring manifest parsing
+- `TargetRegistry` deterministic resolution (no silent JVM fallback)
+- `PythonUndeclaredReachScanner` for covered power surfaces (socket, http, subprocess, etc.)
+- `PythonDynamicExecutionScanner` for eval/exec/compile detection
+- `PythonDynamicImportEnforcer` for importlib/sys.path mutation detection
+- `PythonProjectVerificationRunner` for mypy integration (uv/poetry)
+- Integration test fixtures for all scanner types
+
+### Acceptance Criteria
+- [x] `TargetManifestParsers` moved to shared `com.bear.kernel.target` package
+- [x] `TargetRegistry` throws `TARGET_NOT_DETECTED` when no detector matches
+- [x] `PythonTarget.parseWiringManifest` delegates to shared parser
+- [x] `PythonTarget.prepareCheckWorkspace` creates `_shared` directory if present
+- [x] Containment pipeline stubs return null/no-op (Python doesn't use JVM markers)
+- [x] Port and binding check stubs return empty lists
+- [x] `PythonUndeclaredReachScanner` detects covered module imports and os.system/exec calls
+- [x] `PythonDynamicExecutionScanner` detects eval/exec/compile calls
+- [x] `PythonDynamicImportEnforcer` detects importlib and sys.path mutations
+- [x] `PythonProjectVerificationRunner` runs mypy via uv/poetry
+- [x] All 16 correctness properties pass (100+ iterations each)
+- [x] All existing JVM tests pass without modification
+- [x] All existing Node tests pass without modification
+- [x] Integration test fixtures verify exit codes
+
+### Deliverables
+
+**Implementation:**
+- `kernel/src/main/java/com/bear/kernel/target/TargetManifestParsers.java` (moved from jvm/)
+- `kernel/src/main/java/com/bear/kernel/target/python/PythonUndeclaredReachScanner.java`
+- `kernel/src/main/java/com/bear/kernel/target/python/PythonDynamicExecutionScanner.java`
+- `kernel/src/main/java/com/bear/kernel/target/python/PythonDynamicImportEnforcer.java`
+- `kernel/src/main/java/com/bear/kernel/target/python/PythonProjectVerificationRunner.java`
+
+**Tests:**
+- `kernel/src/test/java/com/bear/kernel/target/TargetRegistryDetectionTest.java`
+- `kernel/src/test/java/com/bear/kernel/target/properties/TargetRegistryResolutionProperties.java`
+- `kernel/src/test/java/com/bear/kernel/target/python/PythonTargetCheckMethodsTest.java`
+- `kernel/src/test/java/com/bear/kernel/target/python/PythonUndeclaredReachScannerTest.java`
+- `kernel/src/test/java/com/bear/kernel/target/python/PythonDynamicExecutionScannerTest.java`
+- `kernel/src/test/java/com/bear/kernel/target/python/PythonDynamicImportEnforcerTest.java`
+- `kernel/src/test/java/com/bear/kernel/target/python/PythonProjectVerificationRunnerTest.java`
+- `kernel/src/test/java/com/bear/kernel/target/python/PythonCheckIntegrationTest.java`
+- `kernel/src/test/java/com/bear/kernel/target/python/properties/WiringManifestParsingProperties.java`
+- `kernel/src/test/java/com/bear/kernel/target/python/properties/CheckWorkspaceProperties.java`
+- `kernel/src/test/java/com/bear/kernel/target/python/properties/UndeclaredReachProperties.java`
+- `kernel/src/test/java/com/bear/kernel/target/python/properties/DynamicExecutionProperties.java`
+- `kernel/src/test/java/com/bear/kernel/target/python/properties/DynamicImportEnforcementProperties.java`
+- `kernel/src/test/java/com/bear/kernel/target/python/properties/ProjectVerificationProperties.java`
+
+**Fixtures:**
+- `kernel/src/test/resources/fixtures/python/check-clean/`
+- `kernel/src/test/resources/fixtures/python/check-undeclared-reach/`
+- `kernel/src/test/resources/fixtures/python/check-os-system/`
+- `kernel/src/test/resources/fixtures/python/check-from-os-import/`
+- `kernel/src/test/resources/fixtures/python/check-dynamic-exec/`
+- `kernel/src/test/resources/fixtures/python/check-dynamic-import/`
+- `kernel/src/test/resources/fixtures/python/check-sys-path-mutation/`
+- `kernel/src/test/resources/fixtures/python/check-type-checking-excluded/`
+
+**Specs:**
+- `.kiro/specs/phase-p2-python-checking/requirements.md`
+- `.kiro/specs/phase-p2-python-checking/design.md`
+- `.kiro/specs/phase-p2-python-checking/tasks.md`
+
+### Status
+✅ COMPLETE
+
+Completed on 2026-03-18. 13 tasks, 16 correctness properties validated.
+
+### Implementation Notes
+- `TargetManifestParsers` moved to shared package, `parseWiringManifest` made public
+- `TargetRegistry` silent JVM fallback removed — throws `TARGET_NOT_DETECTED` instead
+- Python scanners use embedded Python scripts via ProcessBuilder
+- `TYPE_CHECKING` block exclusion implemented in all Python AST scanners
+- Test files (`test_*.py`, `*_test.py`) excluded from scanning
+- `PythonProjectVerificationRunner` prefers `uv` over `poetry`, handles missing mypy gracefully
+
+## Phase C: Node Target — Runtime Execution (PLANNED)
 Add runtime execution capabilities to Node target: project verification, dynamic import
 resolution, and full end-to-end workflow support.
 

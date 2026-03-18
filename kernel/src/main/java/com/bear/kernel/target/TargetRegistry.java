@@ -107,10 +107,7 @@ public final class TargetRegistry {
             if (targets.size() == 1) {
                 return targets.values().iterator().next();
             }
-            Target jvmFallback = targets.get(TargetId.JVM);
-            if (jvmFallback != null) {
-                return jvmFallback;
-            }
+            // Multi-target no-detector registry: throw TARGET_NOT_DETECTED (no silent JVM fallback)
             throw new TargetResolutionException(
                 "TARGET_NOT_DETECTED",
                 projectRoot.toString(),
@@ -187,15 +184,11 @@ public final class TargetRegistry {
                     "Target ecosystem recognized but project shape is unsupported: " + reason
                 );
             }
-            // No detector matched (all returned NONE). Fall back to JVM for backward compatibility.
-            Target jvmFallback = targets.get(TargetId.JVM);
-            if (jvmFallback != null) {
-                return jvmFallback;
-            }
+            // No detector matched (all returned NONE). Throw TARGET_NOT_DETECTED.
             throw new TargetResolutionException(
                 "TARGET_NOT_DETECTED",
                 projectRoot.toString(),
-                "No target detector matched this project. Add a .bear/target.id pin file or ensure the project has recognized build files."
+                "No target detector matched this project. Add a .bear/target.id pin file or ensure the project has recognized build files (build.gradle, package.json, pyproject.toml)."
             );
         }
         if (unblocked.size() > 1) {

@@ -25,11 +25,38 @@ public class PythonDynamicImportDetector {
         import sys
         import json
         
+        def collect_type_checking_lines(tree):
+            \"\"\"Collect line ranges inside `if TYPE_CHECKING:` blocks.\"\"\"
+            type_checking_lines = set()
+            for node in ast.walk(tree):
+                if isinstance(node, ast.If):
+                    # Check if condition is TYPE_CHECKING
+                    test = node.test
+                    is_type_checking = False
+                    if isinstance(test, ast.Name) and test.id == 'TYPE_CHECKING':
+                        is_type_checking = True
+                    elif isinstance(test, ast.Attribute) and test.attr == 'TYPE_CHECKING':
+                        is_type_checking = True
+                    
+                    if is_type_checking:
+                        # Collect all lines in the body of this if block
+                        for body_node in ast.walk(node):
+                            if hasattr(body_node, 'lineno'):
+                                type_checking_lines.add(body_node.lineno)
+            return type_checking_lines
+        
         def detect_dynamic_imports(source_code):
             dynamic_imports = []
             try:
                 tree = ast.parse(source_code)
+                type_checking_lines = collect_type_checking_lines(tree)
+                
                 for node in ast.walk(tree):
+                    if not hasattr(node, 'lineno'):
+                        continue
+                    if node.lineno in type_checking_lines:
+                        continue
+                    
                     if isinstance(node, ast.Call):
                         # Check for importlib.import_module(...)
                         if isinstance(node.func, ast.Attribute):
@@ -52,6 +79,17 @@ public class PythonDynamicImportDetector {
                                     'line': node.lineno,
                                     'col': node.col_offset
                                 })
+                            # Check for sys.path.append(...) or sys.path.insert(...)
+                            elif (isinstance(node.func.value, ast.Attribute) and
+                                  isinstance(node.func.value.value, ast.Name) and
+                                  node.func.value.value.id == 'sys' and
+                                  node.func.value.attr == 'path' and
+                                  node.func.attr in ('append', 'insert')):
+                                dynamic_imports.append({
+                                    'pattern': 'sys.path',
+                                    'line': node.lineno,
+                                    'col': node.col_offset
+                                })
                         # Check for __import__(...)
                         elif isinstance(node.func, ast.Name) and node.func.id == '__import__':
                             dynamic_imports.append({
@@ -59,6 +97,19 @@ public class PythonDynamicImportDetector {
                                 'line': node.lineno,
                                 'col': node.col_offset
                             })
+                    
+                    # Check for sys.path = [...] assignment
+                    elif isinstance(node, ast.Assign):
+                        for target in node.targets:
+                            if (isinstance(target, ast.Attribute) and
+                                target.attr == 'path' and
+                                isinstance(target.value, ast.Name) and
+                                target.value.id == 'sys'):
+                                dynamic_imports.append({
+                                    'pattern': 'sys.path',
+                                    'line': node.lineno,
+                                    'col': node.col_offset
+                                })
             except SyntaxError:
                 # If parsing fails, return empty list
                 pass

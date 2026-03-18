@@ -6,19 +6,17 @@ Long-form historical notes are archived in `docs/context/archive/archive-state-h
 
 ## Last Updated
 
-2026-03-13
+2026-03-18
 
 ## Current Focus
 
-Phase P (Python Target — Scan Only) complete. App test failures fixed. Branch ready for PR.
+Phase P2 (Python Target — Full Check Pipeline) implementation complete. All 13 tasks done, full kernel test suite green.
 
 ## Next Concrete Task
 
-1. Commit all changes, push to `feature/multi-target-expansion`, create PR.
-2. After merge, update `roadmap/board.md` to reflect Phase P complete.
+Begin Phase C (Node Target — Runtime Execution) spec creation, or advance P3 milestone items per `roadmap/board.md`.
 
 ## Session Notes
 
-- **App test failures fixed**: `TargetRegistry` JVM fallback added (all-NONE detectors → JVM when registered); `JvmTargetDetector` extended to detect `gradlew`/`gradlew.bat`; compilation fixes (`e.exitCode()` → `e.code()`) in `BearCli.java` and `CheckCommandService.java`; `UNSUPPORTED_TARGET` constant added to `CliCodes.java`; app test fixtures updated with `build.gradle` creation; `TargetRegistryResolveTest` renamed to match new fallback behavior. Full suite green: 381 kernel + 446 app tests.
-- **Phase P implementation complete**: All 11 tasks finished. 11 source files, 8 unit test files, 6 property test files, 9 fixture projects, 18 integration tests. Full kernel+app test suite passing with zero JVM/Node regressions.
-- **Phase P spec complete**: `requirements.md`, `design.md`, `tasks.md` written. 33 correctness properties defined. AST-first Python analysis strategy.
+- **Phase P2 complete**: All 13 spec tasks implemented — TargetManifestParsers moved to shared package, TargetRegistry silent JVM fallback fixed, PythonTarget check methods wired, undeclared reach scanner, dynamic execution scanner, dynamic import enforcer, project verification runner, integration test fixtures. 16 correctness properties validated. Full kernel suite green (JVM, Node, Python targets).
+- **Phase P complete**: Branch ready for PR. Full suite green: 381 kernel + 446 app tests.
