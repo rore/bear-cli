@@ -41,11 +41,7 @@ public class NodeImportContainmentScanner {
             dynamicDetector.detectDynamicImports(content);
         }
 
-<<<<<<< HEAD
         // Sort findings by file path
-=======
-        // Sort findings by file path only (line numbers not available in current finding model)
->>>>>>> 40bd18f (fix: address Copilot PR review comments)
         findings.sort(Comparator.comparing(
             (BoundaryBypassFinding f) -> f.path(),
             Comparator.naturalOrder()

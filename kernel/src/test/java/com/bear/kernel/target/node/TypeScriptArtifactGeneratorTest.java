@@ -19,7 +19,7 @@ class TypeScriptArtifactGeneratorTest {
 
         generator.generatePorts(ir, tempDir, "user-auth");
 
-        Path portsFile = tempDir.resolve("user-authPorts.ts");
+        Path portsFile = tempDir.resolve("UserAuthPorts.ts");
         assertTrue(Files.exists(portsFile));
         String content = Files.readString(portsFile);
         assertTrue(content.contains("export interface DatabasePort"));
@@ -33,7 +33,7 @@ class TypeScriptArtifactGeneratorTest {
 
         generator.generateLogic(ir, tempDir, "user-auth");
 
-        Path logicFile = tempDir.resolve("user-authLogic.ts");
+        Path logicFile = tempDir.resolve("UserAuthLogic.ts");
         String content = Files.readString(logicFile);
         // blockName="UserAuth", opName="login" → "UserAuthloginRequest" (opName not capitalized)
         assertTrue(content.contains("export interface UserAuthloginRequest"), "content: " + content);
@@ -48,7 +48,7 @@ class TypeScriptArtifactGeneratorTest {
 
         generator.generateWrapper(ir, tempDir, "user-auth");
 
-        Path wrapperFile = tempDir.resolve("user-authWrapper.ts");
+        Path wrapperFile = tempDir.resolve("UserAuthWrapper.ts");
         String content = Files.readString(wrapperFile);
         // blockName="UserAuth", opName="login" → wrapperName="UserAuth_login"
         assertTrue(content.contains("export class UserAuth_login"));

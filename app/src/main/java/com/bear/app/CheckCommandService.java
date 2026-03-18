@@ -258,6 +258,27 @@ final class CheckCommandService {
             boolean considerContainmentSurfaces = considerContainmentSurfacesOverride != null
                 ? considerContainmentSurfacesOverride
                 : target.considerContainmentSurfaces(normalized, projectRoot);
+
+            // Guard: impl.allowedDeps is unsupported for targets that don't consider containment surfaces
+            if (!target.considerContainmentSurfaces(normalized, projectRoot)
+                    && normalized.block().impl() != null
+                    && normalized.block().impl().allowedDeps() != null
+                    && !normalized.block().impl().allowedDeps().isEmpty()) {
+                String irPath = irFile.toString().replace('\\', '/');
+                String line = "check: UNSUPPORTED_TARGET: impl.allowedDeps is not supported for "
+                    + target.targetId().name().toLowerCase() + " target: " + irPath;
+                return checkFailure(
+                    CliCodes.EXIT_USAGE,
+                    List.of(line),
+                    "UNSUPPORTED",
+                    CliCodes.UNSUPPORTED_TARGET,
+                    irPath,
+                    "Remove impl.allowedDeps for " + target.targetId().name().toLowerCase()
+                        + " target, or switch to JVM target.",
+                    line
+                );
+            }
+
             BlockIdentityResolution identity = expectedBlockKey == null
                 ? BlockIdentityResolver.resolveSingleCommandIdentity(irFile, projectRoot, normalized.block().name(), resolvedIndexPath)
                 : BlockIdentityResolver.resolveIndexIdentity(

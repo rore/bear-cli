@@ -24,7 +24,6 @@ public class NodeTargetDetector implements TargetDetector {
 
         // Parse package.json (strict JSON) to check type and packageManager
         try {
-<<<<<<< HEAD
             JsonNode pkg = OBJECT_MAPPER.readTree(packageJson.toFile());
             JsonNode typeNode = pkg.get("type");
             if (typeNode == null || !"module".equals(typeNode.asText())) {
@@ -32,15 +31,6 @@ public class NodeTargetDetector implements TargetDetector {
             }
             JsonNode pmNode = pkg.get("packageManager");
             if (pmNode == null || !pmNode.asText().startsWith("pnpm")) {
-=======
-            String content = Files.readString(packageJson);
-            // Check for "type": "module" with flexible whitespace
-            if (!content.matches("(?s).*\"type\"\\s*:\\s*\"module\".*")) {
-                return DetectedTarget.none();
-            }
-            // Check for "packageManager": "pnpm@..." with flexible whitespace
-            if (!content.matches("(?s).*\"packageManager\"\\s*:\\s*\"pnpm@.*")) {
->>>>>>> 40bd18f (fix: address Copilot PR review comments)
                 return DetectedTarget.none();
             }
         } catch (Exception e) {

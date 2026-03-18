@@ -12,8 +12,9 @@ public class TypeScriptArtifactGenerator {
      * Generates Ports.ts file.
      */
     public void generatePorts(BearIr ir, Path outputDir, String blockKey) throws IOException {
+        String blockName = TypeScriptLexicalSupport.deriveBlockName(blockKey);
         String content = renderPorts(ir, blockKey);
-        Path portsFile = outputDir.resolve(blockKey + "Ports.ts");
+        Path portsFile = outputDir.resolve(blockName + "Ports.ts");
         writeIfDifferent(portsFile, content);
     }
 
@@ -21,8 +22,9 @@ public class TypeScriptArtifactGenerator {
      * Generates Logic.ts file.
      */
     public void generateLogic(BearIr ir, Path outputDir, String blockKey) throws IOException {
+        String blockName = TypeScriptLexicalSupport.deriveBlockName(blockKey);
         String content = renderLogic(ir, blockKey);
-        Path logicFile = outputDir.resolve(blockKey + "Logic.ts");
+        Path logicFile = outputDir.resolve(blockName + "Logic.ts");
         writeIfDifferent(logicFile, content);
     }
 
@@ -30,8 +32,9 @@ public class TypeScriptArtifactGenerator {
      * Generates Wrapper.ts file.
      */
     public void generateWrapper(BearIr ir, Path outputDir, String blockKey) throws IOException {
+        String blockName = TypeScriptLexicalSupport.deriveBlockName(blockKey);
         String content = renderWrapper(ir, blockKey);
-        Path wrapperFile = outputDir.resolve(blockKey + "Wrapper.ts");
+        Path wrapperFile = outputDir.resolve(blockName + "Wrapper.ts");
         writeIfDifferent(wrapperFile, content);
     }
 
@@ -43,7 +46,7 @@ public class TypeScriptArtifactGenerator {
         Path implFile = outputDir.resolve(blockName + "Impl.ts");
 
         if (!Files.exists(implFile)) {
-            String content = renderUserImplSkeleton(ir, blockKey);
+            String content = normalizeLineEndings(renderUserImplSkeleton(ir, blockKey));
             Files.createDirectories(outputDir);
             Files.writeString(implFile, content);
         }
@@ -193,7 +196,7 @@ public class TypeScriptArtifactGenerator {
 
         String blockName = TypeScriptLexicalSupport.deriveBlockName(blockKey);
 
-        sb.append("import { ").append(blockName).append("Logic").append(" } from '../").append(blockKey).append("Logic';\n\n");
+        sb.append("import { ").append(blockName).append("Logic").append(" } from '../").append(blockName).append("Logic';\n\n");
 
         sb.append("export class ").append(blockName).append("Impl implements ").append(blockName).append("Logic {\n");
 
@@ -222,15 +225,24 @@ public class TypeScriptArtifactGenerator {
 
     // Helper methods
 
+    /**
+     * Normalizes line endings to LF (Unix-style) for consistent output
+     * across platforms. Ensures no CRLF or bare CR line endings remain.
+     */
+    static String normalizeLineEndings(String content) {
+        return content.replace("\r\n", "\n").replace("\r", "\n");
+    }
+
     private void writeIfDifferent(Path file, String content) throws IOException {
+        String normalized = normalizeLineEndings(content);
         if (Files.exists(file)) {
             String existing = Files.readString(file);
-            if (existing.equals(content)) {
+            if (existing.equals(normalized)) {
                 return;
             }
         }
         Files.createDirectories(file.getParent());
-        Files.writeString(file, content, java.nio.file.StandardOpenOption.CREATE,
+        Files.writeString(file, normalized, java.nio.file.StandardOpenOption.CREATE,
             java.nio.file.StandardOpenOption.TRUNCATE_EXISTING,
             java.nio.file.StandardOpenOption.SYNC);
     }

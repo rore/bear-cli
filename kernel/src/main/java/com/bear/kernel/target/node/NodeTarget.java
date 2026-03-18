@@ -6,7 +6,11 @@ import com.bear.kernel.ir.BearIrValidationException;
 import com.bear.kernel.target.*;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
@@ -46,7 +50,8 @@ public class NodeTarget implements Target {
 
         // Create user impl skeleton if absent
         Path implDir = projectRoot.resolve("src/blocks/" + blockKeyKebab + "/impl");
-        Path implFile = implDir.resolve(blockKey + "Impl.ts");
+        String blockName = TypeScriptLexicalSupport.deriveBlockName(blockKey);
+        Path implFile = implDir.resolve(blockName + "Impl.ts");
         if (!java.nio.file.Files.exists(implFile)) {
             generator.generateUserImplSkeleton(ir, implDir, blockKey);
         }
@@ -96,7 +101,9 @@ public class NodeTarget implements Target {
     public boolean blockDeclaresAllowedDeps(Path irFile) {
         try {
             BearIr ir = parseIr(irFile);
-            return ir.block().impl() != null && ir.block().impl().allowedDeps() != null;
+            return ir.block().impl() != null
+                && ir.block().impl().allowedDeps() != null
+                && !ir.block().impl().allowedDeps().isEmpty();
         } catch (Exception e) {
             return false;
         }
@@ -163,6 +170,96 @@ public class NodeTarget implements Target {
     @Override
     public ProjectTestResult runProjectVerification(Path projectRoot, String initScriptRelativePath) throws IOException, InterruptedException {
         throw new UnsupportedOperationException("runProjectVerification not implemented in Phase B");
+    }
+
+    /**
+     * Checks for drift in generated artifacts by compiling to a temp directory
+     * and performing byte-for-byte comparison against the workspace.
+     * User-owned impl files are excluded from drift checking.
+     *
+     * @param ir the block IR
+     * @param projectRoot the workspace project root
+     * @param blockKey the block key (kebab-case)
+     * @return list of drift findings (empty if no drift)
+     */
+    public List<TargetCheckIssue> checkDrift(BearIr ir, Path projectRoot, String blockKey) throws IOException {
+        String blockKeyKebab = toKebabCase(blockKey);
+        List<TargetCheckIssue> findings = new ArrayList<>();
+
+        // Generate fresh artifacts to temp directory
+        Path tempRoot = Files.createTempDirectory("bear-node-drift-");
+        try {
+            compile(ir, tempRoot, blockKey);
+
+            // Collect generated artifact paths from the fresh compile (source of truth)
+            // These are the paths that SHOULD exist in the workspace
+            List<String> generatedPaths = collectGeneratedArtifactPaths(blockKeyKebab, tempRoot);
+
+            for (String relPath : generatedPaths) {
+                Path workspacePath = projectRoot.resolve(relPath);
+                Path freshPath = tempRoot.resolve(relPath);
+
+                if (!Files.isRegularFile(workspacePath)) {
+                    findings.add(new TargetCheckIssue(
+                        TargetCheckIssueKind.DRIFT_MISSING_BASELINE,
+                        relPath,
+                        "Run `bear compile` to generate missing baseline artifacts.",
+                        "drift: MISSING_BASELINE: " + relPath
+                    ));
+                    continue;
+                }
+
+                byte[] workspaceBytes = Files.readAllBytes(workspacePath);
+                byte[] freshBytes = Files.readAllBytes(freshPath);
+
+                if (!Arrays.equals(workspaceBytes, freshBytes)) {
+                    findings.add(new TargetCheckIssue(
+                        TargetCheckIssueKind.DRIFT_DETECTED,
+                        relPath,
+                        "Run `bear compile` to regenerate drifted artifacts.",
+                        "drift: CHANGED: " + relPath
+                    ));
+                }
+            }
+        } finally {
+            deleteDirectoryQuietly(tempRoot);
+        }
+
+        return findings;
+    }
+
+    /**
+     * Collects the relative paths of all generated artifacts for a block.
+     * Excludes user-owned impl files.
+     */
+    private List<String> collectGeneratedArtifactPaths(String blockKeyKebab, Path projectRoot) throws IOException {
+        List<String> paths = new ArrayList<>();
+
+        // Types directory: build/generated/bear/types/<blockKey>/*.ts
+        Path typesDir = projectRoot.resolve("build/generated/bear/types/" + blockKeyKebab);
+        if (Files.isDirectory(typesDir)) {
+            try (var stream = Files.walk(typesDir)) {
+                stream.filter(Files::isRegularFile)
+                    .forEach(p -> paths.add(projectRoot.relativize(p).toString().replace('\\', '/')));
+            }
+        }
+
+        // Wiring manifest: build/generated/bear/wiring/<blockKey>.wiring.json
+        String wiringPath = "build/generated/bear/wiring/" + blockKeyKebab + ".wiring.json";
+        paths.add(wiringPath);
+
+        return paths;
+    }
+
+    private void deleteDirectoryQuietly(Path dir) {
+        try {
+            if (Files.isDirectory(dir)) {
+                try (var walk = Files.walk(dir)) {
+                    walk.sorted(Comparator.reverseOrder())
+                        .forEach(p -> { try { Files.deleteIfExists(p); } catch (IOException ignored) {} });
+                }
+            }
+        } catch (IOException ignored) {}
     }
 
     // Helper methods

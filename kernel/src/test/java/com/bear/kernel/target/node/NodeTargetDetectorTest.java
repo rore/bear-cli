@@ -81,6 +81,17 @@ class NodeTargetDetectorTest {
     }
 
     @Test
+    void jvmProjectReturnsNone(@TempDir Path tempDir) throws IOException {
+        // JVM project with build.gradle but no package.json — no false-positive cross-detection
+        Files.writeString(tempDir.resolve("build.gradle"), "plugins { id 'java' }");
+        Files.createFile(tempDir.resolve("gradlew"));
+
+        DetectedTarget result = detector.detect(tempDir);
+
+        assertEquals(DetectionStatus.NONE, result.status());
+    }
+
+    @Test
     void workspaceProject(@TempDir Path tempDir) throws IOException {
         createPackageJson(tempDir, "module", "pnpm@8.0.0");
         Files.createFile(tempDir.resolve("pnpm-lock.yaml"));
