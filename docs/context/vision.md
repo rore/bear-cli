@@ -60,9 +60,7 @@ One explicit candidate is Node.js/TypeScript, with target-specific containment c
 
 ## Related
 
-- [INDEX.md](INDEX.md)
-- [OVERVIEW.md](OVERVIEW.md)
-- [FOUNDATIONS.md](FOUNDATIONS.md)
-- [CONTRACTS.md](CONTRACTS.md)
-- [VERSIONING.md](VERSIONING.md)
+- [Public docs index](../public/INDEX.md)
+- [HOW_IT_WORKS.md](../public/HOW_IT_WORKS.md)
+- [CONTRACTS.md](../public/CONTRACTS.md)
 

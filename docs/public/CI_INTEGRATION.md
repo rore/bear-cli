@@ -258,12 +258,3 @@ Runtime note:
 - if `pwsh` is unavailable, the script fails deterministically and tells the operator to install PowerShell 7 or run `bear-gates.ps1` directly
 - other CI systems should pass `--base-sha <sha>` explicitly
 
-## Related
-
-- [DEMO.md](DEMO.md)
-- [INSTALL.md](INSTALL.md)
-- [QUICKSTART.md](QUICKSTART.md)
-- [PR_REVIEW.md](PR_REVIEW.md)
-- [commands-pr-check.md](commands-pr-check.md)
-- [output-format.md](output-format.md)
-

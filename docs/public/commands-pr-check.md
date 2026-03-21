@@ -124,7 +124,7 @@ For aggregated `--all` non-zero failures, footer code is `REPO_MULTI_BLOCK_FAILE
 
 ## Related
 
-- [FOUNDATIONS.md](FOUNDATIONS.md)
+- [HOW_IT_WORKS.md](HOW_IT_WORKS.md)
 - [commands-check.md](commands-check.md)
 - [exit-codes.md](exit-codes.md)
 - [output-format.md](output-format.md)

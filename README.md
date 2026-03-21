@@ -13,24 +13,14 @@ BEAR is a deterministic governance CLI that constrains agents during development
 
 Demo repo: [bear-account-demo](https://github.com/rore/bear-account-demo)
 
-BEAR runs in two places: inside the agent working loop for immediate corrective feedback, and in PR/CI so humans can review structural authority changes.
+## How BEAR Works
 
-## How BEAR works (10 seconds)
+1. The agent declares boundary authority in a small YAML IR contract (BEAR IR).
+2. `bear compile` generates deterministic structural constraints — typed wrappers, port interfaces, and manifests.
+3. The agent implements code inside those constraints instead of inventing the boundary shape ad hoc.
+4. `bear check` catches drift, boundary bypasses, and undeclared reach while the agent is still working.
+5. `bear pr-check` surfaces boundary authority expansion in PRs and CI for human review.
 
-1. The agent updates BEAR IR when boundary authority must change.
-2. `bear compile` materializes deterministic structural constraints from that IR.
-3. The agent implements code and runs `check` to catch drift and bypasses early.
-4. `pr-check` surfaces structural authority expansion in PRs and CI for human review.
-
-## Example governance signal
-
-```text
-BEAR Decision: REVIEW REQUIRED
-MODE=observe DECISION=review-required BASE=<target-base>
-
-CHECK exit=0 code=- classes=[CI_NO_STRUCTURAL_CHANGE]
-PR-CHECK exit=5 code=BOUNDARY_EXPANSION classes=[CI_BOUNDARY_EXPANSION]
-```
 ```mermaid
 %% id: bear-workflow-v1
 flowchart LR
@@ -59,126 +49,58 @@ flowchart LR
   classDef bad fill:#FEE2E2,stroke:#EF4444,color:#0B1220;
   classDef signal fill:#FFF7ED,stroke:#F97316,color:#0B1220;
 ```
-<p><sub>Figure: the BEAR workflow (compile -> check -> pr-check) and the outputs CI should consume.<br/>Legend: yellow = IR you edit, green = BEAR commands, orange = what automation parses.</sub></p>
+<p><sub>Figure: the BEAR workflow (compile → check → pr-check) and the outputs CI should consume.<br/>Legend: yellow = IR you edit, green = BEAR commands, orange = what automation parses.</sub></p>
 
-## What BEAR does (plain terms)
+## Example Governance Signal
 
-- When boundary authority must change, the agent updates a small YAML IR contract (BEAR IR) first.
-- A block is a governed backend unit; its operations, allowed effects, and ports are declared in BEAR IR.
-- BEAR compiles that declaration into deterministic guardrails (wrappers, ports, manifests).
-- The agent then implements code inside those guardrails instead of inventing the boundary shape ad hoc.
-- Blocks interact only through declared ports; cross-boundary access outside a declared port is flagged as a violation (or PR signal).
-- Agents get immediate deterministic feedback from `check`, and CI gets stable governance signals from `check` and `pr-check`.
+```text
+BEAR Decision: REVIEW REQUIRED
+MODE=observe DECISION=review-required BASE=<target-base>
 
-## What you get
+CHECK exit=0 code=- classes=[CI_NO_STRUCTURAL_CHANGE]
+PR-CHECK exit=5 code=BOUNDARY_EXPANSION classes=[CI_BOUNDARY_EXPANSION]
+```
 
-- Boundary power expansion becomes explicit and machine-parseable in PRs.
-- Generated guardrails cannot drift silently.
+## What You Get
+
+- Boundary authority expansion becomes explicit and machine-parseable in PRs.
+- Generated constraints cannot drift silently.
 - Every non-zero failure is actionable: `CODE`, `PATH`, `REMEDIATION`.
-
-BEAR = Block Enforceable Architectural Representation.
+- Agents get immediate deterministic feedback; humans review governance signals.
 
 <p align="center">
   <img src="assets/bear-boundary.svg" alt="BEAR boundaries: blocks interact through declared ports; direct cross-boundary calls are violations" width="100%" />
 </p>
 
-## What BEAR is not (preview non-goals)
+## Scope
 
-- Not a business-rules engine.
-- Not a runtime transaction framework.
-- Not an agent orchestrator.
-- Not a verifier of domain correctness beyond declared contract checks.
-- Not a replacement for application test strategy.
+BEAR is:
+- a deterministic governance CLI for backend boundaries
+- part of the agent working loop for immediate corrective feedback
+- a CI-friendly signal producer for PR and automation review
 
-## Quickstart
+BEAR is not:
+- a business-rules engine or domain correctness verifier
+- a runtime sandbox or IAM framework
+- an agent orchestrator or workflow engine
 
-Prerequisites:
-
-- clone the companion demo repo so it sits next to this repo as `../bear-account-demo`
-- vendored CLI exists at `.bear/tools/bear-cli`
-- canonical `--all` success path requires `bear.blocks.yaml`
-
-Example sibling layout:
-
-```text
-<parent>/bear-cli
-<parent>/bear-account-demo
-```
-
-1. Open the demo repo.
-
-```powershell
-Set-Location ..\bear-account-demo
-```
-
-2. Verify vendored CLI (not PATH).
-
-Windows (PowerShell):
-
-```powershell
-.\.bear\tools\bear-cli\bin\bear.bat --help
-```
-
-macOS/Linux (bash/zsh):
-
-```sh
-./.bear/tools/bear-cli/bin/bear --help
-```
-
-3. Let your agent update IR first if boundary authority changes, then implement the specs inside the generated constraints.
-
-```text
-Implement the specs. Update BEAR IR first if the boundary must change.
-```
-
-4. Compile deterministic generated artifacts.
-
-```powershell
-.\.bear\tools\bear-cli\bin\bear.bat compile --all --project .
-```
-
-5. Run the deterministic enforcement gate.
-
-```powershell
-.\.bear\tools\bear-cli\bin\bear.bat check --all --project .
-```
-
-6. Run the PR governance gate.
-
-Local sanity (base is self):
-
-```powershell
-.\.bear\tools\bear-cli\bin\bear.bat pr-check --all --project . --base HEAD
-```
-
-In a real PR/CI flow, set `--base` to the target branch or merge-base target.
-
-## See The Live Demo
-
-The companion demo repo shows BEAR in the actual review flow, not only as local commands:
-
-- Demo repo: [bear-account-demo](https://github.com/rore/bear-account-demo)
-- Demo guide: [docs/public/DEMO.md](docs/public/DEMO.md)
-
-The demo currently showcases three PR outcomes:
-
-- greenfield baseline review -> `REVIEW REQUIRED`
-- ordinary feature extension -> `PASS`
-- intentional expansion on existing code -> `REVIEW REQUIRED`
-
-## Links
-
-- Start here: [docs/public/INDEX.md](docs/public/INDEX.md)
-- Quickstart: [docs/public/QUICKSTART.md](docs/public/QUICKSTART.md)
-- Demo walkthrough: [docs/public/DEMO.md](docs/public/DEMO.md)
-- PR/CI review: [docs/public/PR_REVIEW.md](docs/public/PR_REVIEW.md)
-- Guarantees and non-goals: [docs/public/ENFORCEMENT.md](docs/public/ENFORCEMENT.md)
-- Automation/reference contracts: [docs/public/CONTRACTS.md](docs/public/CONTRACTS.md)
-
-## Supported targets
+## Supported Targets
 
 - JVM/Java target in Preview.
 - Primary containment enforcement path is Java plus Gradle wrapper when `impl.allowedDeps` is declared.
 
-This project uses [Minimap](https://github.com/rore/minimap) for repo-local roadmap and feature planning.
+## Documentation
 
+- [Getting started](docs/public/QUICKSTART.md) — first successful local run
+- [How BEAR works](docs/public/HOW_IT_WORKS.md) — workflow, architecture, vocabulary
+- [Demo walkthrough](docs/public/DEMO.md) — live PR showcase with three review outcomes
+- [PR/CI review](docs/public/PR_REVIEW.md) — interpreting check/pr-check in PRs
+- [CI integration](docs/public/CI_INTEGRATION.md) — packaged wrapper, GitHub Actions, allow files
+- [Install](docs/public/INSTALL.md) — add BEAR to another repo
+- [Enforcement](docs/public/ENFORCEMENT.md) — guarantees and non-goals
+- [Contracts](docs/public/CONTRACTS.md) — command contracts, output format, exit codes
+- [Troubleshooting](docs/public/troubleshooting.md) — fix failures by CODE
+
+See the [full docs index](docs/public/INDEX.md) for navigation.
+
+This project uses [Minimap](https://github.com/rore/minimap) for repo-local roadmap and feature planning.

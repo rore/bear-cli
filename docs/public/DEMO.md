@@ -1,15 +1,7 @@
 # Demo
 
-BEAR is a deterministic governance CLI that constrains the agent while it works and then surfaces governance decisions in PRs and CI.
-
-In plain terms:
-- when boundary authority changes, the agent updates BEAR IR first
-- `bear compile` generates deterministic structural constraints from that IR
-- the agent implements code inside those constraints
-- `bear check` verifies repo consistency and covered bypasses
-- `bear pr-check` tells you whether a pull request widened governed boundary authority
-
-This page explains what the live demo repo is meant to prove once those mechanics are running in GitHub.
+The companion demo repo shows BEAR in actual pull requests — not only as local
+commands. For how the workflow fits together, see [HOW_IT_WORKS.md](HOW_IT_WORKS.md).
 
 BEAR ships with a companion demo repo:
 
@@ -116,4 +108,3 @@ If you want the packaged CI and PR-review model used by the demo, continue with:
 
 - [CI_INTEGRATION.md](CI_INTEGRATION.md)
 - [PR_REVIEW.md](PR_REVIEW.md)
-

@@ -108,7 +108,7 @@ See [output-format.md](output-format.md).
 
 ## Related
 
-- [FOUNDATIONS.md](FOUNDATIONS.md)
+- [HOW_IT_WORKS.md](HOW_IT_WORKS.md)
 - [commands-check.md](commands-check.md)
 - [commands-fix.md](commands-fix.md)
 - [output-format.md](output-format.md)

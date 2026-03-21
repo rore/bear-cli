@@ -23,13 +23,5 @@ Within Preview, changes are expected in:
 
 ## Breaking change policy
 
-Breaking changes to the stable public contracts are deferred to post-Preview transitions and should be called out explicitly.
-
-## Related
-
-- [OVERVIEW.md](OVERVIEW.md)
-- [CONTRACTS.md](CONTRACTS.md)
-- [exit-codes.md](exit-codes.md)
-- [output-format.md](output-format.md)
-
-
+Breaking changes to the stable public contracts are deferred to post-Preview
+transitions and should be called out explicitly.

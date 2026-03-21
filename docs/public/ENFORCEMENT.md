@@ -1,8 +1,8 @@
 # Enforcement and Alerts
 
-For rationale see [FOUNDATIONS.md](FOUNDATIONS.md). For exact command contracts see [CONTRACTS.md](CONTRACTS.md).
+For rationale see [HOW_IT_WORKS.md](HOW_IT_WORKS.md). For exact command contracts see [CONTRACTS.md](CONTRACTS.md).
 
-If you are new to BEAR vocabulary (effects/ports/ops, governed roots), start with [TERMS.md](TERMS.md).
+If you are new to BEAR vocabulary (effects/ports/ops, governed roots), see the Key Concepts section in [HOW_IT_WORKS.md](HOW_IT_WORKS.md).
 
 Promise boundary:
 
@@ -83,18 +83,9 @@ Rationale:
 
 See [output-format.md](output-format.md) and [exit-codes.md](exit-codes.md).
 
-## What this does not claim
+## What This Does Not Claim
 
 - BEAR is not a business-rules correctness engine.
 - BEAR does not replace project testing strategy.
 - BEAR does not infer domain intent outside declared IR and configured checks.
-
-## Related
-
-- [INDEX.md](INDEX.md)
-- [TERMS.md](TERMS.md)
-- [CONTRACTS.md](CONTRACTS.md)
-- [commands-check.md](commands-check.md)
-- [commands-pr-check.md](commands-pr-check.md)
-- [troubleshooting.md](troubleshooting.md)
 

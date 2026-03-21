@@ -1,7 +1,8 @@
 # PR / CI Review Guide
 
-BEAR is designed so humans can review agent changes via deterministic signals, without needing to understand every implementation detail.
-This page covers the PR/CI review half of the model. The local agent-loop half is: update IR when boundary authority changes, compile constraints, implement inside them, and run `check` before asking humans to review anything.
+This page covers interpreting BEAR governance signals in PRs and CI.
+For the full workflow and vocabulary, see [HOW_IT_WORKS.md](HOW_IT_WORKS.md).
+The local agent-loop half is covered in [QUICKSTART.md](QUICKSTART.md).
 
 
 Most PR findings become obvious once you know which "zone" a path belongs to.
@@ -107,5 +108,4 @@ Action:
 - Exit code registry: [exit-codes.md](exit-codes.md)
 - Full `pr-check` contract: [commands-pr-check.md](commands-pr-check.md)
 - Downstream wrapper/report contract: [CI_INTEGRATION.md](CI_INTEGRATION.md)
-- Governance policy (normative, maintainer doc): [docs/context/governance.md](../context/governance.md)
 

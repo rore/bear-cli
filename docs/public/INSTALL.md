@@ -33,18 +33,12 @@ BEAR is intended to run "behind the scenes" in agentic workflows:
 
 1. Copy the full BEAR package bundle.
 
-Windows (PowerShell):
-
-```powershell
-New-Item -ItemType Directory -Force .\.bear | Out-Null
-Copy-Item -Recurse -Force ..\bear-cli\docs\bear-package\.bear\* .\.bear\
-```
-
-macOS/Linux (bash/zsh):
-
 ```sh
 mkdir -p ./.bear
 cp -R ../bear-cli/docs/bear-package/.bear/. ./.bear/
+# Windows:
+# New-Item -ItemType Directory -Force .\.bear | Out-Null
+# Copy-Item -Recurse -Force ..\bear-cli\docs\bear-package\.bear\* .\.bear\
 ```
 
 2. Ensure project root `AGENTS.md` points to [`.bear/agent/BOOTSTRAP.md`](../bear-package/.bear/agent/BOOTSTRAP.md).
@@ -53,30 +47,16 @@ If `AGENTS.md` already exists, append the one-line pointer from [`../bear-packag
 
 3. Verify installation.
 
-Windows (PowerShell):
-
-```powershell
-.\.bear\tools\bear-cli\bin\bear.bat --help
-```
-
-macOS/Linux (bash/zsh):
-
 ```sh
 ./.bear/tools/bear-cli/bin/bear --help
+# Windows: .\.bear\tools\bear-cli\bin\bear.bat --help
 ```
 
 4. Verify the packaged CI wrapper and confirm it writes `build/bear/ci/bear-ci-report.json` plus `build/bear/ci/bear-ci-summary.md`.
 
-Windows (PowerShell):
-
-```powershell
-.\.bear\ci\bear-gates.ps1 --mode observe --base-sha HEAD
-```
-
-macOS/Linux (bash/zsh):
-
 ```sh
 ./.bear/ci/bear-gates.sh --mode observe --base-sha HEAD
+# Windows: .\.bear\ci\bear-gates.ps1 --mode observe --base-sha HEAD
 ```
 
 On bash-based runners, `.bear/ci/bear-gates.sh` requires `pwsh`. If `pwsh` is unavailable, run `.bear/ci/bear-gates.ps1` directly or install PowerShell 7.
@@ -85,23 +65,14 @@ On bash-based runners, `.bear/ci/bear-gates.sh` requires `pwsh`. If `pwsh` is un
 
 Use `--all` only when your repo has `bear.blocks.yaml`:
 
-```powershell
-.\.bear\tools\bear-cli\bin\bear.bat check --all --project .
+```sh
+./.bear/tools/bear-cli/bin/bear check --all --project .
+# Windows: .\.bear\tools\bear-cli\bin\bear.bat check --all --project .
 ```
 
 If no block index exists yet, run single-block check:
 
-```powershell
-.\.bear\tools\bear-cli\bin\bear.bat check bear-ir\<block>.bear.yaml --project .
+```sh
+./.bear/tools/bear-cli/bin/bear check bear-ir/<block>.bear.yaml --project .
+# Windows: .\.bear\tools\bear-cli\bin\bear.bat check bear-ir\<block>.bear.yaml --project .
 ```
-
-## Related
-
-- [OVERVIEW.md](OVERVIEW.md)
-- [DEMO.md](DEMO.md)
-- [QUICKSTART.md](QUICKSTART.md)
-- [PR_REVIEW.md](PR_REVIEW.md)
-- [CI_INTEGRATION.md](CI_INTEGRATION.md)
-- [commands-check.md](commands-check.md)
-- [commands-unblock.md](commands-unblock.md)
-- [troubleshooting.md](troubleshooting.md)
